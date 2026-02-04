@@ -3,6 +3,10 @@
 import os
 import requests
 from urllib.parse import urlparse
+from logger import setup_logger
+
+# 获取 logger 实例
+logger = setup_logger(__name__)
 
 
 def download_file(url, output_dir):
@@ -13,7 +17,7 @@ def download_file(url, output_dir):
         output_dir: 输出目录
     """
     try:
-        print(f"下载文件: {url}")
+        logger.info(f"下载文件: {url}")
         
         # 解析URL
         parsed_url = urlparse(url)
@@ -24,7 +28,7 @@ def download_file(url, output_dir):
         
         # 如果没有文件名，跳过
         if not filename:
-            print(f"跳过，无文件名: {url}")
+            logger.info(f"跳过，无文件名: {url}")
             return
         
         # 构建保存路径，保留目录结构
@@ -46,7 +50,7 @@ def download_file(url, output_dir):
                 if chunk:
                     f.write(chunk)
         
-        print(f"保存文件: {file_path}")
+        logger.info(f"保存文件: {file_path}")
         
     except Exception as e:
-        print(f"下载失败: {url}, 错误: {str(e)}")
+        logger.error(f"下载失败: {url}, 错误: {str(e)}")

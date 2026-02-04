@@ -7,13 +7,16 @@ GrabTheSite 主脚本
 """
 
 import os
-import sys
 from crawler.crawler import SiteCrawler
+from logger import setup_logger
+
+# 获取 logger 实例
+logger = setup_logger(__name__)
 
 
 def main():
     """主函数"""
-    print("开始抓取网站...")
+    logger.info("开始抓取网站...")
     
     # 创建爬虫实例
     crawler = SiteCrawler()
@@ -21,7 +24,7 @@ def main():
     # 开始抓取
     crawler.crawl()
     
-    print("抓取完成！")
+    logger.info("抓取完成！")
 
 
 if __name__ == "__main__":

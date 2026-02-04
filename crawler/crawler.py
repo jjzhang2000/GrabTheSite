@@ -6,6 +6,10 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from config import TARGET_URL, MAX_DEPTH, MAX_FILES, OUTPUT_DIR
 from crawler.downloader import download_file
+from logger import setup_logger
+
+# 获取 logger 实例
+logger = setup_logger(__name__)
 
 
 class SiteCrawler:
@@ -26,15 +30,15 @@ class SiteCrawler:
         
     def crawl(self):
         """开始抓取"""
-        print(f"开始抓取网站: {self.target_url}")
-        print(f"保存路径: {self.output_dir}")
-        print(f"最大深度: {self.max_depth}")
-        print(f"最大文件数: {self.max_files}")
+        logger.info(f"开始抓取网站: {self.target_url}")
+        logger.info(f"保存路径: {self.output_dir}")
+        logger.info(f"最大深度: {self.max_depth}")
+        logger.info(f"最大文件数: {self.max_files}")
         
         # 开始递归抓取
         self._crawl_page(self.target_url, 0)
         
-        print(f"抓取完成，共下载 {self.downloaded_files} 个文件")
+        logger.info(f"抓取完成，共下载 {self.downloaded_files} 个文件")
     
     def _crawl_page(self, url, depth):
         """递归抓取页面"""
@@ -55,7 +59,7 @@ class SiteCrawler:
             self.visited_urls.add(url)
             
             # 获取网页内容
-            print(f"抓取页面: {url}")
+            logger.info(f"抓取页面: {url}")
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
             }
@@ -71,7 +75,7 @@ class SiteCrawler:
                 f.write(html_content)
             
             self.downloaded_files += 1
-            print(f"保存文件: {file_path}")
+            logger.info(f"保存文件: {file_path}")
             
             # 解析HTML，提取链接
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -105,7 +109,7 @@ class SiteCrawler:
                             self._crawl_page(full_url, depth + 1)
                             
         except Exception as e:
-            print(f"抓取失败: {url}, 错误: {str(e)}")
+            logger.error(f"抓取失败: {url}, 错误: {str(e)}")
     
     def _get_file_path(self, url):
         """获取文件保存路径，保留原网站的目录结构"""
@@ -206,7 +210,7 @@ class SiteCrawler:
                                     self.to_visit_urls.add(full_url)
                             
         except Exception as e:
-            print(f"收集URL失败: {url}, 错误: {str(e)}")
+            logger.error(f"收集URL失败: {url}, 错误: {str(e)}")
     
     def _process_links(self, html_content, base_url):
         """处理HTML中的链接，替换为本地链接
@@ -299,7 +303,7 @@ class SiteCrawler:
             return str(soup)
             
         except Exception as e:
-            print(f"处理链接失败: {str(e)}")
+            logger.error(f"处理链接失败: {str(e)}")
             return html_content
     
     def _url_to_local_path(self, url, base_path):
