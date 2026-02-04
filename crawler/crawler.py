@@ -25,6 +25,13 @@ class SiteCrawler:
         self.visited_urls = set()
         self.to_visit_urls = set()  # 待访问的URL集合
         
+        # 提取起始目录路径
+        parsed_target = urlparse(self.target_url)
+        self.target_directory = parsed_target.path
+        # 确保路径以/结尾
+        if not self.target_directory.endswith('/'):
+            self.target_directory += '/'
+        
         # 创建输出目录
         os.makedirs(self.output_dir, exist_ok=True)
         
@@ -52,6 +59,10 @@ class SiteCrawler:
         
         # 检查是否达到文件数量限制
         if self.downloaded_files >= self.max_files:
+            return
+        
+        # 检查是否在起始目录及其子目录中
+        if not self._is_in_target_directory(url):
             return
         
         try:
@@ -89,8 +100,8 @@ class SiteCrawler:
                     src = link.get('src') or link.get('href')
                     if src:
                         full_url = urljoin(url, src)
-                        # 只下载同域名的静态资源
-                        if self._is_same_domain(full_url):
+                        # 只下载同域名且在起始目录及其子目录中的静态资源
+                        if self._is_same_domain(full_url) and self._is_in_target_directory(full_url):
                             download_file(full_url, self.output_dir)
                             # 静态资源不计入下载总数限制
                             # self.downloaded_files += 1
@@ -101,8 +112,8 @@ class SiteCrawler:
                     href = link.get('href')
                     if href:
                         full_url = urljoin(url, href)
-                        # 只抓取同域名的链接，并且深度小于最大深度
-                        if self._is_same_domain(full_url) and depth < self.max_depth:
+                        # 只抓取同域名、在起始目录及其子目录中、并且深度小于最大深度的链接
+                        if self._is_same_domain(full_url) and self._is_in_target_directory(full_url) and depth < self.max_depth:
                             # 检查是否达到文件数量限制
                             if self.downloaded_files >= self.max_files:
                                 break
@@ -139,6 +150,25 @@ class SiteCrawler:
         target_domain = urlparse(self.target_url).netloc
         current_domain = urlparse(url).netloc
         return target_domain == current_domain
+    
+    def _is_in_target_directory(self, url):
+        """检查 URL 是否在起始目录及其子目录中
+        
+        Args:
+            url: 要检查的 URL
+            
+        Returns:
+            布尔值，表示该 URL 是否在起始目录及其子目录中
+        """
+        parsed_url = urlparse(url)
+        url_path = parsed_url.path
+        
+        # 确保 url_path 以/结尾，以便正确比较
+        if not url_path.endswith('/'):
+            url_path += '/'
+        
+        # 检查 url_path 是否以 self.target_directory 开头
+        return url_path.startswith(self.target_directory)
     
     def _collect_urls(self, url, depth):
         """收集所有待访问的URL
@@ -238,8 +268,8 @@ class SiteCrawler:
                     href = link.get('href')
                     if href:
                         full_url = urljoin(base_url, href)
-                        # 只处理同域名的链接
-                        if self._is_same_domain(full_url):
+                        # 只处理同域名且在起始目录及其子目录中的链接
+                        if self._is_same_domain(full_url) and self._is_in_target_directory(full_url):
                             # 构建本地文件路径
                             full_local_path = self._get_file_path(full_url)
                             # 检查本地文件是否存在且是一个文件（不是目录）
@@ -256,8 +286,8 @@ class SiteCrawler:
                     src = link.get('src') or link.get('href')
                     if src:
                         full_url = urljoin(base_url, src)
-                        # 只处理同域名的静态资源
-                        if self._is_same_domain(full_url):
+                        # 只处理同域名且在起始目录及其子目录中的静态资源
+                        if self._is_same_domain(full_url) and self._is_in_target_directory(full_url):
                             # 构建静态资源的本地文件路径
                             # 静态资源的路径处理与页面不同，不需要添加.html扩展名
                             parsed_url = urlparse(full_url)
