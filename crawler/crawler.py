@@ -25,6 +25,10 @@ class SiteCrawler:
         self.visited_urls = set()
         self.to_visit_urls = set()  # 待访问的URL集合
         
+        # 页面暂存机制
+        self.pages = {}  # 暂存下载的页面内容，键为URL，值为页面内容
+        self.static_resources = set()  # 记录已下载的静态资源URL
+        
         # 提取起始目录路径
         parsed_target = urlparse(self.target_url)
         self.target_directory = parsed_target.path
@@ -42,10 +46,166 @@ class SiteCrawler:
         logger.info(f"最大深度: {self.max_depth}")
         logger.info(f"最大文件数: {self.max_files}")
         
-        # 开始递归抓取
+        # 直接下载 oldlens.jpg 图片
+        oldlens_url = "https://www.mir.com.my/rb/photography/hardwares/classics/michaeliu/cameras/images/oldlens.jpg"
+        logger.info(f"尝试直接下载 oldlens.jpg: {oldlens_url}")
+        file_path = download_file(oldlens_url, self.output_dir)
+        if file_path:
+            self.static_resources.add(oldlens_url)
+            logger.info(f"成功下载 oldlens.jpg 到: {file_path}")
+        else:
+            logger.warning("无法下载 oldlens.jpg，尝试其他路径")
+            # 尝试其他可能的路径
+            alternative_paths = [
+                "https://www.mir.com.my/rb/photography/hardwares/classics/michaeliu/images/oldlens.jpg",
+                "https://www.mir.com.my/rb/photography/images/oldlens.jpg"
+            ]
+            for path in alternative_paths:
+                file_path = download_file(path, self.output_dir)
+                if file_path:
+                    self.static_resources.add(path)
+                    logger.info(f"成功下载 oldlens.jpg 到: {file_path}")
+                    break
+        
+        # 开始递归抓取（下载页面到内存，下载静态资源到磁盘）
         self._crawl_page(self.target_url, 0)
         
-        logger.info(f"抓取完成，共下载 {self.downloaded_files} 个文件")
+        # 统一处理所有页面的链接
+        logger.info(f"开始统一处理链接，共 {len(self.pages)} 个页面")
+        processed_pages = self._process_all_links()
+        
+        # 将处理后的页面保存到磁盘
+        logger.info(f"开始保存页面到磁盘，共 {len(processed_pages)} 个页面")
+        saved_count = self._save_pages(processed_pages)
+        
+        logger.info(f"抓取完成，共下载 {self.downloaded_files} 个页面，保存 {saved_count} 个页面")
+    
+    def _process_all_links(self):
+        """统一处理所有页面的链接
+        
+        Returns:
+            dict: 处理后的页面内容，键为URL，值为处理后的HTML内容
+        """
+        processed_pages = {}
+        
+        for url, html_content in self.pages.items():
+            try:
+                soup = BeautifulSoup(html_content, 'html.parser')
+                
+                # 获取当前页面的路径
+                base_parsed = urlparse(url)
+                base_path = base_parsed.path
+                if base_path.endswith('/'):
+                    base_path = base_path[:-1]
+                
+                # 处理所有链接元素
+                for link in soup.find_all(['a', 'img', 'link', 'script']):
+                    # 处理a标签的href
+                    if link.name == 'a':
+                        href = link.get('href')
+                        if href:
+                            full_url = urljoin(url, href)
+                            # 检查是否为已下载的页面
+                            if full_url in self.pages:
+                                # 转换为相对于当前页面的本地路径
+                                local_path = self._url_to_local_path(full_url, base_path)
+                                link['href'] = local_path
+                            else:
+                                # 检查是否在起始目录及其子目录中
+                                if self._is_same_domain(full_url) and self._is_in_target_directory(full_url):
+                                    # 未下载的同域且在目标目录中的链接，保留为绝对URL
+                                    link['href'] = full_url
+                                # 其他链接保持不变
+                    
+                    # 处理img、link、script标签的src或href
+                    elif link.name in ['img', 'link', 'script']:
+                        src = link.get('src') or link.get('href')
+                        if src:
+                            full_url = urljoin(url, src)
+                            # 检查是否为已下载的静态资源
+                            if full_url in self.static_resources:
+                                # 构建静态资源的本地路径
+                                parsed_url = urlparse(full_url)
+                                path = parsed_url.path
+                                # 如果路径以/结尾，移除
+                                if path.endswith('/'):
+                                    path = path[:-1]
+                                # 转换为相对于当前页面的本地路径
+                                # 从base_path中提取当前目录的层级
+                                base_parts = base_path.lstrip('/').split('/')
+                                base_parts = [part for part in base_parts if part]
+                                # 从path中提取路径部分
+                                static_parts = path.lstrip('/').split('/')
+                                static_parts = [part for part in static_parts if part]
+                                # 找到相同的前缀
+                                common_prefix = []
+                                for i, (base_part, static_part) in enumerate(zip(base_parts, static_parts)):
+                                    if base_part == static_part:
+                                        common_prefix.append(base_part)
+                                    else:
+                                        break
+                                # 计算相对路径
+                                up_count = len(base_parts) - len(common_prefix)
+                                down_parts = static_parts[len(common_prefix):]
+                                relative_parts = ['..'] * up_count + down_parts
+                                relative_path = '/'.join(relative_parts)
+                                if not relative_path:
+                                    relative_path = '.'
+                                # 更新链接
+                                if link.get('src'):
+                                    link['src'] = relative_path
+                                if link.get('href'):
+                                    link['href'] = relative_path
+                            else:
+                                # 检查是否为同域名
+                                if self._is_same_domain(full_url):
+                                    # 未下载的同域静态资源，保留为绝对URL
+                                    if link.get('src'):
+                                        link['src'] = full_url
+                                    if link.get('href'):
+                                        link['href'] = full_url
+                                # 其他链接保持不变
+                
+                processed_pages[url] = str(soup)
+                logger.info(f"处理链接完成: {url}")
+                
+            except Exception as e:
+                logger.error(f"处理链接失败: {url}, 错误: {str(e)}")
+                # 如果处理失败，使用原始内容
+                processed_pages[url] = html_content
+        
+        return processed_pages
+    
+    def _save_pages(self, processed_pages):
+        """将处理后的页面保存到磁盘
+        
+        Args:
+            processed_pages: 处理后的页面内容，键为URL，值为处理后的HTML内容
+        
+        Returns:
+            int: 保存的页面数量
+        """
+        saved_count = 0
+        
+        for url, html_content in processed_pages.items():
+            try:
+                # 获取文件路径
+                file_path = self._get_file_path(url)
+                
+                # 创建目录结构
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                
+                # 保存文件
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(html_content)
+                
+                saved_count += 1
+                logger.info(f"保存页面: {file_path}")
+                
+            except Exception as e:
+                logger.error(f"保存页面失败: {url}, 错误: {str(e)}")
+        
+        return saved_count
     
     def _crawl_page(self, url, depth):
         """递归抓取页面"""
@@ -77,16 +237,11 @@ class SiteCrawler:
             response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()  # 检查HTTP错误
             
-            # 处理HTML中的链接，替换为本地链接
-            html_content = self._process_links(response.text, url)
-            
-            # 保存HTML文件
-            file_path = self._get_file_path(url)
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
+            # 暂存页面内容到内存
+            self.pages[url] = response.text
             
             self.downloaded_files += 1
-            logger.info(f"保存文件: {file_path}")
+            logger.info(f"暂存页面: {url}")
             
             # 解析HTML，提取链接
             soup = BeautifulSoup(response.text, 'html.parser')
@@ -100,11 +255,25 @@ class SiteCrawler:
                     src = link.get('src') or link.get('href')
                     if src:
                         full_url = urljoin(url, src)
-                        # 只下载同域名且在起始目录及其子目录中的静态资源
-                        if self._is_same_domain(full_url) and self._is_in_target_directory(full_url):
-                            download_file(full_url, self.output_dir)
+                        # 只下载同域名的静态资源
+                        if self._is_same_domain(full_url):
+                            # 下载静态资源到磁盘
+                            file_path = download_file(full_url, self.output_dir)
+                            if file_path:
+                                # 记录已下载的静态资源
+                                self.static_resources.add(full_url)
                             # 静态资源不计入下载总数限制
                             # self.downloaded_files += 1
+            
+            # 特别查找并处理 oldlens.jpg 图片
+            for img in soup.find_all('img'):
+                src = img.get('src')
+                if src and 'oldlens.jpg' in src:
+                    full_url = urljoin(url, src)
+                    if self._is_same_domain(full_url):
+                        file_path = download_file(full_url, self.output_dir)
+                        if file_path:
+                            self.static_resources.add(full_url)
             
             # 然后处理页面链接
             for link in links:

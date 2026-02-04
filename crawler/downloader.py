@@ -15,6 +15,9 @@ def download_file(url, output_dir):
     Args:
         url: 文件URL
         output_dir: 输出目录
+    
+    Returns:
+        str: 下载的文件路径，如果下载失败返回None
     """
     try:
         logger.info(f"下载文件: {url}")
@@ -29,7 +32,7 @@ def download_file(url, output_dir):
         # 如果没有文件名，跳过
         if not filename:
             logger.info(f"跳过，无文件名: {url}")
-            return
+            return None
         
         # 构建保存路径，保留目录结构
         file_path = os.path.join(output_dir, path.lstrip('/'))
@@ -51,6 +54,8 @@ def download_file(url, output_dir):
                     f.write(chunk)
         
         logger.info(f"保存文件: {file_path}")
+        return file_path
         
     except Exception as e:
         logger.error(f"下载失败: {url}, 错误: {str(e)}")
+        return None
