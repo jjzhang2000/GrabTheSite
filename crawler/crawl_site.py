@@ -30,6 +30,11 @@ class CrawlSite:
         self.downloaded_files = 0
         self.visited_urls = set()
         
+        # 排除列表，包含不需要下载的URL及其子目录
+        self.exclude_list = [
+            "https://www.mir.com.my/rb/photography/ftz/"
+        ]
+        
         # 页面暂存机制
         self.pages = {}  # 暂存下载的页面内容，键为URL，值为页面内容
         self.static_resources = set()  # 记录已下载的静态资源URL
@@ -40,6 +45,16 @@ class CrawlSite:
         # 确保路径以/结尾
         if not self.target_directory.endswith('/'):
             self.target_directory += '/'
+        
+        # 处理排除列表，确保每个URL都以/结尾
+        self.processed_exclude_list = []
+        for url in self.exclude_list:
+            parsed_url = urlparse(url)
+            path = parsed_url.path
+            if not path.endswith('/'):
+                path += '/'
+            full_url = f"{parsed_url.scheme}://{parsed_url.netloc}{path}"
+            self.processed_exclude_list.append(full_url)
         
         # 创建输出目录
         os.makedirs(self.output_dir, exist_ok=True)
@@ -94,6 +109,11 @@ class CrawlSite:
         
         # 检查是否达到文件数量限制
         if self.downloaded_files >= self.max_files:
+            return
+        
+        # 检查是否在排除列表中
+        if self._is_in_exclude_list(url):
+            logger.info(f"URL在排除列表中，跳过: {url}")
             return
         
         # 检查是否在起始目录及其子目录中
@@ -190,3 +210,17 @@ class CrawlSite:
         
         # 检查 url_path 是否以 self.target_directory 开头
         return url_path.startswith(self.target_directory)
+    
+    def _is_in_exclude_list(self, url):
+        """检查 URL 是否在排除列表中或其子目录中
+        
+        Args:
+            url: 要检查的 URL
+            
+        Returns:
+            布尔值，表示该 URL 是否在排除列表中或其子目录中
+        """
+        for exclude_url in self.processed_exclude_list:
+            if url.startswith(exclude_url):
+                return True
+        return False
