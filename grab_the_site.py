@@ -7,7 +7,7 @@ GrabTheSite 主脚本
 """
 
 import os
-from config import TARGET_URL, MAX_DEPTH, MAX_FILES, OUTPUT_DIR
+from config import TARGET_URL, MAX_DEPTH, MAX_FILES, OUTPUT_DIR, CONFIG
 from crawler.crawl_site import CrawlSite
 from crawler.save_site import SaveSite
 from logger import setup_logger
@@ -19,6 +19,10 @@ logger = setup_logger(__name__)
 def main():
     """主函数"""
     logger.info("开始抓取网站...")
+    logger.info(f"目标网站: {TARGET_URL}")
+    logger.info(f"最大深度: {MAX_DEPTH}")
+    logger.info(f"最大文件数: {MAX_FILES}")
+    logger.info(f"输出路径: {OUTPUT_DIR}")
     
     # 创建抓取器实例
     crawler = CrawlSite(TARGET_URL, MAX_DEPTH, MAX_FILES, OUTPUT_DIR)

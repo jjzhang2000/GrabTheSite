@@ -1,0 +1,31 @@
+# 用户配置文件
+# 此文件中的配置将覆盖默认配置文件中的相应配置
+# 不需要修改的配置项可以删除，将使用默认值
+
+# 目标网站配置
+# target_url: "https://www.mir.com.my/rb/photography/"
+
+# 抓取参数配置
+# crawl:
+#   max_depth: 1
+#   max_files: 10
+#   delay: 1
+#   random_delay: true
+#   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+# 输出配置
+# output:
+#   base_dir: "output"
+#   site_name: "www.mir.com.my"
+
+# 排除列表
+# exclude:
+#   - "https://www.mir.com.my/rb/photography/ftz/"
+#   - "https://www.mir.com.my/rb/photography/other/excluded/path/"
+
+# 日志配置
+# logging:
+#   level: "INFO"
+#   file: "logs/grabthesite.log"
+#   max_bytes: 10485760
+#   backup_count: 5

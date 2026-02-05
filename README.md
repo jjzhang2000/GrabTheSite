@@ -47,6 +47,64 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
 - 仅支持抓取指定网站
 - 只下载起始目录及其子目录下的内容，基础目录之上的链接将保留原始状态
 
+## 配置文件支持
+
+### 配置文件结构
+
+项目使用 YAML 格式的配置文件，位于 `config/` 目录下：
+
+- **config/default.yaml** - 默认配置文件，包含所有默认配置项
+- **config/config.yaml** - 用户配置文件，用于覆盖默认配置
+
+### 配置项说明
+
+```yaml
+# 目标网站配置
+target_url: "https://www.mir.com.my/rb/photography/"
+
+# 抓取参数配置
+crawl:
+  max_depth: 1          # 最大抓取深度
+  max_files: 10         # 最大文件数量
+  delay: 1              # 请求间隔（秒）
+  random_delay: true    # 是否使用随机延迟
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+
+# 输出配置
+output:
+  base_dir: "output"     # 基础输出目录
+  site_name: "www.mir.com.my"  # 网站名称（用于创建子目录）
+
+# 排除列表
+exclude:
+  - "https://www.mir.com.my/rb/photography/ftz/"  # 排除的URL及其子目录
+
+# 日志配置
+logging:
+  level: "INFO"         # 日志级别
+  file: "logs/grabthesite.log"  # 日志文件路径
+  max_bytes: 10485760   # 日志文件最大字节数（10MB）
+  backup_count: 5       # 保留的日志文件数量
+```
+
+### 配置优先级
+
+1. **用户配置文件** (`config/config.yaml`) - 最高优先级
+2. **默认配置文件** (`config/default.yaml`) - 中等优先级
+3. **硬编码配置** (`config.py`) - 最低优先级，作为备用
+
+### 如何修改配置
+
+1. 复制 `config/config.yaml` 文件（如果不存在）
+2. 编辑 `config/config.yaml` 文件，取消注释并修改需要的配置项
+3. 保存文件并重新运行程序
+
+### 注意事项
+
+- 不需要修改的配置项可以保持注释状态，将使用默认值
+- 配置文件格式必须是有效的 YAML 格式
+- 配置项的值必须符合预期类型（如深度和文件数量必须为整数）
+
 ## 功能规划
 
 ### 近期计划（版本1.0）
@@ -55,9 +113,10 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
    - 允许用户通过命令行指定目标URL、深度、文件数量等参数
    - 支持帮助信息和参数验证
 
-2. **配置文件支持**
-   - 使用JSON或YAML配置文件管理参数
+2. **配置文件支持** (已实现)
+   - 使用YAML配置文件管理参数
    - 支持默认配置和用户自定义配置
+   - 配置文件自动加载和合并
 
 3. **多线程/多进程支持**
    - 实现并行抓取，提高抓取速度

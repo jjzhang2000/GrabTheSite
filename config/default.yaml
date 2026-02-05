@@ -1,0 +1,30 @@
+# 默认配置文件
+
+# 目标网站配置
+target_url: "https://www.mir.com.my/rb/photography/"
+
+# 抓取参数配置
+crawl:
+  max_depth: 1          # 最大抓取深度
+  max_files: 10         # 最大文件数量
+  delay: 1              # 请求间隔（秒）
+  random_delay: true    # 是否使用随机延迟
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+
+# 输出配置
+output:
+  base_dir: "output"     # 基础输出目录
+  site_name: "www.mir.com.my"  # 网站名称（用于创建子目录）
+  # 完整输出路径将自动计算为：output/www.mir.com.my
+
+# 排除列表
+exclude:
+  - "https://www.mir.com.my/rb/photography/ftz/"  # 排除的URL及其子目录
+  # 可以添加更多排除的URL
+
+# 日志配置
+logging:
+  level: "INFO"         # 日志级别
+  file: "logs/grabthesite.log"  # 日志文件路径
+  max_bytes: 10485760   # 日志文件最大字节数（10MB）
+  backup_count: 5       # 保留的日志文件数量

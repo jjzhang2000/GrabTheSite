@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from crawler.downloader import download_file
 from logger import setup_logger
+from config import EXCLUDE_LIST
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -30,10 +31,8 @@ class CrawlSite:
         self.downloaded_files = 0
         self.visited_urls = set()
         
-        # 排除列表，包含不需要下载的URL及其子目录
-        self.exclude_list = [
-            "https://www.mir.com.my/rb/photography/ftz/"
-        ]
+        # 从配置中获取排除列表
+        self.exclude_list = EXCLUDE_LIST or []
         
         # 页面暂存机制
         self.pages = {}  # 暂存下载的页面内容，键为URL，值为页面内容
@@ -55,6 +54,12 @@ class CrawlSite:
                 path += '/'
             full_url = f"{parsed_url.scheme}://{parsed_url.netloc}{path}"
             self.processed_exclude_list.append(full_url)
+        
+        # 打印排除列表信息
+        if self.processed_exclude_list:
+            logger.info(f"排除列表: {self.processed_exclude_list}")
+        else:
+            logger.info("排除列表为空")
         
         # 创建输出目录
         os.makedirs(self.output_dir, exist_ok=True)

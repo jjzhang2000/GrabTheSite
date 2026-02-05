@@ -4,6 +4,7 @@ import os
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from logger import setup_logger
+from config import CONFIG
 
 # 获取 logger 实例
 logger = setup_logger(__name__)

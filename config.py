@@ -1,19 +1,141 @@
 # 配置管理模块
 
-# 目标网站
-TARGET_URL = "https://www.mir.com.my/rb/photography/"
+import os
+import yaml
+from logger import setup_logger
 
-# 下载深度
-MAX_DEPTH = 1
+# 获取 logger 实例
+logger = setup_logger(__name__)
 
-# 下载文件上限
-MAX_FILES = 10
+# 默认配置（最低优先级）
+DEFAULT_CONFIG = {
+    "target_url": "https://www.mir.com.my/rb/photography/",
+    "crawl": {
+        "max_depth": 1,
+        "max_files": 10,
+        "delay": 1,
+        "random_delay": True,
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    },
+    "output": {
+        "base_dir": "output",
+        "site_name": "www.mir.com.my"
+    },
+    "exclude": [
+        "https://www.mir.com.my/rb/photography/ftz/"
+    ],
+    "logging": {
+        "level": "INFO",
+        "file": "logs/grabthesite.log",
+        "max_bytes": 10485760,
+        "backup_count": 5
+    }
+}
 
-# 保存路径基础目录
-BASE_OUTPUT_DIR = "output"
+# 配置文件路径
+CONFIG_DIR = "config"
+DEFAULT_CONFIG_FILE = os.path.join(CONFIG_DIR, "default.yaml")
+USER_CONFIG_FILE = os.path.join(CONFIG_DIR, "config.yaml")
 
-# 网站域名（用于创建保存目录）
-SITE_NAME = "www.mir.com.my"
 
-# 完整保存路径
-OUTPUT_DIR = f"{BASE_OUTPUT_DIR}/{SITE_NAME}"
+def load_config():
+    """加载配置文件
+    
+    Returns:
+        dict: 合并后的配置
+    """
+    # 从默认配置开始
+    config = DEFAULT_CONFIG.copy()
+    
+    # 加载默认配置文件
+    if os.path.exists(DEFAULT_CONFIG_FILE):
+        try:
+            with open(DEFAULT_CONFIG_FILE, "r", encoding="utf-8") as f:
+                default_config = yaml.safe_load(f)
+                if default_config:
+                    config = merge_configs(config, default_config)
+                    logger.info(f"已加载默认配置文件: {DEFAULT_CONFIG_FILE}")
+        except Exception as e:
+            logger.warning(f"加载默认配置文件失败: {e}")
+    else:
+        logger.info(f"默认配置文件不存在: {DEFAULT_CONFIG_FILE}")
+    
+    # 加载用户配置文件
+    if os.path.exists(USER_CONFIG_FILE):
+        try:
+            with open(USER_CONFIG_FILE, "r", encoding="utf-8") as f:
+                user_config = yaml.safe_load(f)
+                if user_config:
+                    config = merge_configs(config, user_config)
+                    logger.info(f"已加载用户配置文件: {USER_CONFIG_FILE}")
+        except Exception as e:
+            logger.warning(f"加载用户配置文件失败: {e}")
+    else:
+        logger.info(f"用户配置文件不存在: {USER_CONFIG_FILE}")
+    
+    # 计算派生配置
+    config["output"]["full_path"] = os.path.join(config["output"]["base_dir"], config["output"]["site_name"])
+    
+    # 验证配置
+    validate_config(config)
+    
+    return config
+
+
+def merge_configs(base, override):
+    """合并配置
+    
+    Args:
+        base: 基础配置
+        override: 覆盖配置
+    
+    Returns:
+        dict: 合并后的配置
+    """
+    for key, value in override.items():
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            base[key] = merge_configs(base[key], value)
+        else:
+            base[key] = value
+    return base
+
+
+def validate_config(config):
+    """验证配置
+    
+    Args:
+        config: 配置字典
+    """
+    # 验证必填项
+    required_fields = ["target_url", "crawl", "output"]
+    for field in required_fields:
+        if field not in config:
+            logger.warning(f"配置缺少必填项: {field}")
+    
+    # 验证抓取参数
+    if "crawl" in config:
+        crawl_config = config["crawl"]
+        if "max_depth" in crawl_config and crawl_config["max_depth"] < 0:
+            logger.warning("max_depth 不能为负数，设置为 0")
+            crawl_config["max_depth"] = 0
+        if "max_files" in crawl_config and crawl_config["max_files"] < 0:
+            logger.warning("max_files 不能为负数，设置为 0")
+            crawl_config["max_files"] = 0
+
+
+# 加载配置
+config = load_config()
+
+# 导出配置项
+TARGET_URL = config["target_url"]
+MAX_DEPTH = config["crawl"]["max_depth"]
+MAX_FILES = config["crawl"]["max_files"]
+USER_AGENT = config["crawl"]["user_agent"]
+BASE_OUTPUT_DIR = config["output"]["base_dir"]
+SITE_NAME = config["output"]["site_name"]
+OUTPUT_DIR = config["output"]["full_path"]
+EXCLUDE_LIST = config.get("exclude", [])
+LOGGING_CONFIG = config.get("logging", {})
+
+# 导出完整配置对象
+CONFIG = config
