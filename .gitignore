@@ -207,7 +207,10 @@ marimo/_lsp/
 __marimo__/
 
 # GrabTheSite output directory
+logs/
+my_site/
 output/
+test_output/
 
 # Trae IDE directory
 .trae/

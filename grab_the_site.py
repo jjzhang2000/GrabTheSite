@@ -55,6 +55,19 @@ def parse_args():
         help="输出目录"
     )
     
+    parser.add_argument(
+        "--delay", "-t",
+        type=float,
+        default=None,
+        help="请求间隔（秒）"
+    )
+    
+    parser.add_argument(
+        "--no-random-delay",
+        action="store_true",
+        help="禁用随机延迟"
+    )
+    
     return parser.parse_args()
 
 
@@ -95,6 +108,16 @@ def update_config(args):
                 config["output"]["site_name"]
             )
     
+    if args.delay is not None:
+        if "crawl" not in config:
+            config["crawl"] = {}
+        config["crawl"]["delay"] = args.delay
+    
+    if args.no_random_delay:
+        if "crawl" not in config:
+            config["crawl"] = {}
+        config["crawl"]["random_delay"] = False
+    
     return config
 
 
@@ -112,10 +135,16 @@ def main():
     max_files = config["crawl"].get("max_files", 10)
     output_dir = config["output"].get("full_path", "output")
     
+    # 提取延迟相关配置
+    delay = config["crawl"].get("delay", 1)
+    random_delay = config["crawl"].get("random_delay", True)
+    
     logger.info("开始抓取网站...")
     logger.info(f"目标网站: {target_url}")
     logger.info(f"最大深度: {max_depth}")
     logger.info(f"最大文件数: {max_files}")
+    logger.info(f"请求间隔: {delay} 秒")
+    logger.info(f"随机延迟: {'启用' if random_delay else '禁用'}")
     logger.info(f"输出路径: {output_dir}")
     
     # 创建抓取器实例

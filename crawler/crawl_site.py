@@ -1,12 +1,14 @@
 # 网站抓取类
 
 import os
+import time
+import random
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from crawler.downloader import download_file
 from logger import setup_logger
-from config import EXCLUDE_LIST
+from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -187,9 +189,15 @@ class CrawlSite:
                             if self.downloaded_files >= self.max_files:
                                 break
                             self._crawl_page(full_url, depth + 1)
+            
+            # 添加延迟
+            self._add_delay()
                             
         except Exception as e:
             logger.error(f"抓取失败: {url}, 错误: {str(e)}")
+            
+            # 添加延迟
+            self._add_delay()
     
     def _is_same_domain(self, url):
         """检查是否为同域名"""
@@ -229,3 +237,20 @@ class CrawlSite:
             if url.startswith(exclude_url):
                 return True
         return False
+    
+    def _add_delay(self):
+        """添加延迟，避免对目标服务器造成过大压力
+        
+        支持固定延迟和随机延迟两种模式
+        """
+        if DELAY > 0:
+            if RANDOM_DELAY:
+                # 随机延迟：0.5 到 1.5 倍的配置延迟时间
+                delay_time = random.uniform(DELAY * 0.5, DELAY * 1.5)
+                logger.debug(f"添加随机延迟: {delay_time:.2f} 秒")
+            else:
+                # 固定延迟
+                delay_time = DELAY
+                logger.debug(f"添加固定延迟: {delay_time:.2f} 秒")
+            
+            time.sleep(delay_time)

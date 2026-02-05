@@ -1,9 +1,12 @@
 # 文件下载模块
 
 import os
+import time
+import random
 import requests
 from urllib.parse import urlparse
 from logger import setup_logger
+from config import DELAY, RANDOM_DELAY
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -54,8 +57,34 @@ def download_file(url, output_dir):
                     f.write(chunk)
         
         logger.info(f"保存文件: {file_path}")
+        
+        # 添加延迟
+        add_delay()
+        
         return file_path
         
     except Exception as e:
         logger.error(f"下载失败: {url}, 错误: {str(e)}")
+        
+        # 添加延迟
+        add_delay()
+        
         return None
+
+
+def add_delay():
+    """添加延迟，避免对目标服务器造成过大压力
+    
+    支持固定延迟和随机延迟两种模式
+    """
+    if DELAY > 0:
+        if RANDOM_DELAY:
+            # 随机延迟：0.5 到 1.5 倍的配置延迟时间
+            delay_time = random.uniform(DELAY * 0.5, DELAY * 1.5)
+            logger.debug(f"添加随机延迟: {delay_time:.2f} 秒")
+        else:
+            # 固定延迟
+            delay_time = DELAY
+            logger.debug(f"添加固定延迟: {delay_time:.2f} 秒")
+        
+        time.sleep(delay_time)

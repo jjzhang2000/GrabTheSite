@@ -88,6 +88,8 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
 | `--depth` | `-d` | 整数 | 最大抓取深度 |
 | `--max-files` | `-m` | 整数 | 最大文件数量 |
 | `--output` | `-o` | 字符串 | 输出目录 |
+| `--delay` | `-t` | 浮点数 | 请求间隔（秒） |
+| `--no-random-delay` | | 布尔值 | 禁用随机延迟 |
 
 ### 使用示例
 
@@ -121,6 +123,14 @@ python grab_the_site.py --output my_site
 python grab_the_site.py --url https://example.com --depth 3 --max-files 100 --output example_site
 ```
 
+#### 6. 设置延迟参数
+
+```bash
+python grab_the_site.py --url https://example.com --delay 2 --no-random-delay
+```
+
+这将设置固定的 2 秒延迟，禁用随机延迟功能。
+
 ### 注意事项
 
 - 命令行参数优先级高于配置文件
@@ -150,7 +160,7 @@ python grab_the_site.py --url https://example.com --depth 3 --max-files 100 --ou
    - 在抓取中断后可以继续之前的抓取
    - 记录已下载的文件，避免重复下载
 
-5. **爬虫延迟设置**
+5. **爬虫延迟设置** (已实现)
    - 支持设置请求间隔，避免对目标服务器造成过大压力
    - 支持随机延迟，模拟真实用户行为
 
