@@ -31,7 +31,8 @@ def setup_logger(name=__name__):
         file_handler = RotatingFileHandler(
             LOG_FILE,
             maxBytes=10 * 1024 * 1024,  # 10MB
-            backupCount=5  # 最多保留5个备份文件
+            backupCount=5,  # 最多保留5个备份文件
+            encoding='utf-8'  # 使用 UTF-8 编码，避免中文乱码
         )
         file_handler.setLevel(logging.DEBUG)  # 文件日志记录所有级别
         
