@@ -82,16 +82,24 @@ def load_config():
             }
         }
     
+    # 从 target_url 中提取域名作为 site_name
+    from urllib.parse import urlparse
+    parsed_url = urlparse(config["target_url"])
+    site_name = parsed_url.netloc
+    
     # 计算派生配置
-    if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
-        config["output"]["full_path"] = os.path.join(config["output"]["base_dir"], config["output"]["site_name"])
-    else:
-        logger.error("配置中缺少 output 部分，使用默认值")
-        config["output"] = {
-            "base_dir": "output",
-            "site_name": "www.mir.com.my",
-            "full_path": "output/www.mir.com.my"
-        }
+    if "output" not in config or config["output"] is None:
+        config["output"] = {}
+    
+    # 设置 base_dir 默认为 "output"
+    if "base_dir" not in config["output"]:
+        config["output"]["base_dir"] = "output"
+    
+    # 设置 site_name 为从 target_url 提取的域名
+    config["output"]["site_name"] = site_name
+    
+    # 计算 full_path
+    config["output"]["full_path"] = os.path.join(config["output"]["base_dir"], config["output"]["site_name"])
     
     # 验证配置
     validate_config(config)

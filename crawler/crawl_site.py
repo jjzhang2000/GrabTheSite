@@ -84,27 +84,6 @@ class CrawlSite:
         logger.info(f"最大文件数: {self.max_files}")
         logger.info(f"线程数: {self.threads}")
         
-        # 直接下载 oldlens.jpg 图片
-        oldlens_url = "https://www.mir.com.my/rb/photography/hardwares/classics/michaeliu/cameras/images/oldlens.jpg"
-        logger.info(f"尝试直接下载 oldlens.jpg: {oldlens_url}")
-        file_path = download_file(oldlens_url, self.output_dir)
-        if file_path:
-            self.static_resources.add(oldlens_url)
-            logger.info(f"成功下载 oldlens.jpg 到: {file_path}")
-        else:
-            logger.warning("无法下载 oldlens.jpg，尝试其他路径")
-            # 尝试其他可能的路径
-            alternative_paths = [
-                "https://www.mir.com.my/rb/photography/hardwares/classics/michaeliu/images/oldlens.jpg",
-                "https://www.mir.com.my/rb/photography/images/oldlens.jpg"
-            ]
-            for path in alternative_paths:
-                file_path = download_file(path, self.output_dir)
-                if file_path:
-                    self.static_resources.add(path)
-                    logger.info(f"成功下载 oldlens.jpg 到: {file_path}")
-                    break
-        
         # 添加初始任务到队列
         self.queue.put((self.target_url, 0))
         

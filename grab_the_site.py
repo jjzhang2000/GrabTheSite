@@ -93,6 +93,13 @@ def update_config(args):
     # 更新配置
     if args.url:
         config["target_url"] = args.url
+        # 从新的 target_url 中提取域名作为 site_name
+        from urllib.parse import urlparse
+        parsed_url = urlparse(args.url)
+        site_name = parsed_url.netloc
+        if "output" not in config:
+            config["output"] = {}
+        config["output"]["site_name"] = site_name
     
     if args.depth is not None:
         if "crawl" not in config:
@@ -129,6 +136,13 @@ def update_config(args):
         if "crawl" not in config:
             config["crawl"] = {}
         config["crawl"]["threads"] = args.threads
+    
+    # 确保完整输出路径被正确计算
+    if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
+        config["output"]["full_path"] = os.path.join(
+            config["output"]["base_dir"],
+            config["output"]["site_name"]
+        )
     
     return config
 

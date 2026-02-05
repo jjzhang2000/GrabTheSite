@@ -15,7 +15,7 @@ target_url: "https://www.mir.com.my/rb/photography/"
 
 # 输出配置
 output:
-  site_name: "www.mir.com.my"
+  # site_name 已从 target_url 中自动提取，无需手动配置
 
 # 排除列表
 exclude:
