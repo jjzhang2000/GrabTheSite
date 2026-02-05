@@ -68,6 +68,13 @@ def parse_args():
         help="禁用随机延迟"
     )
     
+    parser.add_argument(
+        "--threads", "-p",
+        type=int,
+        default=None,
+        help="线程数"
+    )
+    
     return parser.parse_args()
 
 
@@ -118,6 +125,11 @@ def update_config(args):
             config["crawl"] = {}
         config["crawl"]["random_delay"] = False
     
+    if args.threads is not None:
+        if "crawl" not in config:
+            config["crawl"] = {}
+        config["crawl"]["threads"] = args.threads
+    
     return config
 
 
@@ -138,6 +150,7 @@ def main():
     # 提取延迟相关配置
     delay = config["crawl"].get("delay", 1)
     random_delay = config["crawl"].get("random_delay", True)
+    threads = config["crawl"].get("threads", 4)
     
     logger.info("开始抓取网站...")
     logger.info(f"目标网站: {target_url}")
@@ -145,10 +158,11 @@ def main():
     logger.info(f"最大文件数: {max_files}")
     logger.info(f"请求间隔: {delay} 秒")
     logger.info(f"随机延迟: {'启用' if random_delay else '禁用'}")
+    logger.info(f"线程数: {threads}")
     logger.info(f"输出路径: {output_dir}")
     
     # 创建抓取器实例
-    crawler = CrawlSite(target_url, max_depth, max_files, output_dir)
+    crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads)
     
     # 抓取网站，获取暂存页面
     pages = crawler.crawl_site()

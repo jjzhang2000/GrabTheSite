@@ -90,6 +90,7 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
 | `--output` | `-o` | 字符串 | 输出目录 |
 | `--delay` | `-t` | 浮点数 | 请求间隔（秒） |
 | `--no-random-delay` | | 布尔值 | 禁用随机延迟 |
+| `--threads` | `-p` | 整数 | 线程数 |
 
 ### 使用示例
 
@@ -131,6 +132,14 @@ python grab_the_site.py --url https://example.com --delay 2 --no-random-delay
 
 这将设置固定的 2 秒延迟，禁用随机延迟功能。
 
+#### 7. 设置线程数
+
+```bash
+python grab_the_site.py --url https://example.com --threads 8
+```
+
+这将使用 8 个线程进行并行抓取，提高抓取速度。
+
 ### 注意事项
 
 - 命令行参数优先级高于配置文件
@@ -152,9 +161,9 @@ python grab_the_site.py --url https://example.com --delay 2 --no-random-delay
    - 配置文件自动加载和合并
    - 取消硬编码配置，完全使用配置文件管理
 
-3. **多线程/多进程支持**
+3. **多线程/多进程支持** (已实现)
    - 实现并行抓取，提高抓取速度
-   - 支持线程数/进程数配置
+   - 支持线程数配置
 
 4. **断点续传功能**
    - 在抓取中断后可以继续之前的抓取

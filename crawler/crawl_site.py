@@ -3,12 +3,14 @@
 import os
 import time
 import random
+import threading
+import queue
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
-from crawler.downloader import download_file
+from crawler.downloader import download_file, Downloader
 from logger import setup_logger
-from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY
+from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -17,7 +19,7 @@ logger = setup_logger(__name__)
 class CrawlSite:
     """网站抓取类，负责抓取网站内容并返回暂存的页面"""
     
-    def __init__(self, target_url, max_depth, max_files, output_dir):
+    def __init__(self, target_url, max_depth, max_files, output_dir, threads=THREADS):
         """初始化抓取器
         
         Args:
@@ -25,13 +27,17 @@ class CrawlSite:
             max_depth: 最大深度
             max_files: 最大文件数
             output_dir: 输出目录
+            threads: 线程数
         """
         self.target_url = target_url
         self.max_depth = max_depth
         self.max_files = max_files
         self.output_dir = output_dir
+        self.threads = threads
         self.downloaded_files = 0
         self.visited_urls = set()
+        self.lock = threading.Lock()
+        self.queue = queue.Queue()
         
         # 从配置中获取排除列表
         self.exclude_list = EXCLUDE_LIST or []
@@ -76,6 +82,7 @@ class CrawlSite:
         logger.info(f"保存路径: {self.output_dir}")
         logger.info(f"最大深度: {self.max_depth}")
         logger.info(f"最大文件数: {self.max_files}")
+        logger.info(f"线程数: {self.threads}")
         
         # 直接下载 oldlens.jpg 图片
         oldlens_url = "https://www.mir.com.my/rb/photography/hardwares/classics/michaeliu/cameras/images/oldlens.jpg"
@@ -98,38 +105,83 @@ class CrawlSite:
                     logger.info(f"成功下载 oldlens.jpg 到: {file_path}")
                     break
         
-        # 开始递归抓取（下载页面到内存，下载静态资源到磁盘）
-        self._crawl_page(self.target_url, 0)
+        # 添加初始任务到队列
+        self.queue.put((self.target_url, 0))
+        
+        # 开始多线程抓取
+        logger.info(f"开始多线程抓取，线程数: {self.threads}")
+        
+        # 创建并启动线程
+        workers = []
+        for _ in range(self.threads):
+            worker = threading.Thread(target=self._worker)
+            worker.daemon = True
+            worker.start()
+            workers.append(worker)
+        
+        # 等待队列处理完成
+        self.queue.join()
+        
+        # 等待所有线程结束
+        for worker in workers:
+            worker.join()
         
         logger.info(f"抓取完成，共下载 {self.downloaded_files} 个页面")
         return self.pages
     
+    def _worker(self):
+        """工作线程函数"""
+        while not self.queue.empty():
+            try:
+                url, depth = self.queue.get(block=False)
+                # 检查是否达到文件数量限制
+                with self.lock:
+                    if self.downloaded_files >= self.max_files:
+                        self.queue.task_done()
+                        break
+                # 检查是否已访问过该URL
+                with self.lock:
+                    if url in self.visited_urls:
+                        self.queue.task_done()
+                        continue
+                # 检查是否在排除列表中
+                if self._is_in_exclude_list(url):
+                    logger.info(f"URL在排除列表中，跳过: {url}")
+                    self.queue.task_done()
+                    continue
+                # 检查是否在起始目录及其子目录中
+                if not self._is_in_target_directory(url):
+                    self.queue.task_done()
+                    continue
+                # 抓取页面
+                self._crawl_page(url, depth)
+            except queue.Empty:
+                break
+            except Exception as e:
+                logger.error(f"线程工作失败: {e}")
+            finally:
+                try:
+                    self.queue.task_done()
+                except:
+                    pass
+    
     def _crawl_page(self, url, depth):
-        """递归抓取页面"""
+        """抓取页面"""
         # 检查是否达到深度限制
         if depth > self.max_depth:
             return
         
-        # 检查是否已访问过该URL
-        if url in self.visited_urls:
-            return
-        
-        # 检查是否达到文件数量限制
-        if self.downloaded_files >= self.max_files:
-            return
-        
-        # 检查是否在排除列表中
-        if self._is_in_exclude_list(url):
-            logger.info(f"URL在排除列表中，跳过: {url}")
-            return
-        
-        # 检查是否在起始目录及其子目录中
-        if not self._is_in_target_directory(url):
-            return
-        
         try:
             # 标记为已访问
-            self.visited_urls.add(url)
+            with self.lock:
+                if url in self.visited_urls:
+                    return
+                self.visited_urls.add(url)
+            
+            # 检查是否达到文件数量限制
+            with self.lock:
+                if self.downloaded_files >= self.max_files:
+                    return
             
             # 获取网页内容
             logger.info(f"抓取页面: {url}")
@@ -140,9 +192,9 @@ class CrawlSite:
             response.raise_for_status()  # 检查HTTP错误
             
             # 暂存页面内容到内存
-            self.pages[url] = response.text
-            
-            self.downloaded_files += 1
+            with self.lock:
+                self.pages[url] = response.text
+                self.downloaded_files += 1
             logger.info(f"暂存页面: {url}")
             
             # 解析HTML，提取链接
@@ -151,7 +203,8 @@ class CrawlSite:
             # 提取所有链接
             links = soup.find_all(['a', 'img', 'link', 'script'])
             
-            # 先处理所有图片、脚本和样式表链接
+            # 收集静态资源链接
+            static_urls = []
             for link in links:
                 if link.name in ['img', 'link', 'script']:
                     src = link.get('src') or link.get('href')
@@ -159,25 +212,29 @@ class CrawlSite:
                         full_url = urljoin(url, src)
                         # 只下载同域名的静态资源
                         if self._is_same_domain(full_url):
-                            # 下载静态资源到磁盘
-                            file_path = download_file(full_url, self.output_dir)
-                            if file_path:
-                                # 记录已下载的静态资源
-                                self.static_resources.add(full_url)
-                            # 静态资源不计入下载总数限制
-                            # self.downloaded_files += 1
+                            static_urls.append(full_url)
             
             # 特别查找并处理 oldlens.jpg 图片
             for img in soup.find_all('img'):
                 src = img.get('src')
                 if src and 'oldlens.jpg' in src:
                     full_url = urljoin(url, src)
-                    if self._is_same_domain(full_url):
-                        file_path = download_file(full_url, self.output_dir)
-                        if file_path:
-                            self.static_resources.add(full_url)
+                    if self._is_same_domain(full_url) and full_url not in static_urls:
+                        static_urls.append(full_url)
             
-            # 然后处理页面链接
+            # 多线程下载静态资源
+            if static_urls:
+                downloader = Downloader(self.output_dir, threads=self.threads)
+                for static_url in static_urls:
+                    downloader.add_task(static_url)
+                results = downloader.run()
+                # 记录已下载的静态资源
+                with self.lock:
+                    for static_url, file_path in results:
+                        if file_path:
+                            self.static_resources.add(static_url)
+            
+            # 处理页面链接
             for link in links:
                 if link.name == 'a':
                     href = link.get('href')
@@ -186,9 +243,13 @@ class CrawlSite:
                         # 只抓取同域名、在起始目录及其子目录中、并且深度小于最大深度的链接
                         if self._is_same_domain(full_url) and self._is_in_target_directory(full_url) and depth < self.max_depth:
                             # 检查是否达到文件数量限制
-                            if self.downloaded_files >= self.max_files:
-                                break
-                            self._crawl_page(full_url, depth + 1)
+                            with self.lock:
+                                if self.downloaded_files >= self.max_files:
+                                    break
+                                # 检查是否已访问过该URL
+                                if full_url not in self.visited_urls:
+                                    # 添加到队列
+                                    self.queue.put((full_url, depth + 1))
             
             # 添加延迟
             self._add_delay()

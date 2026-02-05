@@ -149,6 +149,7 @@ MAX_DEPTH = config["crawl"]["max_depth"]
 MAX_FILES = config["crawl"]["max_files"]
 DELAY = config["crawl"].get("delay", 1)
 RANDOM_DELAY = config["crawl"].get("random_delay", True)
+THREADS = config["crawl"].get("threads", 4)
 USER_AGENT = config["crawl"]["user_agent"]
 BASE_OUTPUT_DIR = config["output"]["base_dir"]
 SITE_NAME = config["output"]["site_name"]
