@@ -7,7 +7,8 @@ GrabTheSite 主脚本
 """
 
 import os
-from config import TARGET_URL, MAX_DEPTH, MAX_FILES, OUTPUT_DIR, CONFIG
+import argparse
+from config import load_config, CONFIG
 from crawler.crawl_site import CrawlSite
 from crawler.save_site import SaveSite
 from logger import setup_logger
@@ -16,22 +17,115 @@ from logger import setup_logger
 logger = setup_logger(__name__)
 
 
+def parse_args():
+    """解析命令行参数
+    
+    Returns:
+        argparse.Namespace: 解析后的参数
+    """
+    parser = argparse.ArgumentParser(
+        description="GrabTheSite - 网站抓取工具，支持离线浏览"
+    )
+    
+    parser.add_argument(
+        "--url", "-u",
+        type=str,
+        default=None,
+        help="目标网站 URL"
+    )
+    
+    parser.add_argument(
+        "--depth", "-d",
+        type=int,
+        default=None,
+        help="最大抓取深度"
+    )
+    
+    parser.add_argument(
+        "--max-files", "-m",
+        type=int,
+        default=None,
+        help="最大文件数量"
+    )
+    
+    parser.add_argument(
+        "--output", "-o",
+        type=str,
+        default=None,
+        help="输出目录"
+    )
+    
+    return parser.parse_args()
+
+
+def update_config(args):
+    """根据命令行参数更新配置
+    
+    Args:
+        args: 解析后的命令行参数
+    
+    Returns:
+        dict: 更新后的配置
+    """
+    # 加载配置
+    config = load_config()
+    
+    # 更新配置
+    if args.url:
+        config["target_url"] = args.url
+    
+    if args.depth is not None:
+        if "crawl" not in config:
+            config["crawl"] = {}
+        config["crawl"]["max_depth"] = args.depth
+    
+    if args.max_files is not None:
+        if "crawl" not in config:
+            config["crawl"] = {}
+        config["crawl"]["max_files"] = args.max_files
+    
+    if args.output:
+        if "output" not in config:
+            config["output"] = {}
+        config["output"]["base_dir"] = args.output
+        # 重新计算完整输出路径
+        if "site_name" in config["output"]:
+            config["output"]["full_path"] = os.path.join(
+                config["output"]["base_dir"],
+                config["output"]["site_name"]
+            )
+    
+    return config
+
+
 def main():
     """主函数"""
+    # 解析命令行参数
+    args = parse_args()
+    
+    # 更新配置
+    config = update_config(args)
+    
+    # 提取配置参数
+    target_url = config["target_url"]
+    max_depth = config["crawl"].get("max_depth", 1)
+    max_files = config["crawl"].get("max_files", 10)
+    output_dir = config["output"].get("full_path", "output")
+    
     logger.info("开始抓取网站...")
-    logger.info(f"目标网站: {TARGET_URL}")
-    logger.info(f"最大深度: {MAX_DEPTH}")
-    logger.info(f"最大文件数: {MAX_FILES}")
-    logger.info(f"输出路径: {OUTPUT_DIR}")
+    logger.info(f"目标网站: {target_url}")
+    logger.info(f"最大深度: {max_depth}")
+    logger.info(f"最大文件数: {max_files}")
+    logger.info(f"输出路径: {output_dir}")
     
     # 创建抓取器实例
-    crawler = CrawlSite(TARGET_URL, MAX_DEPTH, MAX_FILES, OUTPUT_DIR)
+    crawler = CrawlSite(target_url, max_depth, max_files, output_dir)
     
     # 抓取网站，获取暂存页面
     pages = crawler.crawl_site()
     
     # 创建保存器实例
-    saver = SaveSite(TARGET_URL, OUTPUT_DIR, crawler.static_resources)
+    saver = SaveSite(target_url, output_dir, crawler.static_resources)
     
     # 保存页面到磁盘
     saver.save_site(pages)
