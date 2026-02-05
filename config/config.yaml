@@ -3,7 +3,7 @@
 # 不需要修改的配置项可以删除，将使用默认值
 
 # 目标网站配置
-# target_url: "https://www.mir.com.my/rb/photography/"
+target_url: "https://www.mir.com.my/rb/photography/"
 
 # 抓取参数配置
 # crawl:
@@ -14,14 +14,12 @@
 #   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
 
 # 输出配置
-# output:
-#   base_dir: "output"
-#   site_name: "www.mir.com.my"
+output:
+  site_name: "www.mir.com.my"
 
 # 排除列表
-# exclude:
-#   - "https://www.mir.com.my/rb/photography/ftz/"
-#   - "https://www.mir.com.my/rb/photography/other/excluded/path/"
+exclude:
+  - "https://www.mir.com.my/rb/photography/ftz/"
 
 # 日志配置
 # logging:

@@ -7,30 +7,8 @@ from logger import setup_logger
 # 获取 logger 实例
 logger = setup_logger(__name__)
 
-# 默认配置（最低优先级）
-DEFAULT_CONFIG = {
-    "target_url": "https://www.mir.com.my/rb/photography/",
-    "crawl": {
-        "max_depth": 1,
-        "max_files": 10,
-        "delay": 1,
-        "random_delay": True,
-        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    },
-    "output": {
-        "base_dir": "output",
-        "site_name": "www.mir.com.my"
-    },
-    "exclude": [
-        "https://www.mir.com.my/rb/photography/ftz/"
-    ],
-    "logging": {
-        "level": "INFO",
-        "file": "logs/grabthesite.log",
-        "max_bytes": 10485760,
-        "backup_count": 5
-    }
-}
+# 空默认配置（最低优先级）
+DEFAULT_CONFIG = {}
 
 # 配置文件路径
 CONFIG_DIR = "config"
@@ -48,6 +26,7 @@ def load_config():
     config = DEFAULT_CONFIG.copy()
     
     # 加载默认配置文件
+    config_loaded = False
     if os.path.exists(DEFAULT_CONFIG_FILE):
         try:
             with open(DEFAULT_CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -55,10 +34,11 @@ def load_config():
                 if default_config:
                     config = merge_configs(config, default_config)
                     logger.info(f"已加载默认配置文件: {DEFAULT_CONFIG_FILE}")
+                    config_loaded = True
         except Exception as e:
-            logger.warning(f"加载默认配置文件失败: {e}")
+            logger.error(f"加载默认配置文件失败: {e}")
     else:
-        logger.info(f"默认配置文件不存在: {DEFAULT_CONFIG_FILE}")
+        logger.error(f"默认配置文件不存在: {DEFAULT_CONFIG_FILE}")
     
     # 加载用户配置文件
     if os.path.exists(USER_CONFIG_FILE):
@@ -68,13 +48,50 @@ def load_config():
                 if user_config:
                     config = merge_configs(config, user_config)
                     logger.info(f"已加载用户配置文件: {USER_CONFIG_FILE}")
+                    config_loaded = True
         except Exception as e:
-            logger.warning(f"加载用户配置文件失败: {e}")
+            logger.error(f"加载用户配置文件失败: {e}")
     else:
         logger.info(f"用户配置文件不存在: {USER_CONFIG_FILE}")
     
+    # 检查配置是否加载成功
+    if not config_loaded:
+        logger.error("配置文件加载失败，使用默认配置")
+        # 使用默认配置（作为最后备用）
+        config = {
+            "target_url": "https://www.mir.com.my/rb/photography/",
+            "crawl": {
+                "max_depth": 1,
+                "max_files": 10,
+                "delay": 1,
+                "random_delay": True,
+                "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            },
+            "output": {
+                "base_dir": "output",
+                "site_name": "www.mir.com.my"
+            },
+            "exclude": [
+                "https://www.mir.com.my/rb/photography/ftz/"
+            ],
+            "logging": {
+                "level": "INFO",
+                "file": "logs/grabthesite.log",
+                "max_bytes": 10485760,
+                "backup_count": 5
+            }
+        }
+    
     # 计算派生配置
-    config["output"]["full_path"] = os.path.join(config["output"]["base_dir"], config["output"]["site_name"])
+    if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
+        config["output"]["full_path"] = os.path.join(config["output"]["base_dir"], config["output"]["site_name"])
+    else:
+        logger.error("配置中缺少 output 部分，使用默认值")
+        config["output"] = {
+            "base_dir": "output",
+            "site_name": "www.mir.com.my",
+            "full_path": "output/www.mir.com.my"
+        }
     
     # 验证配置
     validate_config(config)

@@ -208,3 +208,6 @@ __marimo__/
 
 # GrabTheSite output directory
 output/
+
+# Trae IDE directory
+.trae/

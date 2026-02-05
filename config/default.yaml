@@ -1,8 +1,5 @@
 # 默认配置文件
 
-# 目标网站配置
-target_url: "https://www.mir.com.my/rb/photography/"
-
 # 抓取参数配置
 crawl:
   max_depth: 1          # 最大抓取深度
@@ -14,13 +11,10 @@ crawl:
 # 输出配置
 output:
   base_dir: "output"     # 基础输出目录
-  site_name: "www.mir.com.my"  # 网站名称（用于创建子目录）
-  # 完整输出路径将自动计算为：output/www.mir.com.my
 
 # 排除列表
-exclude:
-  - "https://www.mir.com.my/rb/photography/ftz/"  # 排除的URL及其子目录
-  # 可以添加更多排除的URL
+# exclude:
+#   - 可以添加更多排除的URL
 
 # 日志配置
 logging:
