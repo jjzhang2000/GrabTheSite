@@ -9,6 +9,7 @@ import requests
 from urllib.parse import urlparse
 from logger import setup_logger
 from config import DELAY, RANDOM_DELAY, THREADS
+from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -82,6 +83,14 @@ class Downloader:
             
             # 创建目录结构
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            
+            # 检查是否需要更新
+            local_timestamp = get_file_timestamp(file_path)
+            remote_timestamp = get_remote_timestamp(url)
+            
+            if not should_update(remote_timestamp, local_timestamp):
+                logger.info(f"文件已最新，跳过下载: {url}")
+                return file_path
             
             # 下载文件
             headers = {

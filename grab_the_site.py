@@ -181,6 +181,8 @@ def main():
     # 抓取网站，获取暂存页面
     pages = crawler.crawl_site()
     
+    logger.info(f"抓取完成，开始保存页面，共 {len(pages)} 个页面")
+    
     # 创建保存器实例
     saver = SaveSite(target_url, output_dir, crawler.static_resources)
     

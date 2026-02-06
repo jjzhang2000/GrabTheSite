@@ -11,6 +11,7 @@ from urllib.parse import urljoin, urlparse
 from crawler.downloader import download_file, Downloader
 from logger import setup_logger
 from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS
+from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -94,25 +95,23 @@ class CrawlSite:
         workers = []
         for _ in range(self.threads):
             worker = threading.Thread(target=self._worker)
-            worker.daemon = True
+            worker.daemon = False  # 设置为非守护线程，确保任务完成
             worker.start()
             workers.append(worker)
         
-        # 等待队列处理完成
-        self.queue.join()
-        
         # 等待所有线程结束
         for worker in workers:
-            worker.join()
+            worker.join(timeout=10)  # 添加超时，避免无限等待
         
         logger.info(f"抓取完成，共下载 {self.downloaded_files} 个页面")
+        logger.info(f"暂存页面数量: {len(self.pages)}")
         return self.pages
     
     def _worker(self):
         """工作线程函数"""
-        while not self.queue.empty():
+        while True:
             try:
-                url, depth = self.queue.get(block=False)
+                url, depth = self.queue.get(block=True, timeout=1)
                 # 检查是否达到文件数量限制
                 with self.lock:
                     if self.downloaded_files >= self.max_files:
@@ -134,11 +133,13 @@ class CrawlSite:
                     continue
                 # 抓取页面
                 self._crawl_page(url, depth)
+                # 标记任务为完成
+                self.queue.task_done()
             except queue.Empty:
                 break
             except Exception as e:
                 logger.error(f"线程工作失败: {e}")
-            finally:
+                # 标记任务为完成
                 try:
                     self.queue.task_done()
                 except:
@@ -162,7 +163,20 @@ class CrawlSite:
                 if self.downloaded_files >= self.max_files:
                     return
             
-            # 获取网页内容
+            # 计算本地文件路径
+            parsed_url = urlparse(url)
+            path = parsed_url.path
+            if not path:
+                path = '/'
+            if path.endswith('/'):
+                path += 'index.html'
+            file_path = os.path.join(self.output_dir, path.lstrip('/'))
+            
+            # 检查是否需要更新
+            local_timestamp = get_file_timestamp(file_path)
+            remote_timestamp = get_remote_timestamp(url)
+            
+            # 获取网页内容（无论是否需要更新，都需要获取内容来处理链接）
             logger.info(f"抓取页面: {url}")
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -170,11 +184,15 @@ class CrawlSite:
             response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()  # 检查HTTP错误
             
-            # 暂存页面内容到内存
-            with self.lock:
-                self.pages[url] = response.text
-                self.downloaded_files += 1
-            logger.info(f"暂存页面: {url}")
+            # 检查是否需要更新
+            if should_update(remote_timestamp, local_timestamp):
+                # 暂存页面内容到内存
+                with self.lock:
+                    self.pages[url] = response.text
+                    self.downloaded_files += 1
+                logger.info(f"暂存页面: {url}")
+            else:
+                logger.info(f"页面已最新，跳过下载: {url}")
             
             # 解析HTML，提取链接
             soup = BeautifulSoup(response.text, 'html.parser')

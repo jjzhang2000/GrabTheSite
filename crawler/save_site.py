@@ -183,10 +183,14 @@ class SaveSite:
         parsed_url = urlparse(url)
         path = parsed_url.path
         
+        # 如果路径为空，设置为/
+        if not path:
+            path = '/'
+        
         # 如果路径以/结尾，添加index.html
         if path.endswith('/'):
             path += 'index.html'
-        # 如果路径没有文件名（以/结尾但没有文件名），添加index.html
+        # 如果路径没有文件名，添加index.html
         elif not os.path.basename(path):
             path += 'index.html'
         # 如果路径没有扩展名，添加.html
