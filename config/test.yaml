@@ -1,13 +1,10 @@
-# 默认配置文件
-
-# 目标网站 URL
-target_url: "https://www.mir.com.my/rb/photography/"
+# 测试配置文件
 
 # 抓取参数配置
 crawl:
-  max_depth: 1          # 最大抓取深度
-  max_files: 10         # 最大文件数量
-  delay: 1              # 请求间隔（秒）
+  max_depth: 2          # 最大抓取深度
+  max_files: 50         # 最大文件数量
+  delay: 0.5            # 请求间隔（秒）
   random_delay: true    # 是否使用随机延迟
   threads: 4            # 线程数
   incremental: true     # 是否启用增量抓取
@@ -15,7 +12,7 @@ crawl:
 
 # 输出配置
 output:
-  base_dir: "output"     # 基础输出目录
+  base_dir: "output_test"     # 基础输出目录
   sitemap:
     enable: true         # 是否生成站点地图
     enable_html: true    # 是否生成 HTML 格式的站点地图
@@ -27,6 +24,6 @@ output:
 # 日志配置
 logging:
   level: "INFO"         # 日志级别
-  file: "logs/grabthesite.log"  # 日志文件路径
+  file: "logs/grabthesite_test.log"  # 日志文件路径
   max_bytes: 10485760   # 日志文件最大字节数（10MB）
   backup_count: 5       # 保留的日志文件数量

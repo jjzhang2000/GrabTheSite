@@ -75,6 +75,30 @@ def parse_args():
         help="线程数"
     )
     
+    parser.add_argument(
+        "--sitemap",
+        action="store_true",
+        help="生成站点地图"
+    )
+    
+    parser.add_argument(
+        "--no-sitemap",
+        action="store_true",
+        help="不生成站点地图"
+    )
+    
+    parser.add_argument(
+        "--html-sitemap",
+        action="store_true",
+        help="生成 HTML 格式的站点地图"
+    )
+    
+    parser.add_argument(
+        "--no-html-sitemap",
+        action="store_true",
+        help="不生成 HTML 格式的站点地图"
+    )
+    
     return parser.parse_args()
 
 
@@ -137,6 +161,22 @@ def update_config(args):
             config["crawl"] = {}
         config["crawl"]["threads"] = args.threads
     
+    # 处理站点地图配置
+    if "sitemap" not in config["output"]:
+        config["output"]["sitemap"] = {}
+    
+    # 处理 --sitemap 和 --no-sitemap 参数
+    if args.sitemap:
+        config["output"]["sitemap"]["enable"] = True
+    elif args.no_sitemap:
+        config["output"]["sitemap"]["enable"] = False
+    
+    # 处理 --html-sitemap 和 --no-html-sitemap 参数
+    if args.html_sitemap:
+        config["output"]["sitemap"]["enable_html"] = True
+    elif args.no_html_sitemap:
+        config["output"]["sitemap"]["enable_html"] = False
+    
     # 确保完整输出路径被正确计算
     if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
         config["output"]["full_path"] = os.path.join(
@@ -188,6 +228,26 @@ def main():
     
     # 保存页面到磁盘
     saver.save_site(pages)
+    
+    # 生成站点地图
+    sitemap_config = config["output"].get("sitemap", {})
+    sitemap_enable = sitemap_config.get("enable", False)
+    sitemap_html_enable = sitemap_config.get("enable_html", False)
+    
+    if sitemap_enable:
+        from utils.sitemap_generator import SitemapGenerator
+        sitemap_generator = SitemapGenerator(target_url, output_dir)
+        # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
+        sitemap_data = pages if pages else crawler.visited_urls
+        sitemap_generator.generate_sitemap(sitemap_data)
+    
+    # 生成 HTML 格式的站点地图
+    if sitemap_html_enable:
+        from utils.sitemap_generator import SitemapGenerator
+        sitemap_generator = SitemapGenerator(target_url, output_dir)
+        # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
+        sitemap_data = pages if pages else crawler.visited_urls
+        sitemap_generator.generate_html_sitemap(sitemap_data)
     
     logger.info("抓取完成！")
 

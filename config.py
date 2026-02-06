@@ -69,7 +69,11 @@ def load_config():
             },
             "output": {
                 "base_dir": "output",
-                "site_name": "www.mir.com.my"
+                "site_name": "www.mir.com.my",
+                "sitemap": {
+                    "enable": False,
+                    "enable_html": False
+                }
             },
             "exclude": [
                 "https://www.mir.com.my/rb/photography/ftz/"
@@ -91,12 +95,18 @@ def load_config():
     if "output" not in config or config["output"] is None:
         config["output"] = {}
     
+    # 保存可能存在的 sitemap 配置
+    sitemap_config = config["output"].get("sitemap", {})
+    
     # 设置 base_dir 默认为 "output"
     if "base_dir" not in config["output"]:
         config["output"]["base_dir"] = "output"
     
     # 设置 site_name 为从 target_url 提取的域名
     config["output"]["site_name"] = site_name
+    
+    # 恢复 sitemap 配置
+    config["output"]["sitemap"] = sitemap_config
     
     # 计算 full_path
     config["output"]["full_path"] = os.path.join(config["output"]["base_dir"], config["output"]["site_name"])

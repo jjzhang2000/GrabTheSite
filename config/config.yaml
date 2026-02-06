@@ -1,29 +1,28 @@
 # 用户配置文件
-# 此文件中的配置将覆盖默认配置文件中的相应配置
-# 不需要修改的配置项可以删除，将使用默认值
-
-# 目标网站配置
-target_url: "https://www.mir.com.my/rb/photography/"
 
 # 抓取参数配置
-# crawl:
-#   max_depth: 1
-#   max_files: 10
-#   delay: 1
-#   random_delay: true
-#   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+crawl:
+  max_depth: 2          # 最大抓取深度
+  max_files: 50         # 最大文件数量
+  delay: 0.5            # 请求间隔（秒）
+  random_delay: true    # 是否使用随机延迟
+  threads: 4            # 线程数
+  incremental: true     # 是否启用增量抓取
 
 # 输出配置
 output:
-  # site_name 已从 target_url 中自动提取，无需手动配置
+  base_dir: "output"     # 基础输出目录
+  sitemap:
+    enable: true         # 是否生成站点地图
+    enable_html: true    # 是否生成 HTML 格式的站点地图
 
 # 排除列表
-exclude:
-  - "https://www.mir.com.my/rb/photography/ftz/"
+# exclude:
+#   - 可以添加更多排除的URL
 
 # 日志配置
-# logging:
-#   level: "INFO"
-#   file: "logs/grabthesite.log"
-#   max_bytes: 10485760
-#   backup_count: 5
+logging:
+  level: "INFO"         # 日志级别
+  file: "logs/grabthesite.log"  # 日志文件路径
+  max_bytes: 10485760   # 日志文件最大字节数（10MB）
+  backup_count: 5       # 保留的日志文件数量

@@ -110,13 +110,12 @@ class CrawlSite:
     def _worker(self):
         """工作线程函数"""
         while True:
+            # 检查是否达到文件数量限制
+            with self.lock:
+                if self.downloaded_files >= self.max_files:
+                    break
             try:
                 url, depth = self.queue.get(block=True, timeout=1)
-                # 检查是否达到文件数量限制
-                with self.lock:
-                    if self.downloaded_files >= self.max_files:
-                        self.queue.task_done()
-                        break
                 # 检查是否已访问过该URL
                 with self.lock:
                     if url in self.visited_urls:
@@ -136,7 +135,15 @@ class CrawlSite:
                 # 标记任务为完成
                 self.queue.task_done()
             except queue.Empty:
-                break
+                # 检查是否真的完成了所有任务
+                with self.lock:
+                    if self.queue.empty() and self.downloaded_files < self.max_files:
+                        # 队列空了但还没达到文件限制，继续等待
+                        # 给其他线程一些时间来添加新任务
+                        time.sleep(0.1)
+                        continue
+                    else:
+                        break
             except Exception as e:
                 logger.error(f"线程工作失败: {e}")
                 # 标记任务为完成
@@ -152,16 +159,12 @@ class CrawlSite:
             return
         
         try:
-            # 标记为已访问
+            # 检查是否已访问过该URL
             with self.lock:
                 if url in self.visited_urls:
                     return
+                # 标记为已访问
                 self.visited_urls.add(url)
-            
-            # 检查是否达到文件数量限制
-            with self.lock:
-                if self.downloaded_files >= self.max_files:
-                    return
             
             # 计算本地文件路径
             parsed_url = urlparse(url)
@@ -176,6 +179,17 @@ class CrawlSite:
             local_timestamp = get_file_timestamp(file_path)
             remote_timestamp = get_remote_timestamp(url)
             
+            # 检查是否需要下载该页面
+            need_download = should_update(remote_timestamp, local_timestamp)
+            
+            # 如果需要下载，检查是否达到文件数量限制
+            if need_download:
+                with self.lock:
+                    if self.downloaded_files >= self.max_files:
+                        # 达到文件数量限制，不处理该页面
+                        logger.info(f"达到文件数量限制，跳过页面: {url}")
+                        return
+            
             # 获取网页内容（无论是否需要更新，都需要获取内容来处理链接）
             logger.info(f"抓取页面: {url}")
             headers = {
@@ -184,10 +198,13 @@ class CrawlSite:
             response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()  # 检查HTTP错误
             
-            # 检查是否需要更新
-            if should_update(remote_timestamp, local_timestamp):
-                # 暂存页面内容到内存
+            # 如果需要下载，暂存页面内容到内存
+            if need_download:
                 with self.lock:
+                    if self.downloaded_files >= self.max_files:
+                        # 再次检查文件数量限制，避免竞争条件
+                        logger.info(f"达到文件数量限制，跳过页面: {url}")
+                        return
                     self.pages[url] = response.text
                     self.downloaded_files += 1
                 logger.info(f"暂存页面: {url}")
