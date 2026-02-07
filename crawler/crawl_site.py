@@ -23,7 +23,7 @@ logger = setup_logger(__name__)
 class CrawlSite:
     """网站抓取类，负责抓取网站内容并返回暂存的页面"""
     
-    def __init__(self, target_url, max_depth, max_files, output_dir, threads=THREADS):
+    def __init__(self, target_url, max_depth, max_files, output_dir, threads=THREADS, plugin_manager=None):
         """初始化抓取器
         
         Args:
@@ -32,12 +32,14 @@ class CrawlSite:
             max_files: 最大文件数
             output_dir: 输出目录
             threads: 线程数
+            plugin_manager: 插件管理器实例
         """
         self.target_url = target_url
         self.max_depth = max_depth
         self.max_files = max_files
         self.output_dir = output_dir
         self.threads = threads
+        self.plugin_manager = plugin_manager
         self.downloaded_files = 0
         self.visited_urls = set()
         self.lock = threading.Lock()
@@ -277,6 +279,10 @@ class CrawlSite:
             response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()  # 检查HTTP错误
             page_content = response.text
+        
+        # 调用插件的on_page_crawled钩子
+        if self.plugin_manager:
+            self.plugin_manager.call_hook("on_page_crawled", url, page_content)
         
         # 如果需要下载，暂存页面内容到内存
         if need_download:

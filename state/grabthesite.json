@@ -1,14 +1,15 @@
 {
   "visited_urls": [
-    "https://example.com"
+    "https://example.com",
+    "http://example.com"
   ],
   "downloaded_files": [
     "output\\example.com\\index.html"
   ],
   "start_time": 1770433515.3884206,
-  "last_save_time": 1770436174.036214,
+  "last_save_time": 1770444659.346564,
   "stats": {
-    "total_urls": 1,
+    "total_urls": 2,
     "downloaded_files": 1,
     "failed_urls": 0
   }

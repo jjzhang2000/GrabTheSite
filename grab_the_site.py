@@ -13,6 +13,7 @@ from crawler.crawl_site import CrawlSite
 from crawler.save_site import SaveSite
 from logger import setup_logger
 from utils.i18n import init_i18n, gettext as _
+from utils.plugin_manager import PluginManager
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -155,6 +156,21 @@ def parse_args():
         help="自定义用户代理字符串"
     )
     
+    # 插件相关参数
+    parser.add_argument(
+        "--plugins",
+        type=str,
+        nargs="*",
+        default=None,
+        help="启用的插件名称列表"
+    )
+    
+    parser.add_argument(
+        "--no-plugins",
+        action="store_true",
+        help="禁用插件系统"
+    )
+    
     return parser.parse_args()
 
 
@@ -275,6 +291,18 @@ def update_config(args):
             config["crawl"] = {}
         config["crawl"]["user_agent"] = args.user_agent
     
+    # 处理插件配置
+    if "plugins" not in config:
+        config["plugins"] = {}
+    
+    # 处理 --no-plugins 参数
+    if args.no_plugins:
+        config["plugins"]["enable"] = False
+    
+    # 处理 --plugins 参数
+    if args.plugins is not None:
+        config["plugins"]["enabled_plugins"] = args.plugins
+    
     # 确保完整输出路径被正确计算
     if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
         config["output"]["full_path"] = os.path.join(
@@ -296,6 +324,27 @@ def main():
     # 初始化国际化模块
     lang = config.get("i18n", {}).get("lang", "en")
     init_i18n(lang)
+    
+    # 初始化插件系统
+    plugin_config = config.get("plugins", {})
+    plugin_enable = plugin_config.get("enable", True)
+    enabled_plugins = plugin_config.get("enabled_plugins", [])
+    
+    # 创建插件管理器实例
+    plugin_manager = PluginManager(config)
+    
+    # 如果启用了插件系统
+    if plugin_enable:
+        # 发现插件
+        plugin_manager.discover_plugins()
+        # 加载插件
+        plugin_manager.load_plugins()
+        # 启用插件
+        plugin_manager.enable_plugins(enabled_plugins)
+        logger.info(f"插件系统: 启用")
+        logger.info(f"启用的插件: {enabled_plugins if enabled_plugins else '所有插件'}")
+    else:
+        logger.info(f"插件系统: 禁用")
     
     # 提取配置参数
     target_url = config["target_url"]
@@ -341,15 +390,27 @@ def main():
     logger.info(f"{_("当前语言")}: {current_lang}")
     
     # 创建抓取器实例
-    crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads)
+    crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads, plugin_manager=plugin_manager if plugin_enable else None)
+    
+    # 调用插件的 on_crawl_start 钩子
+    if plugin_enable:
+        plugin_manager.call_hook("on_crawl_start", crawler)
     
     # 抓取网站，获取暂存页面
     pages = crawler.crawl_site()
+    
+    # 调用插件的 on_crawl_end 钩子
+    if plugin_enable:
+        plugin_manager.call_hook("on_crawl_end", pages)
     
     logger.info(_(f"抓取完成，开始保存页面，共 {len(pages)} 个页面"))
     
     # 创建保存器实例
     saver = SaveSite(target_url, output_dir, crawler.static_resources)
+    
+    # 调用插件的 on_save_start 钩子
+    if plugin_enable:
+        plugin_manager.call_hook("on_save_start", saver)
     
     # 保存页面到磁盘
     saver.save_site(pages)
@@ -373,6 +434,10 @@ def main():
         # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
         sitemap_data = pages if pages else crawler.visited_urls
         sitemap_generator.generate_html_sitemap(sitemap_data)
+    
+    # 清理插件
+    if plugin_enable:
+        plugin_manager.cleanup()
     
     logger.info(_("抓取完成！"))
 

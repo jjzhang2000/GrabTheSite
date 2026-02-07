@@ -60,6 +60,11 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
   - 支持通过配置文件或命令行参数设置自定义用户代理
   - 默认使用现代浏览器的用户代理字符串
   - 确保所有HTTP请求和JavaScript渲染都使用配置的用户代理
+- 插件系统：
+  - 支持通过插件扩展功能
+  - 提供丰富的钩子方法，如on_init、on_crawl_start、on_page_crawled、on_crawl_end等
+  - 支持插件的发现、加载、注册和管理
+  - 可通过配置文件或命令行参数启用/禁用插件系统和指定启用的插件
 
 **注：** 具体配置参数（如目标网站、下载深度、文件数量限制等）请参考配置文件。
 
@@ -117,6 +122,18 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
     - 确保JavaScript渲染器也使用配置的用户代理
     - 在主脚本中添加显示用户代理配置的日志
     - 在README.md文件中添加自定义用户代理的说明
+18. 实现插件系统：
+    - 创建plugins目录结构，用于存放插件
+    - 创建utils/plugin_manager.py文件，实现插件管理器
+    - 定义Plugin基类，作为所有插件的父类
+    - 提供常用的钩子方法，如on_init、on_crawl_start、on_page_crawled、on_crawl_end等
+    - 在config/default.yaml中添加插件系统配置
+    - 在config.py中添加PLUGIN_CONFIG导出
+    - 在grab_the_site.py中添加插件相关的命令行参数
+    - 在grab_the_site.py中初始化插件系统并集成到代码中
+    - 修改crawler/crawl_site.py文件，添加对插件钩子的调用
+    - 创建示例插件，展示插件的基本结构和使用方法
+    - 在README.md文件中添加插件系统的说明和开发指南
 
 ### 注意事项
 
@@ -214,6 +231,8 @@ i18n:
 | `--js-timeout` | | 整数 | JavaScript渲染超时时间（秒） |
 | `--lang` | | 字符串 | 语言代码，如 'en', 'zh_CN' 等 |
 | `--user-agent` | | 字符串 | 自定义用户代理字符串 |
+| `--plugins` | | 字符串 | 启用的插件列表，逗号分隔 |
+| `--no-plugins` | | 布尔值 | 禁用插件系统 |
 
 ### 使用示例
 
@@ -383,12 +402,127 @@ python grab_the_site.py --url https://example.com --user-agent "Mozilla/5.0 (Win
 
 这将使用指定的自定义用户代理字符串。
 
+#### 23. 启用插件系统并指定启用的插件
+
+```bash
+python grab_the_site.py --url https://example.com --plugins example_plugin
+```
+
+这将启用插件系统，并只启用 example_plugin 插件。
+
+#### 24. 禁用插件系统
+
+```bash
+python grab_the_site.py --url https://example.com --no-plugins
+```
+
+这将禁用插件系统，不加载任何插件。
+
 ### 注意事项
 
 - 命令行参数优先级高于配置文件
 - 未指定的参数将使用配置文件中的值
 - 所有参数均为可选
 - 参数值必须符合预期类型（如深度和文件数量必须为整数）
+
+## 插件系统
+
+### 插件系统简介
+
+GrabTheSite 提供了一个灵活的插件系统，允许用户通过插件扩展工具的功能。插件系统基于钩子机制，在抓取过程的不同阶段触发相应的钩子方法，使插件能够介入抓取流程并执行自定义逻辑。
+
+### 插件目录结构
+
+插件系统使用以下目录结构：
+
+```
+grab_the_site/
+├── plugins/
+│   ├── __init__.py
+│   └── example_plugin/
+│       └── __init__.py
+├── utils/
+│   └── plugin_manager.py
+└── ...
+```
+
+- `plugins/` 目录用于存放所有插件
+- 每个插件是一个独立的目录，如 `example_plugin/`
+- 每个插件目录下必须包含 `__init__.py` 文件，实现插件的核心功能
+
+### 插件配置
+
+插件系统的配置位于 `config/default.yaml` 文件中：
+
+```yaml
+# 插件系统配置
+plugins:
+  enable: true             # 是否启用插件系统
+  enabled_plugins: []      # 启用的插件列表，为空时启用所有发现的插件
+```
+
+### 创建插件
+
+要创建一个插件，需要按照以下步骤操作：
+
+1. 在 `plugins/` 目录下创建一个新的目录，作为插件的名称
+2. 在该目录下创建 `__init__.py` 文件
+3. 在 `__init__.py` 文件中实现插件类，继承自 `Plugin` 基类
+4. 实现需要的钩子方法
+
+### 插件 API
+
+插件系统提供了以下钩子方法，插件可以根据需要实现这些方法：
+
+- `on_init(self, config)`: 插件初始化时调用
+- `on_crawl_start(self, url, output_dir)`: 抓取开始时调用
+- `on_page_crawled(self, url, local_path, content)`: 页面抓取完成时调用
+- `on_crawl_end(self, crawled_urls)`: 抓取结束时调用
+- `on_error(self, url, error)`: 抓取过程中发生错误时调用
+
+### 示例插件
+
+以下是一个简单的页面计数器插件示例：
+
+```python
+from utils.plugin_manager import Plugin
+
+class PageCounterPlugin(Plugin):
+    def __init__(self):
+        super().__init__()
+        self.page_count = 0
+    
+    def on_init(self, config):
+        print("PageCounterPlugin initialized")
+    
+    def on_crawl_start(self, url, output_dir):
+        print(f"Crawling started at {url}")
+    
+    def on_page_crawled(self, url, local_path, content):
+        self.page_count += 1
+        print(f"Page crawled: {url} (Total: {self.page_count})")
+    
+    def on_crawl_end(self, crawled_urls):
+        print(f"Crawling finished. Total pages: {self.page_count}")
+
+plugin = PageCounterPlugin()
+```
+
+### 插件开发指南
+
+1. **插件命名**：插件目录名应该使用小写字母和下划线，避免使用特殊字符
+2. **插件结构**：每个插件应该是一个独立的Python包，包含 `__init__.py` 文件
+3. **钩子实现**：插件可以选择性地实现需要的钩子方法，不需要实现所有方法
+4. **插件注册**：插件会被自动发现和注册，不需要手动注册
+5. **配置管理**：插件可以通过 `on_init` 方法获取全局配置
+6. **资源管理**：插件应该自行管理其使用的资源，确保在抓取结束时释放
+
+### 启用和禁用插件
+
+可以通过以下方式启用或禁用插件：
+
+1. **配置文件**：在 `config/default.yaml` 文件中设置 `plugins.enabled_plugins` 列表
+2. **命令行参数**：使用 `--plugins` 参数指定启用的插件，使用 `--no-plugins` 参数禁用插件系统
 
 ## 功能规划
 
@@ -417,9 +551,10 @@ python grab_the_site.py --url https://example.com --user-agent "Mozilla/5.0 (Win
    - 支持设置请求间隔，避免对目标服务器造成过大压力
    - 支持随机延迟，模拟真实用户行为
 
-6. **自定义用户代理**
-   - 支持设置自定义User-Agent
-   - 支持随机User-Agent轮换
+6. **自定义用户代理** (已实现)
+    - 支持通过配置文件或命令行参数设置自定义用户代理
+    - 默认使用现代浏览器的用户代理字符串
+    - 确保所有HTTP请求和JavaScript渲染都使用配置的用户代理
 
 7. **JavaScript渲染支持** (已实现)
    - 使用Pyppeteer支持动态加载的内容
@@ -474,9 +609,11 @@ python grab_the_site.py --url https://example.com --user-agent "Mozilla/5.0 (Win
     - 开发简单的图形界面
     - 支持拖拽操作和实时预览
 
-17. **插件系统**
+17. **插件系统** (已实现)
     - 支持自定义插件扩展功能
     - 提供插件开发API
+    - 支持插件的发现、加载、注册和管理
+    - 提供丰富的钩子方法
 
 18. **国际化支持** (已实现)
     - 支持英文和中文语言
