@@ -32,6 +32,11 @@ resume:
   state_file: "state/grabthesite.json"  # 状态文件路径
   save_interval: 300    # 状态保存间隔（秒）
 
+# JavaScript渲染配置
+js_rendering:
+  enable: false         # 是否启用JavaScript渲染
+  timeout: 30           # 渲染超时时间（秒）
+
 # 输出配置
 output:
   base_dir: "output"     # 基础输出目录

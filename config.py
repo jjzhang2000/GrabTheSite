@@ -79,6 +79,10 @@ def load_config():
                 "state_file": "state/grabthesite.json",
                 "save_interval": 300
             },
+            "js_rendering": {
+                "enable": False,
+                "timeout": 30
+            },
             "output": {
                 "base_dir": "output",
                 "site_name": "www.mir.com.my",
@@ -188,6 +192,7 @@ EXCLUDE_LIST = config.get("exclude", [])
 LOGGING_CONFIG = config.get("logging", {})
 ERROR_HANDLING_CONFIG = config.get("error_handling", {})
 RESUME_CONFIG = config.get("resume", {})
+JS_RENDERING_CONFIG = config.get("js_rendering", {})
 
 # 导出完整配置对象
 CONFIG = config

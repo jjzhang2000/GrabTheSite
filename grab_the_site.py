@@ -118,6 +118,26 @@ def parse_args():
         help="状态文件路径"
     )
     
+    # JavaScript渲染相关参数
+    parser.add_argument(
+        "--js-rendering",
+        action="store_true",
+        help="启用JavaScript渲染"
+    )
+    
+    parser.add_argument(
+        "--no-js-rendering",
+        action="store_true",
+        help="禁用JavaScript渲染"
+    )
+    
+    parser.add_argument(
+        "--js-timeout",
+        type=int,
+        default=None,
+        help="JavaScript渲染超时时间（秒）"
+    )
+    
     return parser.parse_args()
 
 
@@ -210,6 +230,20 @@ def update_config(args):
     if args.state_file:
         config["resume"]["state_file"] = args.state_file
     
+    # 处理JavaScript渲染配置
+    if "js_rendering" not in config:
+        config["js_rendering"] = {}
+    
+    # 处理 --js-rendering 和 --no-js-rendering 参数
+    if args.js_rendering:
+        config["js_rendering"]["enable"] = True
+    elif args.no_js_rendering:
+        config["js_rendering"]["enable"] = False
+    
+    # 处理 --js-timeout 参数
+    if args.js_timeout is not None:
+        config["js_rendering"]["timeout"] = args.js_timeout
+    
     # 确保完整输出路径被正确计算
     if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
         config["output"]["full_path"] = os.path.join(
@@ -255,6 +289,14 @@ def main():
     logger.info(f"断点续传: {'启用' if resume_enable else '禁用'}")
     if resume_enable:
         logger.info(f"状态文件: {state_file}")
+    
+    # 显示JavaScript渲染配置
+    js_rendering_config = config.get("js_rendering", {})
+    js_rendering_enable = js_rendering_config.get("enable", False)
+    js_rendering_timeout = js_rendering_config.get("timeout", 30)
+    logger.info(f"JavaScript渲染: {'启用' if js_rendering_enable else '禁用'}")
+    if js_rendering_enable:
+        logger.info(f"渲染超时: {js_rendering_timeout}秒")
     
     # 创建抓取器实例
     crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads)

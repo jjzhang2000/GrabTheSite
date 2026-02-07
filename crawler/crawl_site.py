@@ -10,10 +10,11 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from crawler.downloader import download_file, Downloader
 from logger import setup_logger
-from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, RESUME_CONFIG
+from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, RESUME_CONFIG, JS_RENDERING_CONFIG
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler, retry
 from utils.state_manager import StateManager
+from utils.js_renderer import JSRenderer
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -89,6 +90,17 @@ class CrawlSite:
         else:
             self.state_manager = None
         
+        # 初始化JavaScript渲染器
+        self.js_rendering_enabled = JS_RENDERING_CONFIG.get('enable', False)
+        self.js_rendering_timeout = JS_RENDERING_CONFIG.get('timeout', 30)
+        if self.js_rendering_enabled:
+            self.js_renderer = JSRenderer(enable=True, timeout=self.js_rendering_timeout)
+            # 初始化浏览器
+            import asyncio
+            asyncio.get_event_loop().run_until_complete(self.js_renderer.initialize())
+        else:
+            self.js_renderer = None
+        
         # 打印排除列表信息
         if self.processed_exclude_list:
             logger.info(f"排除列表: {self.processed_exclude_list}")
@@ -109,6 +121,12 @@ class CrawlSite:
         logger.info(f"最大深度: {self.max_depth}")
         logger.info(f"最大文件数: {self.max_files}")
         logger.info(f"线程数: {self.threads}")
+        
+        # 检查JavaScript渲染状态
+        if self.js_rendering_enabled:
+            logger.info(f"JavaScript渲染已启用，超时设置: {self.js_rendering_timeout}秒")
+        else:
+            logger.info("JavaScript渲染已禁用")
         
         # 检查是否启用断点续传
         if self.resume_enabled and self.state_manager:
@@ -146,6 +164,11 @@ class CrawlSite:
             logger.info(f"  总访问 URL 数量: {stats.get('total_urls', 0)}")
             logger.info(f"  已下载文件数量: {stats.get('downloaded_files', 0)}")
             logger.info(f"  失败 URL 数量: {stats.get('failed_urls', 0)}")
+        
+        # 清理JavaScript渲染器
+        if self.js_rendering_enabled and self.js_renderer:
+            logger.info("关闭JavaScript渲染器...")
+            self.js_renderer.close_sync()
         
         logger.info(f"抓取完成，共下载 {self.downloaded_files} 个页面")
         logger.info(f"暂存页面数量: {len(self.pages)}")
@@ -242,8 +265,18 @@ class CrawlSite:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status()  # 检查HTTP错误
+        
+        # 尝试使用JavaScript渲染
+        page_content = None
+        if self.js_rendering_enabled and self.js_renderer:
+            logger.debug(f"尝试使用JavaScript渲染页面: {url}")
+            page_content = self.js_renderer.render_page_sync(url)
+        
+        # 如果JavaScript渲染失败或未启用，使用常规请求
+        if not page_content:
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()  # 检查HTTP错误
+            page_content = response.text
         
         # 如果需要下载，暂存页面内容到内存
         if need_download:
@@ -252,7 +285,7 @@ class CrawlSite:
                     # 再次检查文件数量限制，避免竞争条件
                     logger.info(f"达到文件数量限制，跳过页面: {url}")
                     return
-                self.pages[url] = response.text
+                self.pages[url] = page_content
                 self.downloaded_files += 1
                 # 更新状态管理器
                 if self.resume_enabled and self.state_manager:
@@ -267,7 +300,7 @@ class CrawlSite:
                 self.state_manager.save_state()
         
         # 解析HTML，提取链接
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(page_content, 'html.parser')
         
         # 提取所有链接
         links = soup.find_all(['a', 'img', 'link', 'script'])
