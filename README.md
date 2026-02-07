@@ -46,6 +46,16 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
   - 保存抓取状态，包括已访问的URL和已下载的文件
   - 可通过配置文件或命令行参数启用/禁用
   - 可配置状态文件路径
+- JavaScript渲染支持：
+  - 使用Pyppeteer支持动态加载的内容
+  - 可通过配置文件或命令行参数启用/禁用
+  - 可配置渲染超时时间
+  - 自动降级：如果渲染失败或未启用，会回退到常规HTTP请求
+- 国际化支持：
+  - 使用Python标准库gettext实现翻译功能
+  - 支持英文和中文语言
+  - 可通过配置文件或命令行参数设置语言
+  - 提供翻译文件的更新和扩展指南
 
 **注：** 具体配置参数（如目标网站、下载深度、文件数量限制等）请参考配置文件。
 
@@ -80,6 +90,22 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
     - 集成到抓取和下载模块中，避免重复下载
     - 添加断点续传配置选项到配置文件
     - 添加断点续传相关的命令行参数
+15. 实现JavaScript渲染支持：
+    - 创建JavaScript渲染模块，使用Pyppeteer进行无头浏览器自动化
+    - 实现异步和同步两种渲染方法
+    - 集成到爬取逻辑中，在获取页面内容时使用JavaScript渲染
+    - 添加渲染状态日志和清理逻辑
+    - 添加JavaScript渲染配置选项到配置文件
+    - 添加JavaScript渲染相关的命令行参数
+    - 实现自动降级机制，当渲染失败时回退到常规HTTP请求
+16. 实现国际化支持：
+    - 创建国际化模块，使用Python标准库gettext实现翻译功能
+    - 创建locale目录结构，存放翻译文件
+    - 在配置文件中添加国际化配置选项
+    - 在命令行参数中添加语言选择选项
+    - 集成翻译功能到主脚本和日志系统
+    - 创建英文和中文的翻译文件
+    - 实现自动降级机制，当翻译文件不存在时使用默认语言
 
 ### 注意事项
 
@@ -87,6 +113,14 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
 - 命令行参数优先级高于配置文件
 - 仅支持抓取指定网站
 - 只下载起始目录及其子目录下的内容，基础目录之上的链接将保留原始状态
+
+### JavaScript渲染注意事项
+
+- **首次使用需要安装Chrome**：Pyppeteer首次运行时会自动下载Chrome浏览器，可能需要一些时间
+- **性能影响**：JavaScript渲染会增加爬取时间和资源消耗，建议仅在必要时启用
+- **网络要求**：渲染过程需要稳定的网络连接，尤其是首次下载Chrome时
+- **内存使用**：无头浏览器会占用一定内存，对于大型网站可能需要更多资源
+- **自动降级**：如果JavaScript渲染失败或未启用，会自动回退到常规HTTP请求
 
 ## 配置文件支持
 
@@ -98,6 +132,26 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
 - **config/config.yaml** - 用户配置文件，用于覆盖默认配置
 
 ### 配置项说明
+
+#### JavaScript渲染配置
+
+```yaml
+# JavaScript渲染配置
+js_rendering:
+  enable: false         # 是否启用JavaScript渲染
+  timeout: 30           # 渲染超时时间（秒）
+```
+
+#### 国际化配置
+
+```yaml
+# 国际化配置
+i18n:
+  lang: "en"            # 默认语言代码
+  available_langs:      # 可用语言列表
+    - "en"
+    - "zh_CN"
+```
 
 详见 `config/default.yaml` 文件
 
@@ -144,6 +198,10 @@ GrabTheSite 是一个轻量级的网站抓取工具，能够将指定网站的�
 | `--state-file` | | 字符串 | 状态文件路径 |
 | `--incremental` | `-i` | 布尔值 | 启用增量抓取 |
 | `--no-incremental` | | 布尔值 | 禁用增量抓取 |
+| `--js-rendering` | | 布尔值 | 启用JavaScript渲染 |
+| `--no-js-rendering` | | 布尔值 | 禁用JavaScript渲染 |
+| `--js-timeout` | | 整数 | JavaScript渲染超时时间（秒） |
+| `--lang` | | 字符串 | 语言代码，如 'en', 'zh_CN' 等 |
 
 ### 使用示例
 
@@ -265,6 +323,46 @@ python grab_the_site.py --url https://example.com --resume --state-file my_state
 
 这将启用断点续传功能，并使用指定的状态文件路径。
 
+#### 17. 启用JavaScript渲染
+
+```bash
+python grab_the_site.py --url https://example.com --js-rendering
+```
+
+这将启用JavaScript渲染功能，用于抓取使用JavaScript动态加载内容的网站。
+
+#### 18. 禁用JavaScript渲染
+
+```bash
+python grab_the_site.py --url https://example.com --no-js-rendering
+```
+
+这将禁用JavaScript渲染功能，使用常规HTTP请求抓取网站。
+
+#### 19. 设置JavaScript渲染超时时间
+
+```bash
+python grab_the_site.py --url https://example.com --js-rendering --js-timeout 45
+```
+
+这将启用JavaScript渲染功能，并设置渲染超时时间为45秒。
+
+#### 20. 设置语言为英文
+
+```bash
+python grab_the_site.py --url https://example.com --lang en
+```
+
+这将使用英文作为界面语言。
+
+#### 21. 设置语言为中文
+
+```bash
+python grab_the_site.py --url https://example.com --lang zh_CN
+```
+
+这将使用中文作为界面语言。
+
 ### 注意事项
 
 - 命令行参数优先级高于配置文件
@@ -303,9 +401,12 @@ python grab_the_site.py --url https://example.com --resume --state-file my_state
    - 支持设置自定义User-Agent
    - 支持随机User-Agent轮换
 
-7. **JavaScript渲染支持**
-   - 使用Selenium或Pyppeteer支持动态加载的内容
+7. **JavaScript渲染支持** (已实现)
+   - 使用Pyppeteer支持动态加载的内容
    - 可配置是否启用JavaScript渲染
+   - 可配置渲染超时时间
+   - 自动降级机制，当渲染失败时回退到常规HTTP请求
+   - 支持通过配置文件或命令行参数启用/禁用
 
 8. **高级排除列表**
    - 支持正则表达式匹配
@@ -357,6 +458,9 @@ python grab_the_site.py --url https://example.com --resume --state-file my_state
     - 支持自定义插件扩展功能
     - 提供插件开发API
 
-18. **国际化支持**
-    - 支持多语言界面
-    - 支持不同地区的编码处理
+18. **国际化支持** (已实现)
+    - 支持英文和中文语言
+    - 使用Python标准库gettext实现翻译功能
+    - 可通过配置文件或命令行参数设置语言
+    - 集成到主脚本和日志系统
+    - 实现自动降级机制，当翻译文件不存在时使用默认语言

@@ -12,6 +12,7 @@ from config import load_config, CONFIG
 from crawler.crawl_site import CrawlSite
 from crawler.save_site import SaveSite
 from logger import setup_logger
+from utils.i18n import init_i18n, gettext as _
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -138,6 +139,14 @@ def parse_args():
         help="JavaScript渲染超时时间（秒）"
     )
     
+    # 国际化相关参数
+    parser.add_argument(
+        "--lang",
+        type=str,
+        default=None,
+        help="语言代码，如 'en', 'zh_CN' 等"
+    )
+    
     return parser.parse_args()
 
 
@@ -244,6 +253,14 @@ def update_config(args):
     if args.js_timeout is not None:
         config["js_rendering"]["timeout"] = args.js_timeout
     
+    # 处理国际化配置
+    if "i18n" not in config:
+        config["i18n"] = {}
+    
+    # 处理 --lang 参数
+    if args.lang is not None:
+        config["i18n"]["lang"] = args.lang
+    
     # 确保完整输出路径被正确计算
     if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
         config["output"]["full_path"] = os.path.join(
@@ -262,6 +279,10 @@ def main():
     # 更新配置
     config = update_config(args)
     
+    # 初始化国际化模块
+    lang = config.get("i18n", {}).get("lang", "en")
+    init_i18n(lang)
+    
     # 提取配置参数
     target_url = config["target_url"]
     max_depth = config["crawl"].get("max_depth", 1)
@@ -273,30 +294,35 @@ def main():
     random_delay = config["crawl"].get("random_delay", True)
     threads = config["crawl"].get("threads", 4)
     
-    logger.info("开始抓取网站...")
-    logger.info(f"目标网站: {target_url}")
-    logger.info(f"最大深度: {max_depth}")
-    logger.info(f"最大文件数: {max_files}")
-    logger.info(f"请求间隔: {delay} 秒")
-    logger.info(f"随机延迟: {'启用' if random_delay else '禁用'}")
-    logger.info(f"线程数: {threads}")
-    logger.info(f"输出路径: {output_dir}")
+    logger.info(_("开始抓取网站..."))
+    logger.info(f"{_("目标网站")}: {target_url}")
+    logger.info(f"{_("最大深度")}: {max_depth}")
+    logger.info(f"{_("最大文件数")}: {max_files}")
+    logger.info(f"{_("请求间隔")}: {delay} {_("秒")}")
+    logger.info(f"{_("随机延迟")}: {'启用' if random_delay else '禁用'}")
+    logger.info(f"{_("线程数")}: {threads}")
+    logger.info(f"{_("输出路径")}: {output_dir}")
     
     # 显示断点续传配置
     resume_config = config.get("resume", {})
     resume_enable = resume_config.get("enable", True)
     state_file = resume_config.get("state_file", "state/grabthesite.json")
-    logger.info(f"断点续传: {'启用' if resume_enable else '禁用'}")
+    logger.info(f"{_("断点续传")}: {'启用' if resume_enable else '禁用'}")
     if resume_enable:
-        logger.info(f"状态文件: {state_file}")
+        logger.info(f"{_("状态文件")}: {state_file}")
     
     # 显示JavaScript渲染配置
     js_rendering_config = config.get("js_rendering", {})
     js_rendering_enable = js_rendering_config.get("enable", False)
     js_rendering_timeout = js_rendering_config.get("timeout", 30)
-    logger.info(f"JavaScript渲染: {'启用' if js_rendering_enable else '禁用'}")
+    logger.info(f"{_("JavaScript渲染")}: {'启用' if js_rendering_enable else '禁用'}")
     if js_rendering_enable:
-        logger.info(f"渲染超时: {js_rendering_timeout}秒")
+        logger.info(f"{_("渲染超时")}: {js_rendering_timeout}{_("秒")}")
+    
+    # 显示语言配置
+    i18n_config = config.get("i18n", {})
+    current_lang = i18n_config.get("lang", "en")
+    logger.info(f"{_("当前语言")}: {current_lang}")
     
     # 创建抓取器实例
     crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads)
@@ -304,7 +330,7 @@ def main():
     # 抓取网站，获取暂存页面
     pages = crawler.crawl_site()
     
-    logger.info(f"抓取完成，开始保存页面，共 {len(pages)} 个页面")
+    logger.info(_(f"抓取完成，开始保存页面，共 {len(pages)} 个页面"))
     
     # 创建保存器实例
     saver = SaveSite(target_url, output_dir, crawler.static_resources)
@@ -332,7 +358,7 @@ def main():
         sitemap_data = pages if pages else crawler.visited_urls
         sitemap_generator.generate_html_sitemap(sitemap_data)
     
-    logger.info("抓取完成！")
+    logger.info(_("抓取完成！"))
 
 
 if __name__ == "__main__":

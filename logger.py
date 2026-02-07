@@ -11,6 +11,13 @@ LOG_FILE = os.path.join(LOG_DIR, "grab_the_site.log")
 # 创建日志目录
 os.makedirs(LOG_DIR, exist_ok=True)
 
+# 尝试导入翻译函数，避免循环导入
+try:
+    from utils.i18n import gettext as _
+except ImportError:
+    # 如果导入失败，使用身份函数
+    _ = lambda message: message
+
 # 配置日志系统
 def setup_logger(name=__name__):
     """设置并返回一个配置好的 logger 实例
@@ -50,6 +57,9 @@ def setup_logger(name=__name__):
         # 添加处理器到 logger
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
+    
+    # 添加翻译方法
+    logger._ = _
     
     return logger
 

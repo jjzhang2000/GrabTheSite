@@ -54,3 +54,10 @@ logging:
   file: "logs/grabthesite.log"  # 日志文件路径
   max_bytes: 10485760   # 日志文件最大字节数（10MB）
   backup_count: 5       # 保留的日志文件数量
+
+# 国际化配置
+i18n:
+  lang: "en"            # 默认语言代码
+  available_langs:      # 可用语言列表
+    - "en"
+    - "zh_CN"

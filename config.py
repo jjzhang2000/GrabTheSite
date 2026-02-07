@@ -99,6 +99,10 @@ def load_config():
                 "file": "logs/grabthesite.log",
                 "max_bytes": 10485760,
                 "backup_count": 5
+            },
+            "i18n": {
+                "lang": "en",
+                "available_langs": ["en", "zh_CN"]
             }
         }
     
@@ -193,6 +197,7 @@ LOGGING_CONFIG = config.get("logging", {})
 ERROR_HANDLING_CONFIG = config.get("error_handling", {})
 RESUME_CONFIG = config.get("resume", {})
 JS_RENDERING_CONFIG = config.get("js_rendering", {})
+I18N_CONFIG = config.get("i18n", {})
 
 # 导出完整配置对象
 CONFIG = config

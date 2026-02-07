@@ -1,0 +1,70 @@
+# GrabTheSite 中文翻译文件
+# 生成日期: 2026-02-07
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: GrabTheSite\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-02-07 11:00+0800\n"
+"PO-Revision-Date: 2026-02-07 11:00+0800\n"
+"Last-Translator: GrabTheSite Team <team@grabthesite.com>\n"
+"Language-Team: Chinese (Simplified) <zh_CN@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "开始抓取网站..."
+msgstr "开始抓取网站..."
+
+msgid "目标网站"
+msgstr "目标网站"
+
+msgid "最大深度"
+msgstr "最大深度"
+
+msgid "最大文件数"
+msgstr "最大文件数"
+
+msgid "请求间隔"
+msgstr "请求间隔"
+
+msgid "秒"
+msgstr "秒"
+
+msgid "随机延迟"
+msgstr "随机延迟"
+
+msgid "线程数"
+msgstr "线程数"
+
+msgid "输出路径"
+msgstr "输出路径"
+
+msgid "断点续传"
+msgstr "断点续传"
+
+msgid "状态文件"
+msgstr "状态文件"
+
+msgid "JavaScript渲染"
+msgstr "JavaScript渲染"
+
+msgid "渲染超时"
+msgstr "渲染超时"
+
+msgid "当前语言"
+msgstr "当前语言"
+
+msgid "抓取完成，开始保存页面，共 {len(pages)} 个页面"
+msgstr "抓取完成，开始保存页面，共 {len(pages)} 个页面"
+
+msgid "抓取完成！"
+msgstr "抓取完成！"
+
+msgid "启用"
+msgstr "启用"
+
+msgid "禁用"
+msgstr "禁用"
