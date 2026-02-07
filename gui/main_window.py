@@ -86,23 +86,9 @@ class MainWindow(tk.Tk):
         # 获取配置
         config = {
             "url": self.url_panel.get_url(),
-            "depth": self.advanced_config_panel.get_depth(),
-            "max_files": self.advanced_config_panel.get_max_files(),
-            "output": self.advanced_config_panel.get_output(),
-            "delay": self.advanced_config_panel.get_delay(),
-            "no_random_delay": self.advanced_config_panel.get_no_random_delay(),
-            "threads": self.advanced_config_panel.get_threads(),
-            "sitemap": self.advanced_config_panel.get_sitemap(),
-            "html_sitemap": self.advanced_config_panel.get_html_sitemap(),
-            "resume": self.advanced_config_panel.get_resume(),
-            "state_file": self.advanced_config_panel.get_state_file(),
-            "js_rendering": self.advanced_config_panel.get_js_rendering(),
-            "js_timeout": self.advanced_config_panel.get_js_timeout(),
-            "lang": self.advanced_config_panel.get_lang(),
-            "user_agent": self.advanced_config_panel.get_user_agent(),
+            **self.advanced_config_panel.get_config(),
             "plugins": self.plugin_config_panel.get_enabled_plugins(),
-            "no_plugins": self.plugin_config_panel.get_no_plugins(),
-            "force_download": self.advanced_config_panel.get_force_download()
+            "no_plugins": self.plugin_config_panel.get_no_plugins()
         }
         
         # 验证配置
@@ -114,14 +100,48 @@ class MainWindow(tk.Tk):
         # 记录开始日志
         self.log_panel.add_log(_("开始抓取网站: {}").format(config["url"]))
         
-        # 这里将调用抓取功能
-        # 由于抓取是耗时操作，应该在单独的线程中执行
-        # 为了简化示例，这里只记录日志
-        self.log_panel.add_log(_("抓取配置已准备就绪"))
-        self.log_panel.add_log(_("模拟抓取过程..."))
+        # 导入抓取模块
+        from grab_the_site import main as grab_main
+        import threading
         
-        # 模拟抓取完成
-        self.after(2000, self.simulate_crawl_complete)
+        # 在单独的线程中执行抓取，避免阻塞GUI
+        def crawl_thread():
+            try:
+                # 调用抓取功能
+                self.log_panel.add_log(_("抓取配置已准备就绪"))
+                self.log_panel.add_log(_("开始抓取..."))
+                
+                # 将配置转换为命令行参数
+                args_list = []
+                for key, value in config.items():
+                    if value is True:
+                        args_list.append(f"--{key}")
+                    elif value is False:
+                        continue
+                    elif isinstance(value, list):
+                        if value:
+                            args_list.append(f"--{key}")
+                            args_list.extend(value)
+                    else:
+                        args_list.append(f"--{key}")
+                        args_list.append(str(value))
+                
+                # 调用主抓取函数
+                grab_main(args_list)
+                
+                # 记录完成日志
+                self.log_panel.add_log(_("抓取完成!"))
+            except Exception as e:
+                # 记录错误日志
+                self.log_panel.add_log(_("错误: {}").format(str(e)))
+            finally:
+                # 停止抓取
+                self.on_stop()
+        
+        # 启动抓取线程
+        thread = threading.Thread(target=crawl_thread)
+        thread.daemon = True
+        thread.start()
     
     def on_stop(self):
         """停止按钮点击事件"""
@@ -137,8 +157,4 @@ class MainWindow(tk.Tk):
         """退出按钮点击事件"""
         self.destroy()
     
-    def simulate_crawl_complete(self):
-        """模拟抓取完成"""
-        if self.is_crawling:
-            self.log_panel.add_log(_("抓取完成!"))
-            self.on_stop()
+

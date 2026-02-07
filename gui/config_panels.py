@@ -139,6 +139,27 @@ class AdvancedConfigPanel(ttk.Frame):
         self.force_download_checkbutton = ttk.Checkbutton(self, text=_('强制下载所有文件'), variable=self.force_download_var)
         self.force_download_checkbutton.grid(row=14, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
     
+    def get_config(self):
+        """获取所有配置参数"""
+        return {
+            "depth": self.depth_var.get(),
+            "max_files": self.max_files_var.get(),
+            "output": self.output_var.get(),
+            "delay": self.delay_var.get(),
+            "no_random_delay": self.no_random_delay_var.get(),
+            "threads": self.threads_var.get(),
+            "sitemap": self.sitemap_var.get(),
+            "html_sitemap": self.html_sitemap_var.get(),
+            "resume": self.resume_var.get(),
+            "state_file": self.state_file_var.get(),
+            "js_rendering": self.js_rendering_var.get(),
+            "js_timeout": self.js_timeout_var.get(),
+            "lang": self.lang_var.get(),
+            "user_agent": self.user_agent_var.get(),
+            "force_download": self.force_download_var.get()
+        }
+    
+    # 保留一些常用的getter方法，以便向后兼容
     def get_depth(self):
         """获取抓取深度"""
         return self.depth_var.get()
@@ -150,54 +171,6 @@ class AdvancedConfigPanel(ttk.Frame):
     def get_output(self):
         """获取输出目录"""
         return self.output_var.get()
-    
-    def get_delay(self):
-        """获取请求延迟"""
-        return self.delay_var.get()
-    
-    def get_no_random_delay(self):
-        """获取是否无随机延迟"""
-        return self.no_random_delay_var.get()
-    
-    def get_threads(self):
-        """获取线程数"""
-        return self.threads_var.get()
-    
-    def get_sitemap(self):
-        """获取是否生成XML站点地图"""
-        return self.sitemap_var.get()
-    
-    def get_html_sitemap(self):
-        """获取是否生成HTML站点地图"""
-        return self.html_sitemap_var.get()
-    
-    def get_resume(self):
-        """获取是否恢复抓取"""
-        return self.resume_var.get()
-    
-    def get_state_file(self):
-        """获取状态文件"""
-        return self.state_file_var.get()
-    
-    def get_js_rendering(self):
-        """获取是否启用JS渲染"""
-        return self.js_rendering_var.get()
-    
-    def get_js_timeout(self):
-        """获取JS渲染超时"""
-        return self.js_timeout_var.get()
-    
-    def get_lang(self):
-        """获取语言"""
-        return self.lang_var.get()
-    
-    def get_user_agent(self):
-        """获取用户代理"""
-        return self.user_agent_var.get()
-    
-    def get_force_download(self):
-        """获取是否强制下载"""
-        return self.force_download_var.get()
 
 
 class PluginConfigPanel(ttk.Frame):
@@ -230,11 +203,18 @@ class PluginConfigPanel(ttk.Frame):
     
     def _populate_plugin_list(self):
         """填充插件列表"""
-        # 这里应该从插件管理器获取实际的插件列表
-        # 为了演示，使用模拟数据
-        plugins = ['save_plugin', 'example_plugin']
-        for plugin in plugins:
-            self.plugin_list.insert(tk.END, plugin)
+        # 从插件管理器获取实际的插件列表
+        try:
+            from utils.plugin_manager import PluginManager
+            plugin_manager = PluginManager()
+            plugins = plugin_manager.get_available_plugins()
+            for plugin in plugins:
+                self.plugin_list.insert(tk.END, plugin)
+        except Exception as e:
+            # 如果获取插件列表失败，使用默认插件
+            plugins = ['save_plugin']
+            for plugin in plugins:
+                self.plugin_list.insert(tk.END, plugin)
     
     def get_enabled_plugins(self):
         """获取启用的插件"""

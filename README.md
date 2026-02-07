@@ -751,6 +751,84 @@ python grab_the_site.py --url https://example.com --plugins save_plugin --force-
     - 集成到主脚本和日志系统
     - 实现自动降级机制，当翻译文件不存在时使用默认语言
 
+## 代码结构
+
+### 项目目录结构
+
+```
+GrabTheSite/
+├── crawler/              # 抓取模块
+│   ├── crawl_site.py     # 核心抓取逻辑
+│   └── __init__.py
+├── config/               # 配置文件目录
+│   ├── default.yaml      # 默认配置文件
+│   └── config.yaml       # 用户配置文件
+├── gui/                  # GUI界面模块
+│   ├── __init__.py       # 使gui目录成为Python包
+│   ├── main_window.py    # 主窗口类和布局
+│   ├── config_panels.py  # 配置面板（URL、高级配置、插件配置）
+│   └── log_panel.py      # 日志显示面板
+├── plugins/              # 插件目录
+│   ├── __init__.py
+│   └── save_plugin/      # 保存插件
+│       └── __init__.py
+├── utils/                # 工具模块
+│   ├── i18n.py           # 国际化支持
+│   ├── plugin_manager.py # 插件管理器
+│   ├── sitemap_generator.py # 站点地图生成器
+│   └── __init__.py
+├── logger.py             # 日志系统
+├── config.py             # 配置管理
+├── grab_the_site.py      # 命令行主脚本
+├── gui_app.py            # GUI应用程序入口
+├── README.md             # 项目文档
+└── requirements.txt      # 依赖项
+```
+
+### 主要文件功能说明
+
+1. **grab_the_site.py**：命令行主脚本，处理命令行参数、初始化配置和插件系统，启动抓取过程
+
+2. **gui_app.py**：GUI应用程序入口，启动GUI界面
+
+3. **crawler/crawl_site.py**：核心抓取模块，实现网站抓取的主要逻辑
+
+4. **plugins/save_plugin/__init__.py**：保存插件，负责将抓取的页面保存到磁盘
+
+5. **utils/plugin_manager.py**：插件管理器，负责插件的发现、加载、注册和管理
+
+6. **utils/i18n.py**：国际化支持模块，实现多语言支持
+
+7. **utils/sitemap_generator.py**：站点地图生成器，生成XML和HTML格式的站点地图
+
+8. **gui/main_window.py**：主窗口类，实现GUI界面的布局和事件处理
+
+9. **gui/config_panels.py**：配置面板，包含URL面板、高级配置面板和插件配置面板
+
+10. **gui/log_panel.py**：日志面板，显示抓取过程中的日志信息
+
+11. **config.py**：配置管理模块，加载和管理配置文件
+
+12. **logger.py**：日志系统，实现控制台和文件日志
+
+### 插件系统
+
+插件系统是GrabTheSite的核心特性之一，允许用户通过插件扩展工具的功能。插件系统基于钩子机制，在抓取过程的不同阶段触发相应的钩子方法，使插件能够介入抓取流程并执行自定义逻辑。
+
+### 国际化支持
+
+GrabTheSite支持英文和中文语言，使用Python标准库gettext实现翻译功能。用户可以通过配置文件或命令行参数设置语言。
+
+### 模块化设计
+
+项目采用模块化设计，将不同功能分散到不同的模块中，提高了代码的可读性和可维护性。主要模块包括：
+
+- **抓取模块**：负责网站内容的抓取
+- **保存模块**：负责将抓取的内容保存到磁盘
+- **插件系统**：负责插件的管理和钩子调用
+- **工具模块**：提供各种辅助功能
+- **GUI模块**：提供图形界面
+
 ## GUI界面使用说明
 
 ### 启动GUI界面

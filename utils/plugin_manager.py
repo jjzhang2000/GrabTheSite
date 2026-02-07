@@ -241,6 +241,24 @@ class PluginManager:
         self.plugins = []
         self.enabled_plugins = []
         logger.info("插件管理器清理完成")
+    
+    def get_available_plugins(self):
+        """获取可用的插件列表
+        
+        Returns:
+            list: 插件模块名（目录名）列表
+        """
+        # 确保已经发现插件
+        if not self.plugin_paths:
+            self.discover_plugins()
+        
+        # 提取插件模块名
+        plugin_names = []
+        for plugin_path in self.plugin_paths:
+            plugin_name = os.path.basename(plugin_path)
+            plugin_names.append(plugin_name)
+        
+        return plugin_names
 
 
 # 创建插件管理器实例

@@ -319,10 +319,25 @@ def update_config(args):
     return config
 
 
-def main():
-    """主函数"""
+def main(args_list=None):
+    """主函数
+    
+    Args:
+        args_list: 可选的参数列表，用于从GUI传递参数
+    """
     # 解析命令行参数
-    args = parse_args()
+    if args_list:
+        # 从参数列表解析
+        import sys
+        original_argv = sys.argv.copy()
+        sys.argv = ['grab_the_site.py'] + args_list
+        try:
+            args = parse_args()
+        finally:
+            sys.argv = original_argv
+    else:
+        # 从命令行解析
+        args = parse_args()
     
     # 更新配置
     config = update_config(args)
@@ -365,14 +380,14 @@ def main():
     user_agent = config["crawl"].get("user_agent", "")
     
     logger.info(_("开始抓取网站..."))
-    logger.info(f"{_("目标网站")}: {target_url}")
-    logger.info(f"{_("最大深度")}: {max_depth}")
-    logger.info(f"{_("最大文件数")}: {max_files}")
-    logger.info(f"{_("请求间隔")}: {delay} {_("秒")}")
-    logger.info(f"{_("随机延迟")}: {'启用' if random_delay else '禁用'}")
-    logger.info(f"{_("线程数")}: {threads}")
-    logger.info(f"{_("用户代理")}: {user_agent[:50]}..." if len(user_agent) > 50 else f"{_("用户代理")}: {user_agent}")
-    logger.info(f"{_("输出路径")}: {output_dir}")
+    logger.info(f"{_('目标网站')}: {target_url}")
+    logger.info(f"{_('最大深度')}: {max_depth}")
+    logger.info(f"{_('最大文件数')}: {max_files}")
+    logger.info(f"{_('请求间隔')}: {delay} {_('秒')}")
+    logger.info(f"{_('随机延迟')}: {'启用' if random_delay else '禁用'}")
+    logger.info(f"{_('线程数')}: {threads}")
+    logger.info(f"{_('用户代理')}: {user_agent[:50]}..." if len(user_agent) > 50 else f"{_('用户代理')}: {user_agent}")
+    logger.info(f"{_('输出路径')}: {output_dir}")
     
     # 显示断点续传配置
     resume_config = config.get("resume", {})
