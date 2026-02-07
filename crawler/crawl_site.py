@@ -10,8 +10,9 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from crawler.downloader import download_file, Downloader
 from logger import setup_logger
-from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS
+from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
+from utils.error_handler import ErrorHandler, retry
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -63,6 +64,15 @@ class CrawlSite:
                 path += '/'
             full_url = f"{parsed_url.scheme}://{parsed_url.netloc}{path}"
             self.processed_exclude_list.append(full_url)
+        
+        # 初始化错误处理器
+        self.error_handler = ErrorHandler(
+            retry_count=ERROR_HANDLING_CONFIG.get('retry_count', 3),
+            retry_delay=ERROR_HANDLING_CONFIG.get('retry_delay', 2),
+            exponential_backoff=ERROR_HANDLING_CONFIG.get('exponential_backoff', True),
+            retryable_errors=ERROR_HANDLING_CONFIG.get('retryable_errors', [429, 500, 502, 503, 504]),
+            fail_strategy=ERROR_HANDLING_CONFIG.get('fail_strategy', 'log')
+        )
         
         # 打印排除列表信息
         if self.processed_exclude_list:
@@ -152,127 +162,121 @@ class CrawlSite:
                 except:
                     pass
     
+    @retry()
     def _crawl_page(self, url, depth):
         """抓取页面"""
         # 检查是否达到深度限制
         if depth > self.max_depth:
             return
         
-        try:
-            # 检查是否已访问过该URL
+        # 检查是否已访问过该URL
+        with self.lock:
+            if url in self.visited_urls:
+                return
+            # 标记为已访问
+            self.visited_urls.add(url)
+        
+        # 计算本地文件路径
+        parsed_url = urlparse(url)
+        path = parsed_url.path
+        if not path:
+            path = '/'
+        if path.endswith('/'):
+            path += 'index.html'
+        file_path = os.path.join(self.output_dir, path.lstrip('/'))
+        
+        # 检查是否需要更新
+        local_timestamp = get_file_timestamp(file_path)
+        remote_timestamp = get_remote_timestamp(url)
+        
+        # 检查是否需要下载该页面
+        need_download = should_update(remote_timestamp, local_timestamp)
+        
+        # 如果需要下载，检查是否达到文件数量限制
+        if need_download:
             with self.lock:
-                if url in self.visited_urls:
+                if self.downloaded_files >= self.max_files:
+                    # 达到文件数量限制，不处理该页面
+                    logger.info(f"达到文件数量限制，跳过页面: {url}")
                     return
-                # 标记为已访问
-                self.visited_urls.add(url)
-            
-            # 计算本地文件路径
-            parsed_url = urlparse(url)
-            path = parsed_url.path
-            if not path:
-                path = '/'
-            if path.endswith('/'):
-                path += 'index.html'
-            file_path = os.path.join(self.output_dir, path.lstrip('/'))
-            
-            # 检查是否需要更新
-            local_timestamp = get_file_timestamp(file_path)
-            remote_timestamp = get_remote_timestamp(url)
-            
-            # 检查是否需要下载该页面
-            need_download = should_update(remote_timestamp, local_timestamp)
-            
-            # 如果需要下载，检查是否达到文件数量限制
-            if need_download:
-                with self.lock:
-                    if self.downloaded_files >= self.max_files:
-                        # 达到文件数量限制，不处理该页面
-                        logger.info(f"达到文件数量限制，跳过页面: {url}")
-                        return
-            
-            # 获取网页内容（无论是否需要更新，都需要获取内容来处理链接）
-            logger.info(f"抓取页面: {url}")
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()  # 检查HTTP错误
-            
-            # 如果需要下载，暂存页面内容到内存
-            if need_download:
-                with self.lock:
-                    if self.downloaded_files >= self.max_files:
-                        # 再次检查文件数量限制，避免竞争条件
-                        logger.info(f"达到文件数量限制，跳过页面: {url}")
-                        return
-                    self.pages[url] = response.text
-                    self.downloaded_files += 1
-                logger.info(f"暂存页面: {url}")
-            else:
-                logger.info(f"页面已最新，跳过下载: {url}")
-            
-            # 解析HTML，提取链接
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # 提取所有链接
-            links = soup.find_all(['a', 'img', 'link', 'script'])
-            
-            # 收集静态资源链接
-            static_urls = []
-            for link in links:
-                if link.name in ['img', 'link', 'script']:
-                    src = link.get('src') or link.get('href')
-                    if src:
-                        full_url = urljoin(url, src)
-                        # 只下载同域名的静态资源
-                        if self._is_same_domain(full_url):
-                            static_urls.append(full_url)
-            
-            # 特别查找并处理 oldlens.jpg 图片
-            for img in soup.find_all('img'):
-                src = img.get('src')
-                if src and 'oldlens.jpg' in src:
+        
+        # 获取网页内容（无论是否需要更新，都需要获取内容来处理链接）
+        logger.info(f"抓取页面: {url}")
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()  # 检查HTTP错误
+        
+        # 如果需要下载，暂存页面内容到内存
+        if need_download:
+            with self.lock:
+                if self.downloaded_files >= self.max_files:
+                    # 再次检查文件数量限制，避免竞争条件
+                    logger.info(f"达到文件数量限制，跳过页面: {url}")
+                    return
+                self.pages[url] = response.text
+                self.downloaded_files += 1
+            logger.info(f"暂存页面: {url}")
+        else:
+            logger.info(f"页面已最新，跳过下载: {url}")
+        
+        # 解析HTML，提取链接
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # 提取所有链接
+        links = soup.find_all(['a', 'img', 'link', 'script'])
+        
+        # 收集静态资源链接
+        static_urls = []
+        for link in links:
+            if link.name in ['img', 'link', 'script']:
+                src = link.get('src') or link.get('href')
+                if src:
                     full_url = urljoin(url, src)
-                    if self._is_same_domain(full_url) and full_url not in static_urls:
+                    # 只下载同域名的静态资源
+                    if self._is_same_domain(full_url):
                         static_urls.append(full_url)
-            
-            # 多线程下载静态资源
-            if static_urls:
-                downloader = Downloader(self.output_dir, threads=self.threads)
-                for static_url in static_urls:
-                    downloader.add_task(static_url)
-                results = downloader.run()
-                # 记录已下载的静态资源
-                with self.lock:
-                    for static_url, file_path in results:
-                        if file_path:
-                            self.static_resources.add(static_url)
-            
-            # 处理页面链接
-            for link in links:
-                if link.name == 'a':
-                    href = link.get('href')
-                    if href:
-                        full_url = urljoin(url, href)
-                        # 只抓取同域名、在起始目录及其子目录中、并且深度小于最大深度的链接
-                        if self._is_same_domain(full_url) and self._is_in_target_directory(full_url) and depth < self.max_depth:
-                            # 检查是否达到文件数量限制
-                            with self.lock:
-                                if self.downloaded_files >= self.max_files:
-                                    break
-                                # 检查是否已访问过该URL
-                                if full_url not in self.visited_urls:
-                                    # 添加到队列
-                                    self.queue.put((full_url, depth + 1))
-            
-            # 添加延迟
-            self._add_delay()
-                            
-        except Exception as e:
-            logger.error(f"抓取失败: {url}, 错误: {str(e)}")
-            
-            # 添加延迟
-            self._add_delay()
+        
+        # 特别查找并处理 oldlens.jpg 图片
+        for img in soup.find_all('img'):
+            src = img.get('src')
+            if src and 'oldlens.jpg' in src:
+                full_url = urljoin(url, src)
+                if self._is_same_domain(full_url) and full_url not in static_urls:
+                    static_urls.append(full_url)
+        
+        # 多线程下载静态资源
+        if static_urls:
+            downloader = Downloader(self.output_dir, threads=self.threads)
+            for static_url in static_urls:
+                downloader.add_task(static_url)
+            results = downloader.run()
+            # 记录已下载的静态资源
+            with self.lock:
+                for static_url, file_path in results:
+                    if file_path:
+                        self.static_resources.add(static_url)
+        
+        # 处理页面链接
+        for link in links:
+            if link.name == 'a':
+                href = link.get('href')
+                if href:
+                    full_url = urljoin(url, href)
+                    # 只抓取同域名、在起始目录及其子目录中、并且深度小于最大深度的链接
+                    if self._is_same_domain(full_url) and self._is_in_target_directory(full_url) and depth < self.max_depth:
+                        # 检查是否达到文件数量限制
+                        with self.lock:
+                            if self.downloaded_files >= self.max_files:
+                                break
+                            # 检查是否已访问过该URL
+                            if full_url not in self.visited_urls:
+                                # 添加到队列
+                                self.queue.put((full_url, depth + 1))
+        
+        # 添加延迟
+        self._add_delay()
     
     def _is_same_domain(self, url):
         """检查是否为同域名"""

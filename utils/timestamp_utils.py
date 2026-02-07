@@ -5,9 +5,20 @@ import time
 import requests
 from email.utils import parsedate_to_datetime
 from logger import setup_logger
+from config import ERROR_HANDLING_CONFIG
+from utils.error_handler import ErrorHandler, retry
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
+
+# 创建错误处理器实例
+error_handler = ErrorHandler(
+    retry_count=ERROR_HANDLING_CONFIG.get('retry_count', 3),
+    retry_delay=ERROR_HANDLING_CONFIG.get('retry_delay', 2),
+    exponential_backoff=ERROR_HANDLING_CONFIG.get('exponential_backoff', True),
+    retryable_errors=ERROR_HANDLING_CONFIG.get('retryable_errors', [429, 500, 502, 503, 504]),
+    fail_strategy=ERROR_HANDLING_CONFIG.get('fail_strategy', 'log')
+)
 
 
 def get_file_timestamp(file_path):
@@ -28,6 +39,7 @@ def get_file_timestamp(file_path):
     return 0
 
 
+@retry()
 def get_remote_timestamp(url):
     """获取远程文件的 Last-Modified 时间
     
@@ -37,32 +49,27 @@ def get_remote_timestamp(url):
     Returns:
         float: 远程文件的修改时间戳，获取失败返回 0
     """
-    try:
-        # 发送 HEAD 请求，只获取头部信息
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        response = requests.head(url, headers=headers, timeout=10, allow_redirects=True)
-        
-        # 检查响应状态码
-        if response.status_code != 200:
-            logger.debug(f"获取远程文件头部失败: {url}, 状态码: {response.status_code}")
-            return 0
-        
-        # 获取 Last-Modified 头
-        last_modified = response.headers.get('Last-Modified')
-        if not last_modified:
-            logger.debug(f"远程文件无 Last-Modified 头: {url}")
-            return 0
-        
-        # 解析时间格式
-        last_modified_date = parsedate_to_datetime(last_modified)
-        # 转换为时间戳
-        return time.mktime(last_modified_date.timetuple())
-        
-    except Exception as e:
-        logger.error(f"获取远程时间戳失败: {url}, 错误: {e}")
+    # 发送 HEAD 请求，只获取头部信息
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    response = requests.head(url, headers=headers, timeout=10, allow_redirects=True)
+    
+    # 检查响应状态码
+    if response.status_code != 200:
+        logger.debug(f"获取远程文件头部失败: {url}, 状态码: {response.status_code}")
         return 0
+    
+    # 获取 Last-Modified 头
+    last_modified = response.headers.get('Last-Modified')
+    if not last_modified:
+        logger.debug(f"远程文件无 Last-Modified 头: {url}")
+        return 0
+    
+    # 解析时间格式
+    last_modified_date = parsedate_to_datetime(last_modified)
+    # 转换为时间戳
+    return time.mktime(last_modified_date.timetuple())
 
 
 def should_update(remote_timestamp, local_timestamp):

@@ -8,15 +8,16 @@ import queue
 import requests
 from urllib.parse import urlparse
 from logger import setup_logger
-from config import DELAY, RANDOM_DELAY, THREADS
+from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
+from utils.error_handler import ErrorHandler, retry
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
 
 
 class Downloader:
-    """文件下载器，支持多线程下载"""
+    """文件下载器，用于多线程下载静态资源"""
     
     def __init__(self, output_dir, threads=THREADS):
         """初始化下载器
@@ -30,6 +31,15 @@ class Downloader:
         self.queue = queue.Queue()
         self.results = []
         self.lock = threading.Lock()
+        
+        # 初始化错误处理器
+        self.error_handler = ErrorHandler(
+            retry_count=ERROR_HANDLING_CONFIG.get('retry_count', 3),
+            retry_delay=ERROR_HANDLING_CONFIG.get('retry_delay', 2),
+            exponential_backoff=ERROR_HANDLING_CONFIG.get('exponential_backoff', True),
+            retryable_errors=ERROR_HANDLING_CONFIG.get('retryable_errors', [429, 500, 502, 503, 504]),
+            fail_strategy=ERROR_HANDLING_CONFIG.get('fail_strategy', 'log')
+        )
     
     def add_task(self, url):
         """添加下载任务
@@ -54,6 +64,7 @@ class Downloader:
             finally:
                 self.queue.task_done()
     
+    @retry()
     def _download_file(self, url):
         """下载单个文件
         
@@ -63,62 +74,53 @@ class Downloader:
         Returns:
             str: 下载的文件路径，如果下载失败返回None
         """
-        try:
-            logger.info(f"下载文件: {url}")
-            
-            # 解析URL
-            parsed_url = urlparse(url)
-            path = parsed_url.path
-            
-            # 获取文件名
-            filename = os.path.basename(path)
-            
-            # 如果没有文件名，跳过
-            if not filename:
-                logger.info(f"跳过，无文件名: {url}")
-                return None
-            
-            # 构建保存路径，保留目录结构
-            file_path = os.path.join(self.output_dir, path.lstrip('/'))
-            
-            # 创建目录结构
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            
-            # 检查是否需要更新
-            local_timestamp = get_file_timestamp(file_path)
-            remote_timestamp = get_remote_timestamp(url)
-            
-            if not should_update(remote_timestamp, local_timestamp):
-                logger.info(f"文件已最新，跳过下载: {url}")
-                return file_path
-            
-            # 下载文件
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-            response = requests.get(url, headers=headers, timeout=10, stream=True)
-            response.raise_for_status()  # 检查HTTP错误
-            
-            # 保存文件
-            with open(file_path, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-            
-            logger.info(f"保存文件: {file_path}")
-            
-            # 添加延迟
-            add_delay()
-            
-            return file_path
-            
-        except Exception as e:
-            logger.error(f"下载失败: {url}, 错误: {str(e)}")
-            
-            # 添加延迟
-            add_delay()
-            
+        logger.info(f"下载文件: {url}")
+        
+        # 解析URL
+        parsed_url = urlparse(url)
+        path = parsed_url.path
+        
+        # 获取文件名
+        filename = os.path.basename(path)
+        
+        # 如果没有文件名，跳过
+        if not filename:
+            logger.info(f"跳过，无文件名: {url}")
             return None
+        
+        # 构建保存路径，保留目录结构
+        file_path = os.path.join(self.output_dir, path.lstrip('/'))
+        
+        # 创建目录结构
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        
+        # 检查是否需要更新
+        local_timestamp = get_file_timestamp(file_path)
+        remote_timestamp = get_remote_timestamp(url)
+        
+        if not should_update(remote_timestamp, local_timestamp):
+            logger.info(f"文件已最新，跳过下载: {url}")
+            return file_path
+        
+        # 下载文件
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(url, headers=headers, timeout=10, stream=True)
+        response.raise_for_status()  # 检查HTTP错误
+        
+        # 保存文件
+        with open(file_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+        
+        logger.info(f"保存文件: {file_path}")
+        
+        # 添加延迟
+        add_delay()
+        
+        return file_path
     
     def run(self):
         """运行多线程下载

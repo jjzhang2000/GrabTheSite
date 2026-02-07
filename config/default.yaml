@@ -13,6 +13,19 @@ crawl:
   incremental: true     # 是否启用增量抓取
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
+# 错误处理配置
+error_handling:
+  retry_count: 3        # 重试次数
+  retry_delay: 2        # 重试间隔（秒）
+  exponential_backoff: true  # 是否使用指数退避
+  retryable_errors:     # 可重试的错误状态码
+    - 429               # Too Many Requests
+    - 500               # Internal Server Error
+    - 502               # Bad Gateway
+    - 503               # Service Unavailable
+    - 504               # Gateway Timeout
+  fail_strategy: "log"  # 失败策略：log（仅记录）, skip（跳过）, raise（抛出异常）
+
 # 输出配置
 output:
   base_dir: "output"     # 基础输出目录

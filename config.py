@@ -67,6 +67,13 @@ def load_config():
                 "random_delay": True,
                 "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
             },
+            "error_handling": {
+                "retry_count": 3,
+                "retry_delay": 2,
+                "exponential_backoff": True,
+                "retryable_errors": [429, 500, 502, 503, 504],
+                "fail_strategy": "log"
+            },
             "output": {
                 "base_dir": "output",
                 "site_name": "www.mir.com.my",
@@ -174,6 +181,7 @@ SITE_NAME = config["output"]["site_name"]
 OUTPUT_DIR = config["output"]["full_path"]
 EXCLUDE_LIST = config.get("exclude", [])
 LOGGING_CONFIG = config.get("logging", {})
+ERROR_HANDLING_CONFIG = config.get("error_handling", {})
 
 # 导出完整配置对象
 CONFIG = config
