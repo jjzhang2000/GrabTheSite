@@ -147,6 +147,14 @@ def parse_args():
         help="语言代码，如 'en', 'zh_CN' 等"
     )
     
+    # 用户代理相关参数
+    parser.add_argument(
+        "--user-agent",
+        type=str,
+        default=None,
+        help="自定义用户代理字符串"
+    )
+    
     return parser.parse_args()
 
 
@@ -261,6 +269,12 @@ def update_config(args):
     if args.lang is not None:
         config["i18n"]["lang"] = args.lang
     
+    # 处理用户代理配置
+    if args.user_agent is not None:
+        if "crawl" not in config:
+            config["crawl"] = {}
+        config["crawl"]["user_agent"] = args.user_agent
+    
     # 确保完整输出路径被正确计算
     if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
         config["output"]["full_path"] = os.path.join(
@@ -293,6 +307,7 @@ def main():
     delay = config["crawl"].get("delay", 1)
     random_delay = config["crawl"].get("random_delay", True)
     threads = config["crawl"].get("threads", 4)
+    user_agent = config["crawl"].get("user_agent", "")
     
     logger.info(_("开始抓取网站..."))
     logger.info(f"{_("目标网站")}: {target_url}")
@@ -301,6 +316,7 @@ def main():
     logger.info(f"{_("请求间隔")}: {delay} {_("秒")}")
     logger.info(f"{_("随机延迟")}: {'启用' if random_delay else '禁用'}")
     logger.info(f"{_("线程数")}: {threads}")
+    logger.info(f"{_("用户代理")}: {user_agent[:50]}..." if len(user_agent) > 50 else f"{_("用户代理")}: {user_agent}")
     logger.info(f"{_("输出路径")}: {output_dir}")
     
     # 显示断点续传配置

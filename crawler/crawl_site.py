@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from crawler.downloader import download_file, Downloader
 from logger import setup_logger
-from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, RESUME_CONFIG, JS_RENDERING_CONFIG
+from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, ERROR_HANDLING_CONFIG, RESUME_CONFIG, JS_RENDERING_CONFIG
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler, retry
 from utils.state_manager import StateManager
@@ -263,7 +263,7 @@ class CrawlSite:
         # 获取网页内容（无论是否需要更新，都需要获取内容来处理链接）
         logger.info(f"抓取页面: {url}")
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': USER_AGENT
         }
         
         # 尝试使用JavaScript渲染

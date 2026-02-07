@@ -3,7 +3,7 @@
 import os
 import asyncio
 from logger import setup_logger
-from config import CONFIG
+from config import CONFIG, USER_AGENT
 
 # 尝试导入Pyppeteer
 try:
@@ -73,6 +73,9 @@ class JSRenderer:
         try:
             # 创建新页面
             page = await self.browser.newPage()
+            
+            # 设置用户代理
+            await page.setUserAgent(USER_AGENT)
             
             # 设置超时
             await page.setDefaultNavigationTimeout(self.timeout * 1000)
