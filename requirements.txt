@@ -1,0 +1,5 @@
+requests
+beautifulsoup4
+lxml
+pyppeteer
+# GUI相关依赖（tkinter是Python标准库，不需要额外安装）
