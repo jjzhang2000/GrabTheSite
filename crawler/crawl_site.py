@@ -23,7 +23,7 @@ logger = setup_logger(__name__)
 class CrawlSite:
     """网站抓取类，负责抓取网站内容并返回暂存的页面"""
     
-    def __init__(self, target_url, max_depth, max_files, output_dir, threads=THREADS, plugin_manager=None):
+    def __init__(self, target_url, max_depth, max_files, output_dir, threads=THREADS, plugin_manager=None, force_download=False):
         """初始化抓取器
         
         Args:
@@ -33,7 +33,9 @@ class CrawlSite:
             output_dir: 输出目录
             threads: 线程数
             plugin_manager: 插件管理器实例
+            force_download: 是否强制重新下载页面
         """
+        self.force_download = force_download
         self.target_url = target_url
         self.max_depth = max_depth
         self.max_files = max_files
@@ -88,7 +90,8 @@ class CrawlSite:
                 state_file = os.path.join(os.getcwd(), state_file)
             self.state_manager = StateManager(state_file)
             # 从状态管理器加载已访问的URL
-            self.visited_urls.update(self.state_manager.state.get('visited_urls', set()))
+            if not self.force_download:
+                self.visited_urls.update(self.state_manager.state.get('visited_urls', set()))
         else:
             self.state_manager = None
         
@@ -252,7 +255,7 @@ class CrawlSite:
         remote_timestamp = get_remote_timestamp(url)
         
         # 检查是否需要下载该页面
-        need_download = should_update(remote_timestamp, local_timestamp)
+        need_download = should_update(remote_timestamp, local_timestamp) or self.force_download
         
         # 如果需要下载，检查是否达到文件数量限制
         if need_download:

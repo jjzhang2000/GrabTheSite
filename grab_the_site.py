@@ -10,7 +10,6 @@ import os
 import argparse
 from config import load_config, CONFIG
 from crawler.crawl_site import CrawlSite
-from crawler.save_site import SaveSite
 from logger import setup_logger
 from utils.i18n import init_i18n, gettext as _
 from utils.plugin_manager import PluginManager
@@ -169,6 +168,13 @@ def parse_args():
         "--no-plugins",
         action="store_true",
         help="禁用插件系统"
+    )
+    
+    # 抓取相关参数
+    parser.add_argument(
+        "--force-download",
+        action="store_true",
+        help="强制重新下载页面"
     )
     
     return parser.parse_args()
@@ -390,7 +396,7 @@ def main():
     logger.info(f"{_("当前语言")}: {current_lang}")
     
     # 创建抓取器实例
-    crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads, plugin_manager=plugin_manager if plugin_enable else None)
+    crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads, plugin_manager=plugin_manager if plugin_enable else None, force_download=args.force_download)
     
     # 调用插件的 on_crawl_start 钩子
     if plugin_enable:
@@ -404,16 +410,44 @@ def main():
         plugin_manager.call_hook("on_crawl_end", pages)
     
     logger.info(_(f"抓取完成，开始保存页面，共 {len(pages)} 个页面"))
-    
-    # 创建保存器实例
-    saver = SaveSite(target_url, output_dir, crawler.static_resources)
+    logger.info(f"pages类型: {type(pages)}")
+    if pages:
+        logger.info(f"pages前5个元素: {list(pages.items())[:5]}")
     
     # 调用插件的 on_save_start 钩子
     if plugin_enable:
-        plugin_manager.call_hook("on_save_start", saver)
-    
-    # 保存页面到磁盘
-    saver.save_site(pages)
+        saver_data = {
+            'target_url': target_url,
+            'output_dir': output_dir,
+            'static_resources': crawler.static_resources
+        }
+        plugin_manager.call_hook("on_save_start", saver_data)
+        
+        # 查找并使用保存插件
+        save_plugin = None
+        for plugin in plugin_manager.enabled_plugins:
+            if plugin.name == "Save Plugin":
+                save_plugin = plugin
+                break
+        
+        # 如果通过名称找不到，尝试通过属性查找
+        if not save_plugin:
+            for plugin in plugin_manager.enabled_plugins:
+                if hasattr(plugin, 'save_site'):
+                    save_plugin = plugin
+                    break
+        
+        if save_plugin:
+            logger.info(f"使用保存插件: {save_plugin.name}")
+            # 使用保存插件保存页面
+            saved_files = save_plugin.save_site(pages)
+            logger.info(f"保存插件执行完成，共保存 {len(saved_files)} 个文件")
+            # 调用插件的 on_save_end 钩子
+            plugin_manager.call_hook("on_save_end", saved_files)
+        else:
+            logger.error("未找到保存插件，无法保存页面")
+    else:
+        logger.error("插件系统已禁用，无法保存页面")
     
     # 生成站点地图
     sitemap_config = config["output"].get("sitemap", {})

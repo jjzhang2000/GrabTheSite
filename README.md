@@ -231,8 +231,9 @@ i18n:
 | `--js-timeout` | | 整数 | JavaScript渲染超时时间（秒） |
 | `--lang` | | 字符串 | 语言代码，如 'en', 'zh_CN' 等 |
 | `--user-agent` | | 字符串 | 自定义用户代理字符串 |
-| `--plugins` | | 字符串 | 启用的插件列表，逗号分隔 |
+| `--plugins` | | 字符串 | 启用的插件名称列表 |
 | `--no-plugins` | | 布尔值 | 禁用插件系统 |
+| `--force-download` | | 布尔值 | 强制重新下载页面 |
 
 ### 使用示例
 
@@ -418,6 +419,22 @@ python grab_the_site.py --url https://example.com --no-plugins
 
 这将禁用插件系统，不加载任何插件。
 
+#### 25. 强制重新下载页面
+
+```bash
+python grab_the_site.py --url https://example.com --force-download
+```
+
+这将强制重新下载页面，忽略页面的更新时间戳，以便测试保存插件的功能。
+
+#### 26. 使用保存插件并强制重新下载页面
+
+```bash
+python grab_the_site.py --url https://example.com --plugins save_plugin --force-download
+```
+
+这将使用保存插件处理保存功能，并强制重新下载页面，以便测试保存插件的完整工作流程。
+
 ### 注意事项
 
 - 命令行参数优先级高于配置文件
@@ -482,6 +499,8 @@ plugins:
 
 ### 示例插件
 
+#### 1. 页面计数器插件
+
 以下是一个简单的页面计数器插件示例：
 
 ```python
@@ -508,6 +527,88 @@ class PageCounterPlugin(Plugin):
 plugin = PageCounterPlugin()
 ```
 
+#### 2. 保存插件
+
+保存插件是一个核心插件，负责将抓取的页面保存到磁盘：
+
+```python
+from utils.plugin_manager import Plugin
+
+class SavePlugin(Plugin):
+    """保存插件，负责保存抓取的页面到磁盘"""
+    
+    # 插件名称
+    name = "Save Plugin"
+    
+    # 插件描述
+    description = "负责保存抓取的页面到磁盘的插件"
+    
+    def __init__(self, config=None):
+        """初始化插件
+        
+        Args:
+            config: 配置对象
+        """
+        super().__init__(config)
+        self.target_url = None
+        self.output_dir = None
+        self.static_resources = None
+        self.saved_files = []
+    
+    def on_init(self):
+        """插件初始化时调用"""
+        super().on_init()
+        self.logger.info("保存插件初始化完成")
+    
+    def on_crawl_end(self, pages):
+        """抓取结束时调用，准备保存参数
+        
+        Args:
+            pages: 抓取的页面字典
+        """
+        self.logger.info(f"准备保存 {len(pages)} 个页面")
+    
+    def on_save_start(self, saver_data):
+        """保存开始时调用
+        
+        Args:
+            saver_data: 保存器数据，包含target_url、output_dir和static_resources
+        """
+        self.target_url = saver_data.get('target_url')
+        self.output_dir = saver_data.get('output_dir')
+        self.static_resources = saver_data.get('static_resources', set())
+        
+        if self.target_url and self.output_dir:
+            # 提取起始目录路径
+            parsed_target = urlparse(self.target_url)
+            self.target_directory = parsed_target.path
+            # 确保路径以/结尾
+            if not self.target_directory.endswith('/'):
+                self.target_directory += '/'
+            self.logger.info("保存插件准备就绪")
+        else:
+            self.logger.error("保存插件初始化失败：缺少必要参数")
+    
+    def save_site(self, pages):
+        """保存抓取的页面到磁盘
+        
+        Args:
+            pages: 暂存的页面内容，键为URL，值为页面内容
+        """
+        # 统一处理所有页面的链接
+        self.logger.info(f"开始统一处理链接，共 {len(pages)} 个页面")
+        processed_pages = self._process_all_links(pages)
+        
+        # 将处理后的页面保存到磁盘
+        self.logger.info(f"开始保存页面到磁盘，共 {len(processed_pages)} 个页面")
+        saved_count = self._save_pages(processed_pages)
+        
+        self.logger.info(f"保存完成，共保存 {saved_count} 个页面")
+        return self.saved_files
+
+plugin = SavePlugin()
+```
+
 ### 插件开发指南
 
 1. **插件命名**：插件目录名应该使用小写字母和下划线，避免使用特殊字符
@@ -523,6 +624,29 @@ plugin = PageCounterPlugin()
 
 1. **配置文件**：在 `config/default.yaml` 文件中设置 `plugins.enabled_plugins` 列表
 2. **命令行参数**：使用 `--plugins` 参数指定启用的插件，使用 `--no-plugins` 参数禁用插件系统
+
+### 保存插件的使用
+
+保存插件（Save Plugin）是一个核心插件，负责将抓取的页面保存到磁盘。使用方法如下：
+
+1. **默认使用**：保存插件会自动被插件系统发现和启用
+2. **明确指定**：使用 `--plugins save_plugin` 参数明确指定启用保存插件
+3. **强制下载**：使用 `--force-download` 参数强制重新下载页面，以便测试保存功能
+
+例如：
+```bash
+python grab_the_site.py --url https://example.com --plugins save_plugin --force-download
+```
+
+### 保存插件的工作原理
+
+1. **初始化**：插件系统初始化时，保存插件会被发现和加载
+2. **准备**：抓取结束后，保存插件会接收保存参数，包括目标URL、输出目录和静态资源
+3. **处理**：保存插件会处理页面链接，将其转换为本地路径
+4. **保存**：保存插件会将处理后的页面保存到磁盘，创建必要的目录结构
+5. **完成**：保存完成后，保存插件会返回保存的文件列表
+
+通过将保存功能重构为插件形式，我们获得了更好的模块化和可扩展性，便于未来的维护和扩展。
 
 ## 功能规划
 
@@ -614,6 +738,8 @@ plugin = PageCounterPlugin()
     - 提供插件开发API
     - 支持插件的发现、加载、注册和管理
     - 提供丰富的钩子方法
+    - 保存功能已重构为插件形式 (Save Plugin)
+    - 支持通过插件系统处理保存功能
 
 18. **国际化支持** (已实现)
     - 支持英文和中文语言

@@ -64,11 +64,28 @@ class Plugin:
         """
         self.logger.info(f"抓取结束: {self.name}")
     
-    def on_save_start(self, saver):
+    def on_save_start(self, saver_data):
         """保存开始时调用
         
         Args:
-            saver: 保存器实例
+            saver_data: 保存器数据，包含target_url、output_dir和static_resources
+        """
+        pass
+    
+    def on_save_site(self, pages):
+        """保存站点时调用
+        
+        Args:
+            pages: 抓取的页面字典
+        """
+        pass
+    
+    def on_process_links(self, url, html_content):
+        """处理链接时调用
+        
+        Args:
+            url: 页面URL
+            html_content: 页面内容
         """
         pass
     
