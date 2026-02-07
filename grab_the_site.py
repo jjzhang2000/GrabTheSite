@@ -99,6 +99,25 @@ def parse_args():
         help="不生成 HTML 格式的站点地图"
     )
     
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="启用断点续传"
+    )
+    
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="禁用断点续传"
+    )
+    
+    parser.add_argument(
+        "--state-file",
+        type=str,
+        default=None,
+        help="状态文件路径"
+    )
+    
     return parser.parse_args()
 
 
@@ -177,6 +196,20 @@ def update_config(args):
     elif args.no_html_sitemap:
         config["output"]["sitemap"]["enable_html"] = False
     
+    # 处理断点续传配置
+    if "resume" not in config:
+        config["resume"] = {}
+    
+    # 处理 --resume 和 --no-resume 参数
+    if args.resume:
+        config["resume"]["enable"] = True
+    elif args.no_resume:
+        config["resume"]["enable"] = False
+    
+    # 处理 --state-file 参数
+    if args.state_file:
+        config["resume"]["state_file"] = args.state_file
+    
     # 确保完整输出路径被正确计算
     if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
         config["output"]["full_path"] = os.path.join(
@@ -214,6 +247,14 @@ def main():
     logger.info(f"随机延迟: {'启用' if random_delay else '禁用'}")
     logger.info(f"线程数: {threads}")
     logger.info(f"输出路径: {output_dir}")
+    
+    # 显示断点续传配置
+    resume_config = config.get("resume", {})
+    resume_enable = resume_config.get("enable", True)
+    state_file = resume_config.get("state_file", "state/grabthesite.json")
+    logger.info(f"断点续传: {'启用' if resume_enable else '禁用'}")
+    if resume_enable:
+        logger.info(f"状态文件: {state_file}")
     
     # 创建抓取器实例
     crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads)

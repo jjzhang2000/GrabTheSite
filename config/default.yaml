@@ -26,6 +26,12 @@ error_handling:
     - 504               # Gateway Timeout
   fail_strategy: "log"  # 失败策略：log（仅记录）, skip（跳过）, raise（抛出异常）
 
+# 断点续传配置
+resume:
+  enable: true          # 是否启用断点续传
+  state_file: "state/grabthesite.json"  # 状态文件路径
+  save_interval: 300    # 状态保存间隔（秒）
+
 # 输出配置
 output:
   base_dir: "output"     # 基础输出目录

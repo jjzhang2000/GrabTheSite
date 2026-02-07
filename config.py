@@ -74,6 +74,11 @@ def load_config():
                 "retryable_errors": [429, 500, 502, 503, 504],
                 "fail_strategy": "log"
             },
+            "resume": {
+                "enable": True,
+                "state_file": "state/grabthesite.json",
+                "save_interval": 300
+            },
             "output": {
                 "base_dir": "output",
                 "site_name": "www.mir.com.my",
@@ -182,6 +187,7 @@ OUTPUT_DIR = config["output"]["full_path"]
 EXCLUDE_LIST = config.get("exclude", [])
 LOGGING_CONFIG = config.get("logging", {})
 ERROR_HANDLING_CONFIG = config.get("error_handling", {})
+RESUME_CONFIG = config.get("resume", {})
 
 # 导出完整配置对象
 CONFIG = config

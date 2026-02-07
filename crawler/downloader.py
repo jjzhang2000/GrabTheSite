@@ -8,9 +8,10 @@ import queue
 import requests
 from urllib.parse import urlparse
 from logger import setup_logger
-from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG
+from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, RESUME_CONFIG
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler, retry
+from utils.state_manager import StateManager
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -19,18 +20,20 @@ logger = setup_logger(__name__)
 class Downloader:
     """文件下载器，用于多线程下载静态资源"""
     
-    def __init__(self, output_dir, threads=THREADS):
+    def __init__(self, output_dir, threads=THREADS, state_manager=None):
         """初始化下载器
         
         Args:
             output_dir: 输出目录
             threads: 线程数
+            state_manager: 状态管理器实例，用于断点续传
         """
         self.output_dir = output_dir
         self.threads = threads
         self.queue = queue.Queue()
         self.results = []
         self.lock = threading.Lock()
+        self.state_manager = state_manager
         
         # 初始化错误处理器
         self.error_handler = ErrorHandler(
@@ -91,6 +94,11 @@ class Downloader:
         # 构建保存路径，保留目录结构
         file_path = os.path.join(self.output_dir, path.lstrip('/'))
         
+        # 检查状态管理器，避免重复下载
+        if self.state_manager and self.state_manager.is_file_downloaded(file_path):
+            logger.info(f"文件已下载，跳过: {url}")
+            return file_path
+        
         # 创建目录结构
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         
@@ -100,6 +108,9 @@ class Downloader:
         
         if not should_update(remote_timestamp, local_timestamp):
             logger.info(f"文件已最新，跳过下载: {url}")
+            # 更新状态管理器
+            if self.state_manager:
+                self.state_manager.add_downloaded_file(file_path)
             return file_path
         
         # 下载文件
@@ -116,6 +127,10 @@ class Downloader:
                     f.write(chunk)
         
         logger.info(f"保存文件: {file_path}")
+        
+        # 更新状态管理器
+        if self.state_manager:
+            self.state_manager.add_downloaded_file(file_path)
         
         # 添加延迟
         add_delay()

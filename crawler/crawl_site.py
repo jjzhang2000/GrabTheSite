@@ -10,9 +10,10 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from crawler.downloader import download_file, Downloader
 from logger import setup_logger
-from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG
+from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, RESUME_CONFIG
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler, retry
+from utils.state_manager import StateManager
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -74,6 +75,20 @@ class CrawlSite:
             fail_strategy=ERROR_HANDLING_CONFIG.get('fail_strategy', 'log')
         )
         
+        # 初始化状态管理器
+        self.resume_enabled = RESUME_CONFIG.get('enable', True)
+        self.save_interval = RESUME_CONFIG.get('save_interval', 300)
+        if self.resume_enabled:
+            state_file = RESUME_CONFIG.get('state_file', 'state/grabthesite.json')
+            # 如果状态文件路径是相对路径，转换为绝对路径
+            if not os.path.isabs(state_file):
+                state_file = os.path.join(os.getcwd(), state_file)
+            self.state_manager = StateManager(state_file)
+            # 从状态管理器加载已访问的URL
+            self.visited_urls.update(self.state_manager.state.get('visited_urls', set()))
+        else:
+            self.state_manager = None
+        
         # 打印排除列表信息
         if self.processed_exclude_list:
             logger.info(f"排除列表: {self.processed_exclude_list}")
@@ -95,8 +110,17 @@ class CrawlSite:
         logger.info(f"最大文件数: {self.max_files}")
         logger.info(f"线程数: {self.threads}")
         
+        # 检查是否启用断点续传
+        if self.resume_enabled and self.state_manager:
+            logger.info(f"断点续传已启用，状态文件: {self.state_manager.state_file}")
+            logger.info(f"已访问 URL 数量: {len(self.visited_urls)}")
+        
         # 添加初始任务到队列
-        self.queue.put((self.target_url, 0))
+        # 只有当目标URL未被访问过时才添加到队列
+        if self.target_url not in self.visited_urls:
+            self.queue.put((self.target_url, 0))
+        else:
+            logger.info(f"目标 URL 已访问过，跳过: {self.target_url}")
         
         # 开始多线程抓取
         logger.info(f"开始多线程抓取，线程数: {self.threads}")
@@ -112,6 +136,16 @@ class CrawlSite:
         # 等待所有线程结束
         for worker in workers:
             worker.join(timeout=10)  # 添加超时，避免无限等待
+        
+        # 保存最终状态
+        if self.resume_enabled and self.state_manager:
+            logger.info("保存最终抓取状态...")
+            self.state_manager.save_state()
+            stats = self.state_manager.get_stats()
+            logger.info(f"抓取统计信息:")
+            logger.info(f"  总访问 URL 数量: {stats.get('total_urls', 0)}")
+            logger.info(f"  已下载文件数量: {stats.get('downloaded_files', 0)}")
+            logger.info(f"  失败 URL 数量: {stats.get('failed_urls', 0)}")
         
         logger.info(f"抓取完成，共下载 {self.downloaded_files} 个页面")
         logger.info(f"暂存页面数量: {len(self.pages)}")
@@ -175,6 +209,9 @@ class CrawlSite:
                 return
             # 标记为已访问
             self.visited_urls.add(url)
+            # 更新状态管理器
+            if self.resume_enabled and self.state_manager:
+                self.state_manager.add_visited_url(url)
         
         # 计算本地文件路径
         parsed_url = urlparse(url)
@@ -217,9 +254,17 @@ class CrawlSite:
                     return
                 self.pages[url] = response.text
                 self.downloaded_files += 1
+                # 更新状态管理器
+                if self.resume_enabled and self.state_manager:
+                    self.state_manager.add_downloaded_file(file_path)
             logger.info(f"暂存页面: {url}")
         else:
             logger.info(f"页面已最新，跳过下载: {url}")
+        
+        # 检查是否需要保存状态
+        if self.resume_enabled and self.state_manager:
+            if self.state_manager.should_save(self.save_interval):
+                self.state_manager.save_state()
         
         # 解析HTML，提取链接
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -248,7 +293,7 @@ class CrawlSite:
         
         # 多线程下载静态资源
         if static_urls:
-            downloader = Downloader(self.output_dir, threads=self.threads)
+            downloader = Downloader(self.output_dir, threads=self.threads, state_manager=self.state_manager)
             for static_url in static_urls:
                 downloader.add_task(static_url)
             results = downloader.run()
