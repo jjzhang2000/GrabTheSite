@@ -1,4 +1,10 @@
-# JavaScript渲染模块
+"""JavaScript渲染模块
+
+使用Pyppeteer进行无头浏览器渲染：
+- 支持动态加载的内容
+- 可配置渲染超时
+- 自动降级到常规HTTP请求
+"""
 
 import os
 import asyncio

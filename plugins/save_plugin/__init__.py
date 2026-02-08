@@ -1,4 +1,10 @@
-# 保存插件
+"""保存插件
+
+核心插件，负责将抓取的页面保存到磁盘：
+- 处理页面链接转换
+- 保存HTML文件
+- 创建目录结构
+"""
 
 import os
 from bs4 import BeautifulSoup

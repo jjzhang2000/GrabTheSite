@@ -1,4 +1,12 @@
-# 主窗口模块
+"""主窗口模块
+
+GUI应用程序的主窗口，包含：
+- URL配置面板
+- 高级配置选项卡
+- 插件配置选项卡
+- 日志显示面板
+- 控制按钮
+"""
 
 import tkinter as tk
 from tkinter import ttk

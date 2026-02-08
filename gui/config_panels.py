@@ -1,4 +1,10 @@
-# 配置面板模块
+"""配置面板模块
+
+提供GUI配置界面：
+- URL输入面板
+- 高级配置面板（深度、文件数等）
+- 插件配置面板
+"""
 
 import tkinter as tk
 from tkinter import ttk

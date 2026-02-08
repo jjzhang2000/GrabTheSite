@@ -1,11 +1,18 @@
-# 配置管理模块
+"""配置管理模块
+
+负责加载和管理YAML配置文件，支持：
+1. 默认配置（default.yaml）
+2. 用户配置（config.yaml）覆盖默认配置
+3. 命令行参数覆盖配置文件
+
+配置优先级：命令行 > 用户配置 > 默认配置
+"""
 
 import os
 from typing import Dict, Any
 import yaml
 from logger import setup_logger
 
-# 获取 logger 实例
 logger = setup_logger(__name__)
 
 # 常用配置常量

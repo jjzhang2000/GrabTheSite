@@ -1,4 +1,12 @@
-# 网站抓取类
+"""网站抓取模块
+
+核心抓取逻辑，负责：
+1. 多线程抓取网页
+2. 链接提取和转换
+3. 静态资源下载
+4. 增量更新支持
+5. 断点续传支持
+"""
 
 import os
 import time
@@ -47,21 +55,19 @@ class CrawlSite:
         self.lock = threading.Lock()
         self.queue = queue.Queue()
         
-        # 从配置中获取排除列表
         self.exclude_list = EXCLUDE_LIST or []
         
-        # 页面暂存机制
-        self.pages = {}  # 暂存下载的页面内容，键为URL，值为页面内容
-        self.static_resources = set()  # 记录已下载的静态资源URL
+        # 页面暂存机制：URL -> 页面内容
+        self.pages = {}
+        self.static_resources = set()
         
-        # 提取起始目录路径
+        # 提取并标准化起始目录路径（确保以/结尾）
         parsed_target = urlparse(self.target_url)
         self.target_directory = parsed_target.path
-        # 确保路径以/结尾
         if not self.target_directory.endswith('/'):
             self.target_directory += '/'
         
-        # 处理排除列表，确保每个URL都以/结尾
+        # 标准化排除列表URL
         self.processed_exclude_list = []
         for url in self.exclude_list:
             parsed_url = urlparse(url)

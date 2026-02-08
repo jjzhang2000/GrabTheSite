@@ -1,4 +1,10 @@
-# 站点地图生成工具
+"""站点地图生成模块
+
+生成XML和HTML格式的站点地图：
+- 从页面内容提取标题
+- 构建页面树结构
+- 支持多语言标题
+"""
 
 import os
 import xml.etree.ElementTree as ET

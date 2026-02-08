@@ -1,4 +1,10 @@
-# 日志配置模块
+"""日志配置模块
+
+提供统一的日志记录功能：
+- 文件日志： RotatingFileHandler，自动轮转
+- 控制台日志：StreamHandler
+- 支持国际化日志消息
+"""
 
 import logging
 import os

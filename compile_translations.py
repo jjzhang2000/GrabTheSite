@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-# 编译翻译文件
+"""编译翻译文件
+
+将 .po 文件编译为 .mo 文件：
+- 支持英文和中文
+- 自动创建目录结构
+- 错误处理和报告
+"""
 
 import gettext
 import os

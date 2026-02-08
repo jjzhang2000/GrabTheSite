@@ -1,7 +1,8 @@
-# 网站保存类
-# 
-# 注意：此类已弃用，请使用 plugins/save_plugin 中的 SavePlugin
-# 保留此文件是为了向后兼容，将在未来版本中移除
+"""网站保存类 - 已弃用
+
+注意：此类已弃用，请使用 plugins.save_plugin.SavePlugin
+保留此文件是为了向后兼容，将在未来版本中移除
+"""
 
 import warnings
 from plugins.save_plugin import SavePlugin
@@ -34,11 +35,10 @@ class SaveSite(SavePlugin):
         self.output_dir = output_dir
         self.static_resources = static_resources
         
-        # 从目标URL提取起始目录路径
+        # 提取并标准化起始目录路径
         from urllib.parse import urlparse
         parsed_target = urlparse(self.target_url)
         self.target_directory = parsed_target.path
-        # 确保路径以/结尾
         if not self.target_directory.endswith('/'):
             self.target_directory += '/'
         

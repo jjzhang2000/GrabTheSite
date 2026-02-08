@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-GrabTheSite 主脚本
-初始版本原型0
+"""GrabTheSite 主脚本
+
+网站抓取工具的命令行入口，负责：
+1. 解析命令行参数
+2. 加载和合并配置
+3. 初始化插件系统
+4. 启动抓取流程
+5. 生成站点地图
 """
 
 import os
@@ -14,7 +19,6 @@ from logger import setup_logger
 from utils.i18n import init_i18n, gettext as _
 from utils.plugin_manager import PluginManager
 
-# 获取 logger 实例
 logger = setup_logger(__name__)
 
 
@@ -189,14 +193,12 @@ def update_config(args):
     Returns:
         dict: 更新后的配置
     """
-    # 加载配置
     config = load_config()
     
-    # 更新配置
+    # 根据命令行参数更新配置
     if args.url:
         config["target_url"] = args.url
-        # 从新的 target_url 中提取域名作为 site_name
-        from urllib.parse import urlparse
+        # 从 target_url 中提取域名作为 site_name
         parsed_url = urlparse(args.url)
         site_name = parsed_url.netloc
         if "output" not in config:
@@ -239,77 +241,59 @@ def update_config(args):
             config["crawl"] = {}
         config["crawl"]["threads"] = args.threads
     
-    # 处理站点地图配置
+    # 站点地图配置
     if "sitemap" not in config["output"]:
         config["output"]["sitemap"] = {}
-    
-    # 处理 --sitemap 和 --no-sitemap 参数
     if args.sitemap:
         config["output"]["sitemap"]["enable"] = True
     elif args.no_sitemap:
         config["output"]["sitemap"]["enable"] = False
-    
-    # 处理 --html-sitemap 和 --no-html-sitemap 参数
     if args.html_sitemap:
         config["output"]["sitemap"]["enable_html"] = True
     elif args.no_html_sitemap:
         config["output"]["sitemap"]["enable_html"] = False
     
-    # 处理断点续传配置
+    # 断点续传配置
     if "resume" not in config:
         config["resume"] = {}
-    
-    # 处理 --resume 和 --no-resume 参数
     if args.resume:
         config["resume"]["enable"] = True
     elif args.no_resume:
         config["resume"]["enable"] = False
-    
-    # 处理 --state-file 参数
     if args.state_file:
         config["resume"]["state_file"] = args.state_file
     
-    # 处理JavaScript渲染配置
+    # JavaScript渲染配置
     if "js_rendering" not in config:
         config["js_rendering"] = {}
-    
-    # 处理 --js-rendering 和 --no-js-rendering 参数
     if args.js_rendering:
         config["js_rendering"]["enable"] = True
     elif args.no_js_rendering:
         config["js_rendering"]["enable"] = False
-    
-    # 处理 --js-timeout 参数
     if args.js_timeout is not None:
         config["js_rendering"]["timeout"] = args.js_timeout
     
-    # 处理国际化配置
+    # 国际化配置
     if "i18n" not in config:
         config["i18n"] = {}
-    
-    # 处理 --lang 参数
     if args.lang is not None:
         config["i18n"]["lang"] = args.lang
     
-    # 处理用户代理配置
+    # 用户代理配置
     if args.user_agent is not None:
         if "crawl" not in config:
             config["crawl"] = {}
         config["crawl"]["user_agent"] = args.user_agent
     
-    # 处理插件配置
+    # 插件配置
     if "plugins" not in config:
         config["plugins"] = {}
-    
-    # 处理 --no-plugins 参数
     if args.no_plugins:
         config["plugins"]["enable"] = False
-    
-    # 处理 --plugins 参数
     if args.plugins is not None:
         config["plugins"]["enabled_plugins"] = args.plugins
     
-    # 确保完整输出路径被正确计算
+    # 计算完整输出路径
     if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
         config["output"]["full_path"] = os.path.join(
             config["output"]["base_dir"],
