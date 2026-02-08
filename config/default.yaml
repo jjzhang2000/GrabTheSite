@@ -63,6 +63,6 @@ i18n:
     - "zh_CN"
 
 # 插件系统配置
-plugin:
+plugins:
   enable: true          # 是否启用插件系统
   enabled_plugins: []    # 启用的插件名称列表，空列表表示启用所有插件

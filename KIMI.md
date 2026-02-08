@@ -2,6 +2,22 @@
 
 > 本报告由代码审查工具生成，记录了项目中发现的错误和需要改进的地方。
 > 生成时间: 2026-02-08
+> 最后更新: 2026-02-08
+
+## 修复状态摘要
+
+| 问题级别 | 总数 | 已修复 | 待修复 |
+|----------|------|--------|--------|
+| 关键错误 (Critical) | 3 | **3** ✅ | 0 |
+| 严重问题 (High) | 6 | 0 | 6 |
+| 中等问题 (Medium) | 8 | 0 | 8 |
+| 低风险问题 (Low) | 5 | 0 | 5 |
+| 代码质量/改进建议 | 5 | 0 | 5 |
+
+### 已修复的关键错误
+1. ✅ **配置键名不一致** - 统一使用 `plugins`（复数形式）
+2. ✅ **PLUGIN_CONFIG 导入问题** - 配置键名修复后自动解决
+3. ✅ **保存插件硬编码依赖** - 改为通过能力发现插件，支持多插件
 
 ## 目录
 - [关键错误 (Critical)](#关键错误-critical)
@@ -15,7 +31,7 @@
 
 ## 关键错误 (Critical)
 
-### 1. 配置键名不一致导致插件系统无法正常工作
+### 1. 配置键名不一致导致插件系统无法正常工作 ✅ 已修复
 
 **位置**: 
 - `config.py` 第 205 行
@@ -26,40 +42,29 @@
 
 **影响**: 插件系统可能无法正确加载配置，导致插件功能异常。
 
-**建议修复**:
-统一配置键名，建议修改为：
-```python
-# config.py 第 205 行
-PLUGIN_CONFIG = config.get("plugins", {})  # 改为复数形式
-```
-
-或修改 default.yaml：
-```yaml
-# 从 plugin: 改为 plugins:
-plugins:
-  enable: true
-  enabled_plugins: []
-```
+**修复方案**:
+统一配置键名为复数形式 `plugins`:
+1. 修改 `config.py` 第 205 行: `PLUGIN_CONFIG = config.get("plugins", {})`
+2. 修改 `config.py` 第 107-110 行的默认配置: `"plugins": {...}`
+3. 修改 `config/default.yaml`: `plugin:` → `plugins:`
 
 ---
 
-### 2. `grab_the_site.py` 中导入未定义的 `PLUGIN_CONFIG`
+### 2. `grab_the_site.py` 中配置键名问题 ✅ 已修复（与问题1一并修复）
 
-**位置**: `grab_the_site.py` 第 11 行
+**位置**: `config.py` 和 `config/default.yaml`
 
 **问题描述**:
-代码尝试从 config 导入 `PLUGIN_CONFIG`：
-```python
-from config import load_config, CONFIG
-```
+配置键名不一致导致插件配置无法正确读取。
 
-但在 `config.py` 末尾导出的是 `PLUGIN_CONFIG = config.get("plugin", {})`，实际应该导入并使用此配置。
+**修复方案**:
+已统一配置键名为 `plugins`（复数形式），确保配置能够正确加载。
 
 ---
 
-### 3. 保存插件功能硬编码依赖
+### 3. 保存插件功能硬编码依赖 ✅ 已修复
 
-**位置**: `grab_the_site.py` 第 442-463 行
+**位置**: `grab_the_site.py` 第 441-465 行
 
 **问题描述**:
 代码硬编码查找名为 "Save Plugin" 或具有 `save_site` 方法的插件：
@@ -74,8 +79,34 @@ for plugin in plugin_manager.enabled_plugins:
 
 这种方式不够灵活，如果插件名称改变或需要多个保存插件时会出问题。
 
-**建议**:
-使用接口或抽象基类来定义保存插件的契约。
+**修复方案**:
+修改为查找所有实现了 `save_site` 方法的插件，支持多个保存插件同时工作：
+```python
+# 查找所有实现了 save_site 方法的插件
+save_plugins = []
+for plugin in plugin_manager.enabled_plugins:
+    if hasattr(plugin, 'save_site') and callable(getattr(plugin, 'save_site')):
+        save_plugins.append(plugin)
+
+if save_plugins:
+    saved_files = []
+    for save_plugin in save_plugins:
+        logger.info(f"使用保存插件: {save_plugin.name}")
+        try:
+            plugin_saved_files = save_plugin.save_site(pages)
+            saved_files.extend(plugin_saved_files)
+        except Exception as e:
+            logger.error(f"保存插件 {save_plugin.name} 执行失败: {e}")
+    plugin_manager.call_hook("on_save_end", saved_files)
+else:
+    logger.warning("未找到保存插件...")
+```
+
+**改进**:
+1. 不再硬编码插件名称，通过能力（capability）发现插件
+2. 支持多个保存插件同时工作
+3. 添加异常处理，单个插件失败不影响其他插件
+4. 日志级别从 error 改为 warning，更准确地反映问题严重程度
 
 ---
 

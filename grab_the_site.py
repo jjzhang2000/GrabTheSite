@@ -438,31 +438,31 @@ def main(args_list=None):
         }
         plugin_manager.call_hook("on_save_start", saver_data)
         
-        # 查找并使用保存插件
-        save_plugin = None
+        # 查找所有实现了 save_site 方法的插件
+        save_plugins = []
         for plugin in plugin_manager.enabled_plugins:
-            if plugin.name == "Save Plugin":
-                save_plugin = plugin
-                break
+            if hasattr(plugin, 'save_site') and callable(getattr(plugin, 'save_site')):
+                save_plugins.append(plugin)
         
-        # 如果通过名称找不到，尝试通过属性查找
-        if not save_plugin:
-            for plugin in plugin_manager.enabled_plugins:
-                if hasattr(plugin, 'save_site'):
-                    save_plugin = plugin
-                    break
-        
-        if save_plugin:
-            logger.info(f"使用保存插件: {save_plugin.name}")
-            # 使用保存插件保存页面
-            saved_files = save_plugin.save_site(pages)
-            logger.info(f"保存插件执行完成，共保存 {len(saved_files)} 个文件")
+        if save_plugins:
+            saved_files = []
+            for save_plugin in save_plugins:
+                logger.info(f"使用保存插件: {save_plugin.name}")
+                try:
+                    # 使用保存插件保存页面
+                    plugin_saved_files = save_plugin.save_site(pages)
+                    saved_files.extend(plugin_saved_files)
+                    logger.info(f"保存插件 {save_plugin.name} 执行完成，保存 {len(plugin_saved_files)} 个文件")
+                except Exception as e:
+                    logger.error(f"保存插件 {save_plugin.name} 执行失败: {e}")
+            
             # 调用插件的 on_save_end 钩子
             plugin_manager.call_hook("on_save_end", saved_files)
+            logger.info(f"所有保存插件执行完成，共保存 {len(saved_files)} 个文件")
         else:
-            logger.error("未找到保存插件，无法保存页面")
+            logger.warning("未找到保存插件，没有页面被保存。请确保启用了实现了 save_site 方法的插件（如 save_plugin）")
     else:
-        logger.error("插件系统已禁用，无法保存页面")
+        logger.warning("插件系统已禁用，无法保存页面。请启用插件系统以保存抓取的内容")
     
     # 生成站点地图
     sitemap_config = config["output"].get("sitemap", {})
