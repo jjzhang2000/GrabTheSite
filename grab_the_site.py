@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-GrabTheSite 主脚本
-初始版本原型0
+"""GrabTheSite 主脚本
+
+网站抓取工具的命令行入口，负责：
+1. 解析命令行参数
+2. 加载和合并配置
+3. 初始化插件系统
+4. 启动抓取流程
+5. 生成站点地图
 """
 
 import os
@@ -14,7 +19,6 @@ from logger import setup_logger
 from utils.i18n import init_i18n, gettext as _
 from utils.plugin_manager import PluginManager
 
-# 获取 logger 实例
 logger = setup_logger(__name__)
 
 
@@ -189,14 +193,12 @@ def update_config(args):
     Returns:
         dict: 更新后的配置
     """
-    # 加载配置
     config = load_config()
     
-    # 更新配置
+    # 根据命令行参数更新配置
     if args.url:
         config["target_url"] = args.url
-        # 从新的 target_url 中提取域名作为 site_name
-        from urllib.parse import urlparse
+        # 从 target_url 中提取域名作为 site_name
         parsed_url = urlparse(args.url)
         site_name = parsed_url.netloc
         if "output" not in config:
@@ -239,77 +241,59 @@ def update_config(args):
             config["crawl"] = {}
         config["crawl"]["threads"] = args.threads
     
-    # 处理站点地图配置
+    # 站点地图配置
     if "sitemap" not in config["output"]:
         config["output"]["sitemap"] = {}
-    
-    # 处理 --sitemap 和 --no-sitemap 参数
     if args.sitemap:
         config["output"]["sitemap"]["enable"] = True
     elif args.no_sitemap:
         config["output"]["sitemap"]["enable"] = False
-    
-    # 处理 --html-sitemap 和 --no-html-sitemap 参数
     if args.html_sitemap:
         config["output"]["sitemap"]["enable_html"] = True
     elif args.no_html_sitemap:
         config["output"]["sitemap"]["enable_html"] = False
     
-    # 处理断点续传配置
+    # 断点续传配置
     if "resume" not in config:
         config["resume"] = {}
-    
-    # 处理 --resume 和 --no-resume 参数
     if args.resume:
         config["resume"]["enable"] = True
     elif args.no_resume:
         config["resume"]["enable"] = False
-    
-    # 处理 --state-file 参数
     if args.state_file:
         config["resume"]["state_file"] = args.state_file
     
-    # 处理JavaScript渲染配置
+    # JavaScript渲染配置
     if "js_rendering" not in config:
         config["js_rendering"] = {}
-    
-    # 处理 --js-rendering 和 --no-js-rendering 参数
     if args.js_rendering:
         config["js_rendering"]["enable"] = True
     elif args.no_js_rendering:
         config["js_rendering"]["enable"] = False
-    
-    # 处理 --js-timeout 参数
     if args.js_timeout is not None:
         config["js_rendering"]["timeout"] = args.js_timeout
     
-    # 处理国际化配置
+    # 国际化配置
     if "i18n" not in config:
         config["i18n"] = {}
-    
-    # 处理 --lang 参数
     if args.lang is not None:
         config["i18n"]["lang"] = args.lang
     
-    # 处理用户代理配置
+    # 用户代理配置
     if args.user_agent is not None:
         if "crawl" not in config:
             config["crawl"] = {}
         config["crawl"]["user_agent"] = args.user_agent
     
-    # 处理插件配置
+    # 插件配置
     if "plugins" not in config:
         config["plugins"] = {}
-    
-    # 处理 --no-plugins 参数
     if args.no_plugins:
         config["plugins"]["enable"] = False
-    
-    # 处理 --plugins 参数
     if args.plugins is not None:
         config["plugins"]["enabled_plugins"] = args.plugins
     
-    # 确保完整输出路径被正确计算
+    # 计算完整输出路径
     if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
         config["output"]["full_path"] = os.path.join(
             config["output"]["base_dir"],
@@ -425,9 +409,9 @@ def main(args_list=None):
         plugin_manager.call_hook("on_crawl_end", pages)
     
     logger.info(_(f"抓取完成，开始保存页面，共 {len(pages)} 个页面"))
-    logger.info(f"pages类型: {type(pages)}")
+    logger.debug(f"Pages type: {type(pages)}")
     if pages:
-        logger.info(f"pages前5个元素: {list(pages.items())[:5]}")
+        logger.debug(f"First 5 pages: {list(pages.items())[:5]}")
     
     # 调用插件的 on_save_start 钩子
     if plugin_enable:
@@ -438,31 +422,31 @@ def main(args_list=None):
         }
         plugin_manager.call_hook("on_save_start", saver_data)
         
-        # 查找并使用保存插件
-        save_plugin = None
+        # 查找所有实现了 save_site 方法的插件
+        save_plugins = []
         for plugin in plugin_manager.enabled_plugins:
-            if plugin.name == "Save Plugin":
-                save_plugin = plugin
-                break
+            if hasattr(plugin, 'save_site') and callable(getattr(plugin, 'save_site')):
+                save_plugins.append(plugin)
         
-        # 如果通过名称找不到，尝试通过属性查找
-        if not save_plugin:
-            for plugin in plugin_manager.enabled_plugins:
-                if hasattr(plugin, 'save_site'):
-                    save_plugin = plugin
-                    break
-        
-        if save_plugin:
-            logger.info(f"使用保存插件: {save_plugin.name}")
-            # 使用保存插件保存页面
-            saved_files = save_plugin.save_site(pages)
-            logger.info(f"保存插件执行完成，共保存 {len(saved_files)} 个文件")
+        if save_plugins:
+            saved_files = []
+            for save_plugin in save_plugins:
+                logger.info(f"{_('Using save plugin')}: {save_plugin.name}")
+                try:
+                    # 使用保存插件保存页面
+                    plugin_saved_files = save_plugin.save_site(pages)
+                    saved_files.extend(plugin_saved_files)
+                    logger.info(f"{_('Save plugin')} {save_plugin.name} {_('completed, saved')} {len(plugin_saved_files)} {_('files')}")
+                except Exception as e:
+                    logger.error(f"{_('Save plugin')} {save_plugin.name} {_('execution failed')}: {e}")
+            
             # 调用插件的 on_save_end 钩子
             plugin_manager.call_hook("on_save_end", saved_files)
+            logger.info(f"{_('All save plugins completed, total saved')} {len(saved_files)} {_('files')}")
         else:
-            logger.error("未找到保存插件，无法保存页面")
+            logger.warning(_("No save plugin found, no pages saved. Please ensure a plugin implementing save_site method is enabled (e.g., save_plugin)"))
     else:
-        logger.error("插件系统已禁用，无法保存页面")
+        logger.warning(_("Plugin system disabled, cannot save pages. Please enable plugin system to save crawled content"))
     
     # 生成站点地图
     sitemap_config = config["output"].get("sitemap", {})

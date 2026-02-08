@@ -1,4 +1,10 @@
-# 站点地图生成工具
+"""站点地图生成模块
+
+生成XML和HTML格式的站点地图：
+- 从页面内容提取标题
+- 构建页面树结构
+- 支持多语言标题
+"""
 
 import os
 import xml.etree.ElementTree as ET
@@ -6,6 +12,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from logger import setup_logger
+from utils.i18n import gettext as _
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -48,13 +55,13 @@ class SitemapGenerator:
         parsed_url = urlparse(url)
         path = parsed_url.path
         if not path or path == '/':
-            return '首页'
+            return _('Home')
         
         page_title = os.path.basename(path)
         if not page_title:
-            return '首页'
+            return _('Home')
         elif page_title == 'index.html':
-            return os.path.basename(os.path.dirname(path)) or '首页'
+            return os.path.basename(os.path.dirname(path)) or _('Home')
         elif '.' in page_title:
             return page_title.split('.')[0]
         else:
@@ -131,13 +138,13 @@ class SitemapGenerator:
         parsed_url = urlparse(url)
         path = parsed_url.path
         if not path or path == '/':
-            return '首页'
+            return _('Home')
         
         page_title = os.path.basename(path)
         if not page_title:
-            return '首页'
+            return _('Home')
         elif page_title == 'index.html':
-            return os.path.basename(os.path.dirname(path)) or '首页'
+            return os.path.basename(os.path.dirname(path)) or _('Home')
         elif '.' in page_title:
             return page_title.split('.')[0]
         else:

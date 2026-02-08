@@ -1,4 +1,10 @@
-# 日志面板模块
+"""日志面板模块
+
+GUI中的日志显示组件：
+- 实时显示日志
+- 支持滚动查看
+- 自动滚动到底部
+"""
 
 import tkinter as tk
 from tkinter import ttk

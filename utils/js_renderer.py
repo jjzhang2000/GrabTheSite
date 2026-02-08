@@ -1,9 +1,25 @@
-# JavaScript渲染模块
+"""JavaScript渲染模块
+
+使用Pyppeteer进行无头浏览器渲染：
+- 支持动态加载的内容
+- 可配置渲染超时
+- 自动降级到常规HTTP请求
+"""
 
 import os
 import asyncio
 from logger import setup_logger
 from config import CONFIG, USER_AGENT
+
+# JavaScript渲染配置常量
+DEFAULT_JS_TIMEOUT = 30  # 默认超时时间（秒）
+DEFAULT_SLEEP_TIME = 2   # 渲染后等待时间（秒）
+BROWSER_ARGS = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu'
+]
 
 # 尝试导入Pyppeteer
 try:
@@ -43,13 +59,8 @@ class JSRenderer:
         try:
             # 启动浏览器
             self.browser = await launch(
-                headless=True,  # 无头模式
-                args=[
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-gpu'
-                ],
+                headless=True,
+                args=BROWSER_ARGS,
                 timeout=self.timeout * 1000
             )
             logger.info("浏览器初始化成功")
@@ -84,7 +95,7 @@ class JSRenderer:
             await page.goto(url, waitUntil='networkidle2')
             
             # 等待一段时间，确保所有内容都已加载
-            await asyncio.sleep(2)
+            await asyncio.sleep(DEFAULT_SLEEP_TIME)
             
             # 获取页面HTML
             html = await page.content()

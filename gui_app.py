@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-GUI应用程序入口
+"""GUI应用程序入口
+
+启动GrabTheSite的图形界面：
+- 加载主窗口
+- 启动事件循环
 """
 
 import sys

@@ -1,4 +1,10 @@
-# 保存插件
+"""保存插件
+
+核心插件，负责将抓取的页面保存到磁盘：
+- 处理页面链接转换
+- 保存HTML文件
+- 创建目录结构
+"""
 
 import os
 from bs4 import BeautifulSoup
@@ -170,7 +176,7 @@ class SavePlugin(Plugin):
                 processed_pages[url] = str(soup)
                 self.logger.info(f"处理链接完成: {url}")
                 
-            except Exception as e:
+            except (IOError, OSError, ValueError) as e:
                 self.logger.error(f"处理链接失败: {url}, 错误: {str(e)}")
                 # 如果处理失败，使用原始内容
                 processed_pages[url] = html_content
@@ -204,7 +210,7 @@ class SavePlugin(Plugin):
                 self.saved_files.append((url, file_path))
                 self.logger.info(f"保存页面: {file_path}")
                 
-            except Exception as e:
+            except (IOError, OSError) as e:
                 self.logger.error(f"保存页面失败: {url}, 错误: {str(e)}")
         
         return saved_count

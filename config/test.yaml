@@ -1,29 +1,30 @@
 # 测试配置文件
+# 用于自动化测试环境
 
 # 抓取参数配置
 crawl:
-  max_depth: 2          # 最大抓取深度
-  max_files: 50         # 最大文件数量
-  delay: 0.5            # 请求间隔（秒）
-  random_delay: true    # 是否使用随机延迟
-  threads: 4            # 线程数
-  incremental: true     # 是否启用增量抓取
+  max_depth: 2          # 测试时使用较小深度
+  max_files: 50         # 限制文件数量
+  delay: 0.5            # 较短延迟加快测试
+  random_delay: true    # 启用随机延迟
+  threads: 4            # 并发线程数
+  incremental: true     # 启用增量抓取
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
-# 输出配置
+# 输出配置 - 使用独立的测试目录
 output:
-  base_dir: "output_test"     # 基础输出目录
+  base_dir: "output_test"      # 测试输出目录（与生产环境隔离）
   sitemap:
-    enable: true         # 是否生成站点地图
-    enable_html: true    # 是否生成 HTML 格式的站点地图
+    enable: true               # 生成站点地图
+    enable_html: true          # 生成HTML站点地图
 
 # 排除列表
 # exclude:
-#   - 可以添加更多排除的URL
+#   - "https://example.com/private/"
 
-# 日志配置
+# 日志配置 - 使用独立的测试日志
 logging:
-  level: "INFO"         # 日志级别
-  file: "logs/grabthesite_test.log"  # 日志文件路径
-  max_bytes: 10485760   # 日志文件最大字节数（10MB）
-  backup_count: 5       # 保留的日志文件数量
+  level: "INFO"                        # 日志级别
+  file: "logs/grabthesite_test.log"    # 测试日志文件（与生产日志隔离）
+  max_bytes: 10485760                  # 单个日志文件最大10MB
+  backup_count: 5                      # 保留5个备份

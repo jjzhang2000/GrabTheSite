@@ -1,12 +1,32 @@
-# 日志配置模块
+"""日志配置模块
+
+提供统一的日志记录功能：
+- 文件日志： RotatingFileHandler，自动轮转
+- 控制台日志：StreamHandler
+- 支持国际化日志消息
+"""
 
 import logging
 import os
 from logging.handlers import RotatingFileHandler
 
-# 日志文件路径
+# 日志配置常量
 LOG_DIR = "logs"
-LOG_FILE = os.path.join(LOG_DIR, "grab_the_site.log")
+DEFAULT_LOG_FILE = "grabthesite.log"
+DEFAULT_LOG_LEVEL = logging.DEBUG
+DEFAULT_CONSOLE_LEVEL = logging.INFO
+DEFAULT_MAX_BYTES = 10 * 1024 * 1024  # 10MB
+DEFAULT_BACKUP_COUNT = 5
+DEFAULT_ENCODING = 'utf-8'
+LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+# 尝试从配置读取日志文件路径
+try:
+    from config import LOGGING_CONFIG
+    LOG_FILE = LOGGING_CONFIG.get('file', os.path.join(LOG_DIR, "grabthesite.log"))
+except ImportError:
+    # 配置模块可能尚未初始化，使用默认值
+    LOG_FILE = os.path.join(LOG_DIR, "grabthesite.log")
 
 # 创建日志目录
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -37,20 +57,18 @@ def setup_logger(name=__name__):
         # 创建文件处理器，用于写入日志文件
         file_handler = RotatingFileHandler(
             LOG_FILE,
-            maxBytes=10 * 1024 * 1024,  # 10MB
-            backupCount=5,  # 最多保留5个备份文件
-            encoding='utf-8'  # 使用 UTF-8 编码，避免中文乱码
+            maxBytes=DEFAULT_MAX_BYTES,
+            backupCount=DEFAULT_BACKUP_COUNT,
+            encoding=DEFAULT_ENCODING
         )
-        file_handler.setLevel(logging.DEBUG)  # 文件日志记录所有级别
+        file_handler.setLevel(DEFAULT_LOG_LEVEL)
         
         # 创建控制台处理器，用于输出到控制台
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)  # 控制台只显示 INFO 及以上级别
+        console_handler.setLevel(DEFAULT_CONSOLE_LEVEL)
         
         # 定义日志格式
-        formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
+        formatter = logging.Formatter(LOG_FORMAT)
         file_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
         

@@ -1,4 +1,10 @@
-# 文件下载模块
+"""文件下载模块
+
+多线程文件下载器：
+- 支持并发下载
+- 断点续传支持
+- 全局速率限制
+"""
 
 import os
 import time
@@ -8,10 +14,11 @@ import queue
 import requests
 from urllib.parse import urlparse
 from logger import setup_logger
-from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, RESUME_CONFIG
+from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, RESUME_CONFIG, USER_AGENT
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler, retry
 from utils.state_manager import StateManager
+from utils.rate_limiter import GlobalDelayManager
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -43,6 +50,9 @@ class Downloader:
             retryable_errors=ERROR_HANDLING_CONFIG.get('retryable_errors', [429, 500, 502, 503, 504]),
             fail_strategy=ERROR_HANDLING_CONFIG.get('fail_strategy', 'log')
         )
+        
+        # 初始化全局延迟管理器
+        self.delay_manager = GlobalDelayManager(DELAY, RANDOM_DELAY)
     
     def add_task(self, url):
         """添加下载任务
@@ -113,16 +123,21 @@ class Downloader:
                 self.state_manager.add_downloaded_file(file_path)
             return file_path
         
+        # 使用全局延迟管理器
+        self.delay_manager.wait()
+        
         # 下载文件
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': USER_AGENT
         }
-        response = requests.get(url, headers=headers, timeout=10, stream=True)
+        from config import DEFAULT_REQUEST_TIMEOUT, DEFAULT_CHUNK_SIZE
+        response = requests.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT, stream=True)
         response.raise_for_status()  # 检查HTTP错误
         
         # 保存文件
+        CHUNK_SIZE = 8192  # 8KB chunks
         with open(file_path, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
+            for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
                 if chunk:
                     f.write(chunk)
         
@@ -131,9 +146,6 @@ class Downloader:
         # 更新状态管理器
         if self.state_manager:
             self.state_manager.add_downloaded_file(file_path)
-        
-        # 添加延迟
-        add_delay()
         
         return file_path
     
@@ -149,7 +161,7 @@ class Downloader:
         workers = []
         for _ in range(self.threads):
             worker = threading.Thread(target=self._worker)
-            worker.daemon = True
+            worker.daemon = False  # 改为非守护线程，确保下载完成后再退出
             worker.start()
             workers.append(worker)
         

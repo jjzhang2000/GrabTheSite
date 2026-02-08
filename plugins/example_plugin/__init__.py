@@ -1,4 +1,9 @@
-# 示例插件
+"""示例插件
+
+演示插件开发的基本结构：
+- 页面计数功能
+- 插件生命周期管理
+"""
 
 from utils.plugin_manager import Plugin
 

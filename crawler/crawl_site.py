@@ -1,4 +1,12 @@
-# 网站抓取类
+"""网站抓取模块
+
+核心抓取逻辑，负责：
+1. 多线程抓取网页
+2. 链接提取和转换
+3. 静态资源下载
+4. 增量更新支持
+5. 断点续传支持
+"""
 
 import os
 import time
@@ -12,7 +20,7 @@ from crawler.downloader import download_file, Downloader
 from logger import setup_logger
 from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, ERROR_HANDLING_CONFIG, RESUME_CONFIG, JS_RENDERING_CONFIG
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
-from utils.error_handler import ErrorHandler, retry
+from utils.error_handler import ErrorHandler
 from utils.state_manager import StateManager
 from utils.js_renderer import JSRenderer
 
@@ -47,21 +55,19 @@ class CrawlSite:
         self.lock = threading.Lock()
         self.queue = queue.Queue()
         
-        # 从配置中获取排除列表
         self.exclude_list = EXCLUDE_LIST or []
         
-        # 页面暂存机制
-        self.pages = {}  # 暂存下载的页面内容，键为URL，值为页面内容
-        self.static_resources = set()  # 记录已下载的静态资源URL
+        # 页面暂存机制：URL -> 页面内容
+        self.pages = {}
+        self.static_resources = set()
         
-        # 提取起始目录路径
+        # 提取并标准化起始目录路径（确保以/结尾）
         parsed_target = urlparse(self.target_url)
         self.target_directory = parsed_target.path
-        # 确保路径以/结尾
         if not self.target_directory.endswith('/'):
             self.target_directory += '/'
         
-        # 处理排除列表，确保每个URL都以/结尾
+        # 标准化排除列表URL
         self.processed_exclude_list = []
         for url in self.exclude_list:
             parsed_url = urlparse(url)
@@ -98,13 +104,11 @@ class CrawlSite:
         # 初始化JavaScript渲染器
         self.js_rendering_enabled = JS_RENDERING_CONFIG.get('enable', False)
         self.js_rendering_timeout = JS_RENDERING_CONFIG.get('timeout', 30)
+        self.js_renderer = None
         if self.js_rendering_enabled:
             self.js_renderer = JSRenderer(enable=True, timeout=self.js_rendering_timeout)
-            # 初始化浏览器
-            import asyncio
-            asyncio.get_event_loop().run_until_complete(self.js_renderer.initialize())
-        else:
-            self.js_renderer = None
+            # 延迟初始化浏览器，避免在__init__中调用异步代码
+            # 浏览器将在首次渲染时自动初始化
         
         # 打印排除列表信息
         if self.processed_exclude_list:
@@ -156,9 +160,14 @@ class CrawlSite:
             worker.start()
             workers.append(worker)
         
-        # 等待所有线程结束
+        # 等待队列中的所有任务完成
+        self.queue.join()
+        
+        # 等待所有线程结束（使用更长的超时时间）
         for worker in workers:
-            worker.join(timeout=10)  # 添加超时，避免无限等待
+            worker.join(timeout=60)  # 增加到60秒超时，确保任务有足够时间完成
+            if worker.is_alive():
+                logger.warning("工作线程超时，强制结束")
         
         # 保存最终状态
         if self.resume_enabled and self.state_manager:
@@ -188,24 +197,33 @@ class CrawlSite:
                     break
             try:
                 url, depth = self.queue.get(block=True, timeout=1)
-                # 检查是否已访问过该URL
-                with self.lock:
-                    if url in self.visited_urls:
+                task_completed = False
+                try:
+                    # 检查是否已访问过该URL
+                    with self.lock:
+                        if url in self.visited_urls:
+                            task_completed = True
+                            return
+                    
+                    # 检查是否在排除列表中
+                    if self._is_in_exclude_list(url):
+                        logger.info(f"URL在排除列表中，跳过: {url}")
+                        task_completed = True
+                        return
+                    
+                    # 检查是否在起始目录及其子目录中
+                    if not self._is_in_target_directory(url):
+                        task_completed = True
+                        return
+                    
+                    # 抓取页面
+                    self._crawl_page(url, depth)
+                    task_completed = True
+                finally:
+                    # 确保 task_done() 只被调用一次
+                    if task_completed:
                         self.queue.task_done()
-                        continue
-                # 检查是否在排除列表中
-                if self._is_in_exclude_list(url):
-                    logger.info(f"URL在排除列表中，跳过: {url}")
-                    self.queue.task_done()
-                    continue
-                # 检查是否在起始目录及其子目录中
-                if not self._is_in_target_directory(url):
-                    self.queue.task_done()
-                    continue
-                # 抓取页面
-                self._crawl_page(url, depth)
-                # 标记任务为完成
-                self.queue.task_done()
+                    
             except queue.Empty:
                 # 检查是否真的完成了所有任务
                 with self.lock:
@@ -216,17 +234,54 @@ class CrawlSite:
                         continue
                     else:
                         break
-            except Exception as e:
-                logger.error(f"线程工作失败: {e}")
-                # 标记任务为完成
-                try:
-                    self.queue.task_done()
-                except:
-                    pass
+            except (IOError, OSError) as e:
+                logger.error(f"文件操作失败: {e}")
+            except requests.RequestException as e:
+                logger.error(f"网络请求失败: {e}")
     
-    @retry()
-    def _crawl_page(self, url, depth):
-        """抓取页面"""
+    def _fetch_page_content(self, url):
+        """获取页面内容，使用错误处理器进行重试
+        
+        Args:
+            url: 页面URL
+            
+        Returns:
+            str: 页面内容，如果获取失败返回None
+        """
+        headers = {'User-Agent': USER_AGENT}
+        
+        # 尝试使用JavaScript渲染
+        if self.js_rendering_enabled and self.js_renderer:
+            logger.debug(f"尝试使用JavaScript渲染页面: {url}")
+            page_content = self.js_renderer.render_page_sync(url)
+            if page_content:
+                return page_content
+        
+        # 使用常规HTTP请求，使用类中配置的错误处理器进行重试
+        @self.error_handler.retry
+        def _do_request():
+            from config import DEFAULT_REQUEST_TIMEOUT
+            response = requests.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT)
+            response.raise_for_status()
+            return response.text
+        
+        return _do_request()
+    
+    def _crawl_page(self, url: str, depth: int) -> None:
+        """抓取单个页面
+        
+        该方法是抓取的核心逻辑，包括：
+        1. 检查深度和访问状态
+        2. 检查文件更新需求
+        3. 获取页面内容
+        4. 暂存页面（如果需要）
+        5. 提取并下载静态资源
+        6. 提取页面链接并添加到队列
+        
+        Args:
+            url: 要抓取的页面URL
+            depth: 当前抓取深度
+        """
         # 检查是否达到深度限制
         if depth > self.max_depth:
             return
@@ -267,21 +322,11 @@ class CrawlSite:
         
         # 获取网页内容（无论是否需要更新，都需要获取内容来处理链接）
         logger.info(f"抓取页面: {url}")
-        headers = {
-            'User-Agent': USER_AGENT
-        }
         
-        # 尝试使用JavaScript渲染
-        page_content = None
-        if self.js_rendering_enabled and self.js_renderer:
-            logger.debug(f"尝试使用JavaScript渲染页面: {url}")
-            page_content = self.js_renderer.render_page_sync(url)
-        
-        # 如果JavaScript渲染失败或未启用，使用常规请求
+        page_content = self._fetch_page_content(url)
         if not page_content:
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()  # 检查HTTP错误
-            page_content = response.text
+            logger.error(f"获取页面内容失败: {url}")
+            return
         
         # 调用插件的on_page_crawled钩子
         if self.plugin_manager:
@@ -325,14 +370,6 @@ class CrawlSite:
                     if self._is_same_domain(full_url):
                         static_urls.append(full_url)
         
-        # 特别查找并处理 oldlens.jpg 图片
-        for img in soup.find_all('img'):
-            src = img.get('src')
-            if src and 'oldlens.jpg' in src:
-                full_url = urljoin(url, src)
-                if self._is_same_domain(full_url) and full_url not in static_urls:
-                    static_urls.append(full_url)
-        
         # 多线程下载静态资源
         if static_urls:
             downloader = Downloader(self.output_dir, threads=self.threads, state_manager=self.state_manager)
@@ -365,20 +402,27 @@ class CrawlSite:
         # 添加延迟
         self._add_delay()
     
-    def _is_same_domain(self, url):
-        """检查是否为同域名"""
+    def _is_same_domain(self, url: str) -> bool:
+        """检查是否为同域名
+        
+        Args:
+            url: 要检查的URL
+            
+        Returns:
+            bool: 是否与目标URL同域名
+        """
         target_domain = urlparse(self.target_url).netloc
         current_domain = urlparse(url).netloc
         return target_domain == current_domain
     
-    def _is_in_target_directory(self, url):
+    def _is_in_target_directory(self, url: str) -> bool:
         """检查 URL 是否在起始目录及其子目录中
         
         Args:
-            url: 要检查的 URL
+            url: 要检查的URL
             
         Returns:
-            布尔值，表示该 URL 是否在起始目录及其子目录中
+            bool: URL是否在起始目录及其子目录中
         """
         parsed_url = urlparse(url)
         url_path = parsed_url.path

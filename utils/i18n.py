@@ -1,4 +1,10 @@
-# 国际化模块
+"""国际化模块
+
+使用Python标准库gettext实现多语言支持：
+- 支持英文和中文
+- 自动降级到默认语言
+- 提供翻译函数 gettext
+"""
 
 import os
 import gettext
@@ -17,11 +23,9 @@ LOCALE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'locale')
 if not os.path.exists(LOCALE_DIR):
     os.makedirs(LOCALE_DIR)
 
-# 已加载的翻译器缓存
+# 翻译器缓存和当前语言设置
 _translators = {}
-
-# 当前语言
-_current_lang = None
+_current_lang = 'en'
 
 
 def init_i18n(lang='en'):
@@ -33,12 +37,8 @@ def init_i18n(lang='en'):
     global _current_lang
     _current_lang = lang
     
-    # 尝试加载指定语言的翻译
     if lang not in _translators:
         try:
-            # 尝试使用gettext.translation加载
-            try:
-                # 加载翻译器
                 translator = gettext.translation(
                     DOMAIN,
                     localedir=LOCALE_DIR,
@@ -48,17 +48,16 @@ def init_i18n(lang='en'):
                 _translators[lang] = translator
                 logger.info(f"加载语言: {lang}")
             except Exception as e:
-                # 如果加载失败，创建一个简单的翻译器
                 logger.warning(f"使用gettext.translation加载语言 {lang} 失败: {e}")
-                # 创建一个基于字典的翻译器
+                # 降级：使用基于字典的翻译器
                 translations = {}
-                # 尝试读取.po文件
+                # 尝试从.po文件加载
                 po_file = os.path.join(LOCALE_DIR, lang, 'LC_MESSAGES', f'{DOMAIN}.po')
                 if os.path.exists(po_file):
                     try:
                         with open(po_file, 'r', encoding='utf-8') as f:
                             content = f.read()
-                        # 简单解析.po文件
+                        # 解析.po文件格式
                         lines = content.split('\n')
                         msgid = None
                         msgstr = None
@@ -77,7 +76,7 @@ def init_i18n(lang='en'):
                     except Exception as e:
                         logger.warning(f"读取.po文件失败: {e}")
                 
-                # 创建一个基于字典的翻译器
+                # 基于字典的翻译器实现
                 class DictTranslator:
                     def __init__(self, translations):
                         self.translations = translations

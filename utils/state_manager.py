@@ -1,4 +1,10 @@
-# 状态管理模块
+"""状态管理模块
+
+管理抓取状态，支持断点续传：
+- 保存已访问的URL
+- 保存已下载的文件
+- 自动状态保存
+"""
 
 import os
 import json
@@ -31,7 +37,6 @@ class StateManager:
             }
         }
         
-        # 加载状态文件
         self.load_state()
     
     def load_state(self):
@@ -45,13 +50,13 @@ class StateManager:
                 with open(self.state_file, 'r', encoding='utf-8') as f:
                     loaded_state = json.load(f)
                 
-                # 转换集合类型
+                # JSON不支持集合类型，需要转换
                 if "visited_urls" in loaded_state:
                     self.state["visited_urls"] = set(loaded_state["visited_urls"])
                 if "downloaded_files" in loaded_state:
                     self.state["downloaded_files"] = set(loaded_state["downloaded_files"])
                 
-                # 更新其他状态
+                # 恢复其他状态
                 if "start_time" in loaded_state:
                     self.state["start_time"] = loaded_state["start_time"]
                 if "stats" in loaded_state:
@@ -61,7 +66,7 @@ class StateManager:
                 logger.info(f"已访问 URL 数量: {len(self.state['visited_urls'])}")
                 logger.info(f"已下载文件数量: {len(self.state['downloaded_files'])}")
                 return True
-            except Exception as e:
+            except (IOError, OSError, json.JSONDecodeError) as e:
                 logger.error(f"加载状态文件失败: {e}")
                 return False
         return False
@@ -91,7 +96,7 @@ class StateManager:
             self.state["last_save_time"] = state_to_save["last_save_time"]
             logger.info(f"成功保存状态文件: {self.state_file}")
             return True
-        except Exception as e:
+        except (IOError, OSError, TypeError) as e:
             logger.error(f"保存状态文件失败: {e}")
             return False
     
@@ -175,7 +180,7 @@ class StateManager:
             
             logger.info("成功清除状态")
             return True
-        except Exception as e:
+        except (IOError, OSError) as e:
             logger.error(f"清除状态失败: {e}")
             return False
     
