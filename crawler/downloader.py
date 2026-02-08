@@ -149,7 +149,7 @@ class Downloader:
         workers = []
         for _ in range(self.threads):
             worker = threading.Thread(target=self._worker)
-            worker.daemon = True
+            worker.daemon = False  # 改为非守护线程，确保下载完成后再退出
             worker.start()
             workers.append(worker)
         

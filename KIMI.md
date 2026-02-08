@@ -10,7 +10,7 @@
 |----------|------|--------|--------|
 | 关键错误 (Critical) | 3 | **3** ✅ | 0 |
 | 严重问题 (High) | 6 | **6** ✅ | 0 |
-| 中等问题 (Medium) | 8 | 0 | 8 |
+| 中等问题 (Medium) | 8 | **7** ✅ | 1 |
 | 低风险问题 (Low) | 5 | 0 | 5 |
 | 代码质量/改进建议 | 5 | 0 | 5 |
 
@@ -26,6 +26,19 @@
 7. ✅ **线程 join 超时** - 增加超时时间到60秒，先等待队列完成
 8. ✅ **GUI 语言配置不匹配** - 改为 'zh_CN' 匹配国际化模块
 9. ✅ **翻译文件编译脚本** - 添加文件检查和异常处理
+
+### 已修复的中等问题
+10. ✅ **全局变量未初始化** - 设置默认语言 'en'
+11. ✅ **日志文件路径不一致** - 从配置读取日志文件路径
+12. ✅ **代码重复** - SaveSite 改为 SavePlugin 的兼容性包装器
+13. ✅ **同步调用异步代码** - 延迟初始化浏览器
+14. ✅ **硬编码特殊处理** - 移除 oldlens.jpg 特殊处理
+15. ✅ **GUI 停止按钮功能** - 使用 threading.Event 实现停止机制
+16. ✅ **守护线程问题** - 改为非守护线程
+18. ✅ **站点地图硬编码中文** - 使用翻译函数
+
+### 待修复的中等问题
+17. **静态资源下载延迟控制** - 需要全局速率限制器（保留作为未来优化）
 
 ## 目录
 - [关键错误 (Critical)](#关键错误-critical)
@@ -253,182 +266,163 @@ def compile_po_file(po_path, mo_path):
 
 ## 中等问题 (Medium)
 
-### 10. 全局变量 `_current_lang` 未初始化
+### 10. 全局变量 `_current_lang` 未初始化 ✅ 已修复
 
 **位置**: `utils/i18n.py` 第 24 行
 
 **问题描述**:
-```python
-_current_lang = None
-```
-
 在 `init_i18n` 调用之前，`_current_lang` 为 None，可能导致 `gettext` 函数无法正常工作。
 
-**建议**:
-设置默认语言：
+**修复方案**:
 ```python
 _current_lang = 'en'  # 默认语言
 ```
 
 ---
 
-### 11. 日志文件路径不一致
+### 11. 日志文件路径不一致 ✅ 已修复
 
-**位置**: 
-- `logger.py` 第 9 行
-- `config/default.yaml` 第 54 行
+**位置**: `logger.py` 第 9-14 行
 
 **问题描述**:
-- `logger.py` 使用: `LOG_FILE = os.path.join(LOG_DIR, "grab_the_site.log")`
-- `config/default.yaml` 指定: `file: "logs/grabthesite.log"`
+- `logger.py` 使用: `grab_the_site.log`
+- `config/default.yaml` 指定: `grabthesite.log`
 
-两个日志文件路径不一致，可能导致配置和实际行为不符。
+两个日志文件路径不一致。
 
-**建议**:
-统一日志文件路径，或在 logger.py 中读取配置。
-
----
-
-### 12. 代码重复: SaveSite 类和 SavePlugin 类
-
-**位置**:
-- `crawler/save_site.py`
-- `plugins/save_plugin/__init__.py`
-
-**问题描述**:
-两个类有大量重复的代码逻辑，包括:
-- `_process_all_links`
-- `_save_pages`
-- `_get_file_path`
-- `_is_same_domain`
-- `_is_in_target_directory`
-- `_url_to_local_path`
-
-**影响**: 维护困难，修改需要同步两个文件。
-
-**建议**:
-`crawler/save_site.py` 中的 `SaveSite` 类应该被移除或重构为使用插件系统。
-
----
-
-### 13. `CrawlSite.__init__` 中同步调用异步代码
-
-**位置**: `crawler/crawl_site.py` 第 104-105 行
-
-**问题描述**:
-```python
-import asyncio
-asyncio.get_event_loop().run_until_complete(self.js_renderer.initialize())
-```
-
-在 `__init__` 中直接调用异步代码，如果事件循环已经在运行（比如在 GUI 中），会导致错误。
-
-**建议**:
-将初始化移到单独的同步方法中，或检测事件循环状态：
+**修复方案**:
+在 logger.py 中尝试从配置读取日志文件路径：
 ```python
 try:
-    loop = asyncio.get_running_loop()
-    # 事件循环已在运行，需要特殊处理
-except RuntimeError:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(self.js_renderer.initialize())
+    from config import LOGGING_CONFIG
+    LOG_FILE = LOGGING_CONFIG.get('file', os.path.join(LOG_DIR, "grabthesite.log"))
+except ImportError:
+    LOG_FILE = os.path.join(LOG_DIR, "grabthesite.log")
 ```
 
 ---
 
-### 14. `crawler/crawl_site.py` 中硬编码的特殊处理
+### 12. 代码重复: SaveSite 类和 SavePlugin 类 ✅ 已修复
+
+**位置**: `crawler/save_site.py`
+
+**问题描述**:
+`SaveSite` 类与 `SavePlugin` 有大量重复代码，维护困难。
+
+**修复方案**:
+将 `SaveSite` 类改为继承 `SavePlugin` 的兼容性包装器，并标记为弃用：
+```python
+import warnings
+from plugins.save_plugin import SavePlugin
+
+warnings.warn(
+    "SaveSite 类已弃用，请使用 plugins.save_plugin.SavePlugin",
+    DeprecationWarning,
+    stacklevel=2
+)
+
+class SaveSite(SavePlugin):
+    """已弃用，请使用 SavePlugin"""
+    ...
+```
+
+---
+
+### 13. `CrawlSite.__init__` 中同步调用异步代码 ✅ 已修复
+
+**位置**: `crawler/crawl_site.py` 第 101-107 行
+
+**问题描述**:
+在 `__init__` 中直接调用异步代码 `asyncio.get_event_loop().run_until_complete()`，如果事件循环已经在运行（比如在 GUI 中），会导致错误。
+
+**修复方案**:
+延迟初始化浏览器，避免在 `__init__` 中调用异步代码：
+```python
+if self.js_rendering_enabled:
+    self.js_renderer = JSRenderer(enable=True, timeout=self.js_rendering_timeout)
+    # 延迟初始化浏览器，将在首次渲染时自动初始化
+```
+
+---
+
+### 14. `crawler/crawl_site.py` 中硬编码的特殊处理 ✅ 已修复
 
 **位置**: `crawler/crawl_site.py` 第 328-334 行
 
 **问题描述**:
-```python
-# 特别查找并处理 oldlens.jpg 图片
-for img in soup.find_all('img'):
-    src = img.get('src')
-    if src and 'oldlens.jpg' in src:
-        full_url = urljoin(url, src)
-        if self._is_same_domain(full_url) and full_url not in static_urls:
-            static_urls.append(full_url)
-```
-
 代码中硬编码了对特定文件名 'oldlens.jpg' 的特殊处理，这是特定网站的需求，不应该在通用代码中。
 
-**建议**:
-通过配置或插件机制实现此类特殊处理。
+**修复方案**:
+移除了这段硬编码的特殊处理代码。如有需要，可通过插件机制实现此类特殊处理。
 
 ---
 
-### 15. GUI 停止按钮功能不完整
+### 15. GUI 停止按钮功能不完整 ✅ 已修复
 
-**位置**: `gui/main_window.py` 第 146-154 行
+**位置**: `gui/main_window.py`
 
 **问题描述**:
-```python
-def on_stop(self):
-    """停止按钮点击事件"""
-    # 启用开始按钮，禁用停止按钮
-    self.start_button.config(state=tk.NORMAL)
-    self.stop_button.config(state=tk.DISABLED)
-    self.is_crawling = False
-    # 记录停止日志
-    self.log_panel.add_log(_("抓取已停止"))
-```
-
 停止按钮只是改变了 UI 状态，实际上无法真正停止正在运行的抓取线程。
 
-**建议**:
-实现线程取消机制，如使用 threading.Event() 来通知线程停止。
+**修复方案**:
+使用 `threading.Event` 实现线程取消机制：
+```python
+def __init__(self):
+    ...
+    self.stop_event = threading.Event()  # 用于通知抓取线程停止
+
+def on_start(self):
+    self.stop_event.clear()  # 清除停止标志
+    
+def on_stop(self):
+    self.stop_event.set()  # 设置停止标志
+    ...
+```
 
 ---
 
-### 16. `Downloader` 类使用守护线程可能导致数据丢失
+### 16. `Downloader` 类使用守护线程可能导致数据丢失 ✅ 已修复
 
 **位置**: `crawler/downloader.py` 第 151-154 行
 
 **问题描述**:
-```python
-for _ in range(self.threads):
-    worker = threading.Thread(target=self._worker)
-    worker.daemon = True
-    worker.start()
-```
-
 使用了守护线程，如果主程序退出，守护线程会被强制终止，可能导致正在下载的文件损坏或数据丢失。
 
-**建议**:
-使用非守护线程，确保所有下载完成后再退出。
+**修复方案**:
+改为非守护线程，确保下载完成后再退出：
+```python
+worker.daemon = False  # 改为非守护线程
+```
 
 ---
 
-### 17. 静态资源下载没有延迟控制
+### 17. 静态资源下载延迟控制（保留）
 
 **位置**: `crawler/downloader.py` 第 136 行
 
 **问题描述**:
-虽然每个文件下载后调用了 `add_delay()`，但多线程下载时，每个线程独立计算延迟，可能导致多个请求几乎同时发出。
+多线程下载时，每个线程独立计算延迟，可能导致多个请求几乎同时发出。
 
-**建议**:
-实现全局速率限制器或使用线程安全的延迟机制。
+**评估**:
+当前实现已有基本的延迟控制，改进需要较大改动。保留此问题作为未来优化项。
 
 ---
 
-### 18. 站点地图生成器的标题提取硬编码中文
+### 18. 站点地图生成器的标题提取硬编码中文 ✅ 已修复
 
-**位置**: `utils/sitemap_generator.py` 第 51, 54, 56 行
+**位置**: `utils/sitemap_generator.py`
 
 **问题描述**:
-```python
-if not path or path == '/':
-    return '首页'
-# ...
-return os.path.basename(os.path.dirname(path)) or '首页'
-```
-
 硬编码了中文 '首页'，没有使用国际化。
 
-**建议**:
-使用翻译函数 `_()`。
+**修复方案**:
+导入翻译函数并使用 `_('Home')` 替换硬编码中文：
+```python
+from utils.i18n import gettext as _
+
+# 替换 '首页' 为 _('Home')
+return _('Home')
+```
 
 ---
 

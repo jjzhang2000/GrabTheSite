@@ -4,9 +4,16 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
-# 日志文件路径
+# 日志文件路径 - 从配置读取，保持一致
 LOG_DIR = "logs"
-LOG_FILE = os.path.join(LOG_DIR, "grab_the_site.log")
+
+# 尝试从配置读取日志文件路径
+try:
+    from config import LOGGING_CONFIG
+    LOG_FILE = LOGGING_CONFIG.get('file', os.path.join(LOG_DIR, "grabthesite.log"))
+except ImportError:
+    # 配置模块可能尚未初始化，使用默认值
+    LOG_FILE = os.path.join(LOG_DIR, "grabthesite.log")
 
 # 创建日志目录
 os.makedirs(LOG_DIR, exist_ok=True)

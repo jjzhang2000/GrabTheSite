@@ -21,7 +21,7 @@ if not os.path.exists(LOCALE_DIR):
 _translators = {}
 
 # 当前语言
-_current_lang = None
+_current_lang = 'en'  # 默认语言
 
 
 def init_i18n(lang='en'):

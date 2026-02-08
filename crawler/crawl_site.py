@@ -98,13 +98,11 @@ class CrawlSite:
         # 初始化JavaScript渲染器
         self.js_rendering_enabled = JS_RENDERING_CONFIG.get('enable', False)
         self.js_rendering_timeout = JS_RENDERING_CONFIG.get('timeout', 30)
+        self.js_renderer = None
         if self.js_rendering_enabled:
             self.js_renderer = JSRenderer(enable=True, timeout=self.js_rendering_timeout)
-            # 初始化浏览器
-            import asyncio
-            asyncio.get_event_loop().run_until_complete(self.js_renderer.initialize())
-        else:
-            self.js_renderer = None
+            # 延迟初始化浏览器，避免在__init__中调用异步代码
+            # 浏览器将在首次渲染时自动初始化
         
         # 打印排除列表信息
         if self.processed_exclude_list:
@@ -345,14 +343,6 @@ class CrawlSite:
                     # 只下载同域名的静态资源
                     if self._is_same_domain(full_url):
                         static_urls.append(full_url)
-        
-        # 特别查找并处理 oldlens.jpg 图片
-        for img in soup.find_all('img'):
-            src = img.get('src')
-            if src and 'oldlens.jpg' in src:
-                full_url = urljoin(url, src)
-                if self._is_same_domain(full_url) and full_url not in static_urls:
-                    static_urls.append(full_url)
         
         # 多线程下载静态资源
         if static_urls:
