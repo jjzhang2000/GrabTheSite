@@ -8,7 +8,7 @@ import queue
 import requests
 from urllib.parse import urlparse
 from logger import setup_logger
-from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, RESUME_CONFIG
+from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, RESUME_CONFIG, USER_AGENT
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler, retry
 from utils.state_manager import StateManager
@@ -115,7 +115,7 @@ class Downloader:
         
         # 下载文件
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            'User-Agent': USER_AGENT
         }
         response = requests.get(url, headers=headers, timeout=10, stream=True)
         response.raise_for_status()  # 检查HTTP错误

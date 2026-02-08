@@ -122,8 +122,8 @@ class AdvancedConfigPanel(ttk.Frame):
         self.lang_label = ttk.Label(self, text=_('语言:'))
         self.lang_label.grid(row=12, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.lang_var = tk.StringVar(value='zh')
-        self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh', 'en'], width=10)
+        self.lang_var = tk.StringVar(value='zh_CN')
+        self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh_CN', 'en'], width=10)
         self.lang_combobox.grid(row=12, column=1, sticky=tk.W, padx=5, pady=5)
         
         # 用户代理配置

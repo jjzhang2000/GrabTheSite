@@ -9,7 +9,7 @@
 | 问题级别 | 总数 | 已修复 | 待修复 |
 |----------|------|--------|--------|
 | 关键错误 (Critical) | 3 | **3** ✅ | 0 |
-| 严重问题 (High) | 6 | 0 | 6 |
+| 严重问题 (High) | 6 | **6** ✅ | 0 |
 | 中等问题 (Medium) | 8 | 0 | 8 |
 | 低风险问题 (Low) | 5 | 0 | 5 |
 | 代码质量/改进建议 | 5 | 0 | 5 |
@@ -18,6 +18,14 @@
 1. ✅ **配置键名不一致** - 统一使用 `plugins`（复数形式）
 2. ✅ **PLUGIN_CONFIG 导入问题** - 配置键名修复后自动解决
 3. ✅ **保存插件硬编码依赖** - 改为通过能力发现插件，支持多插件
+
+### 已修复的严重问题
+4. ✅ **Downloader 硬编码 User-Agent** - 使用配置的 USER_AGENT
+5. ✅ **timestamp_utils 硬编码 User-Agent** - 使用配置的 USER_AGENT
+6. ✅ **重试装饰器问题** - 使用类中配置的 error_handler
+7. ✅ **线程 join 超时** - 增加超时时间到60秒，先等待队列完成
+8. ✅ **GUI 语言配置不匹配** - 改为 'zh_CN' 匹配国际化模块
+9. ✅ **翻译文件编译脚本** - 添加文件检查和异常处理
 
 ## 目录
 - [关键错误 (Critical)](#关键错误-critical)
@@ -112,43 +120,35 @@ else:
 
 ## 严重问题 (High)
 
-### 4. Downloader 类中硬编码 User-Agent
+### 4. Downloader 类中硬编码 User-Agent ✅ 已修复
 
 **位置**: `crawler/downloader.py` 第 117-119 行
 
 **问题描述**:
-```python
-headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-}
-```
-
 使用了硬编码的 User-Agent，而没有使用配置中的 `USER_AGENT` 常量。
 
 **影响**: 配置的自定义 User-Agent 对静态资源下载不生效。
 
-**建议修复**:
-```python
-from config import USER_AGENT
-# ...
-headers = {'User-Agent': USER_AGENT}
-```
+**修复方案**:
+1. 导入 `USER_AGENT`: `from config import ..., USER_AGENT`
+2. 使用配置: `headers = {'User-Agent': USER_AGENT}`
 
 ---
 
-### 5. `timestamp_utils.py` 中硬编码 User-Agent
+### 5. `timestamp_utils.py` 中硬编码 User-Agent ✅ 已修复
 
 **位置**: `utils/timestamp_utils.py` 第 53-55 行
 
 **问题描述**:
 同样使用了硬编码的 User-Agent。
 
-**建议修复**:
-从配置中导入 USER_AGENT。
+**修复方案**:
+1. 导入 `USER_AGENT`: `from config import ..., USER_AGENT`
+2. 使用配置: `headers = {'User-Agent': USER_AGENT}`
 
 ---
 
-### 6. 重试装饰器使用不当可能导致无限递归
+### 6. 重试装饰器使用不当 ✅ 已修复
 
 **位置**: `crawler/crawl_site.py` 第 227 行
 
@@ -158,42 +158,62 @@ headers = {'User-Agent': USER_AGENT}
 def _crawl_page(self, url, depth):
 ```
 
-`@retry()` 装饰器没有指定参数，使用的是默认的错误处理器。但 `ErrorHandler` 的 `retry` 方法返回的是 `wrapper` 函数，如果内部调用自身可能会导致问题。
+`@retry()` 装饰器使用的是默认的错误处理器，而不是类中配置的 error_handler，导致配置不生效。
+
+**修复方案**:
+1. 移除模块级 `@retry()` 装饰器
+2. 创建新的 `_fetch_page_content` 方法专门处理 HTTP 请求
+3. 在该方法内部使用 `self.error_handler.retry` 装饰器：
+```python
+def _fetch_page_content(self, url):
+    @self.error_handler.retry
+    def _do_request():
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        return response.text
+    return _do_request()
+```
+
+**改进**:
+- 使用类中配置的错误处理器（包含重试次数、退避策略等）
+- 只重试 HTTP 请求部分，避免重试状态更新等副作用操作
 
 ---
 
-### 7. 线程 join 超时可能导致任务未完成就退出
+### 7. 线程 join 超时可能导致任务未完成就退出 ✅ 已修复
 
 **位置**: `crawler/crawl_site.py` 第 161 行
 
 **问题描述**:
-```python
-for worker in workers:
-    worker.join(timeout=10)  # 添加超时，避免无限等待
-```
-
 使用了 10 秒超时，但如果任务较多或网络较慢，线程可能在完成前就超时退出，导致任务未完成。
 
-**建议**:
-考虑使用队列标记所有任务完成，或使用事件通知机制。
+**修复方案**:
+1. 先调用 `self.queue.join()` 等待队列中所有任务完成
+2. 增加线程 join 超时时间到 60 秒
+3. 添加超时警告日志：
+```python
+# 等待队列中的所有任务完成
+self.queue.join()
+
+# 等待所有线程结束（使用更长的超时时间）
+for worker in workers:
+    worker.join(timeout=60)
+    if worker.is_alive():
+        logger.warning("工作线程超时，强制结束")
+```
 
 ---
 
-### 8. GUI 语言配置值不匹配
+### 8. GUI 语言配置值不匹配 ✅ 已修复
 
 **位置**: `gui/config_panels.py` 第 125-127 行
 
 **问题描述**:
-```python
-self.lang_var = tk.StringVar(value='zh')
-self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh', 'en'], width=10)
-```
-
 语言值使用的是 'zh'，但国际化模块中定义的是 'zh_CN'。
 
 **影响**: 可能导致语言切换不生效。
 
-**建议修复**:
+**修复方案**:
 ```python
 self.lang_var = tk.StringVar(value='zh_CN')
 self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh_CN', 'en'], width=10)
@@ -201,25 +221,32 @@ self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh_
 
 ---
 
-### 9. 翻译文件编译脚本错误
+### 9. 翻译文件编译脚本错误 ✅ 已修复
 
 **位置**: `compile_translations.py`
 
 **问题描述**:
-脚本尝试编译翻译文件，但没有检查源文件是否存在：
-```python
-gettext.msgfmt(en_po, en_mo)
-```
+脚本尝试编译翻译文件，但没有检查源文件是否存在，如果 po 文件不存在会抛出 FileNotFoundError。
 
-如果 po 文件不存在，会抛出 FileNotFoundError。
-
-**建议**:
-添加文件存在性检查：
+**修复方案**:
+1. 添加文件存在性检查
+2. 添加异常处理
+3. 添加成功/失败统计
+4. 自动创建目标目录：
 ```python
-if os.path.exists(en_po):
-    gettext.msgfmt(en_po, en_mo)
-else:
-    print(f'警告: 翻译文件不存在: {en_po}')
+def compile_po_file(po_path, mo_path):
+    if os.path.exists(po_path):
+        try:
+            os.makedirs(os.path.dirname(mo_path), exist_ok=True)
+            gettext.msgfmt(po_path, mo_path)
+            print(f'✓ 编译成功: {po_path} -> {mo_path}')
+            return True
+        except Exception as e:
+            print(f'✗ 编译失败: {po_path}, 错误: {e}')
+            return False
+    else:
+        print(f'⚠ 翻译文件不存在，跳过: {po_path}')
+        return False
 ```
 
 ---

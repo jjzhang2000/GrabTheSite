@@ -5,7 +5,7 @@ import time
 import requests
 from email.utils import parsedate_to_datetime
 from logger import setup_logger
-from config import ERROR_HANDLING_CONFIG
+from config import ERROR_HANDLING_CONFIG, USER_AGENT
 from utils.error_handler import ErrorHandler, retry
 
 # 获取 logger 实例
@@ -51,7 +51,7 @@ def get_remote_timestamp(url):
     """
     # 发送 HEAD 请求，只获取头部信息
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': USER_AGENT
     }
     response = requests.head(url, headers=headers, timeout=10, allow_redirects=True)
     
