@@ -33,7 +33,7 @@ def get_file_timestamp(file_path):
     if os.path.exists(file_path):
         try:
             return os.path.getmtime(file_path)
-        except Exception as e:
+        except (IOError, OSError) as e:
             logger.error(f"获取文件时间戳失败: {file_path}, 错误: {e}")
             return 0
     return 0
@@ -53,7 +53,8 @@ def get_remote_timestamp(url):
     headers = {
         'User-Agent': USER_AGENT
     }
-    response = requests.head(url, headers=headers, timeout=10, allow_redirects=True)
+    from config import DEFAULT_REQUEST_TIMEOUT
+    response = requests.head(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT, allow_redirects=True)
     
     # 检查响应状态码
     if response.status_code != 200:

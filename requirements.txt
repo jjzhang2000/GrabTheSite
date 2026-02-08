@@ -1,5 +1,12 @@
-requests
-beautifulsoup4
-lxml
-pyppeteer
+# 核心依赖
+requests>=2.28.0,<3.0
+beautifulsoup4>=4.11.0,<5.0
+lxml>=4.9.0,<5.0
+
+# JavaScript渲染支持
+pyppeteer>=1.0.0,<2.0
+
+# 配置解析
+pyyaml>=6.0,<7.0
+
 # GUI相关依赖（tkinter是Python标准库，不需要额外安装）

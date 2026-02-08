@@ -8,6 +8,12 @@ from logger import setup_logger
 # 获取 logger 实例
 logger = setup_logger(__name__)
 
+# 常用配置常量
+DEFAULT_REQUEST_TIMEOUT = 10  # 默认请求超时（秒）
+DEFAULT_CHUNK_SIZE = 8192     # 默认文件下载块大小（字节）
+DEFAULT_RETRY_COUNT = 3       # 默认重试次数
+DEFAULT_RETRY_DELAY = 2       # 默认重试延迟（秒）
+
 # 空默认配置（最低优先级）
 DEFAULT_CONFIG = {}
 

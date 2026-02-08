@@ -61,7 +61,7 @@ class StateManager:
                 logger.info(f"已访问 URL 数量: {len(self.state['visited_urls'])}")
                 logger.info(f"已下载文件数量: {len(self.state['downloaded_files'])}")
                 return True
-            except Exception as e:
+            except (IOError, OSError, json.JSONDecodeError) as e:
                 logger.error(f"加载状态文件失败: {e}")
                 return False
         return False
@@ -91,7 +91,7 @@ class StateManager:
             self.state["last_save_time"] = state_to_save["last_save_time"]
             logger.info(f"成功保存状态文件: {self.state_file}")
             return True
-        except Exception as e:
+        except (IOError, OSError, TypeError) as e:
             logger.error(f"保存状态文件失败: {e}")
             return False
     
@@ -175,7 +175,7 @@ class StateManager:
             
             logger.info("成功清除状态")
             return True
-        except Exception as e:
+        except (IOError, OSError) as e:
             logger.error(f"清除状态失败: {e}")
             return False
     

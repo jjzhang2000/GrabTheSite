@@ -228,8 +228,10 @@ class CrawlSite:
                         continue
                     else:
                         break
-            except Exception as e:
-                logger.error(f"线程工作失败: {e}")
+            except (IOError, OSError) as e:
+                logger.error(f"文件操作失败: {e}")
+            except requests.RequestException as e:
+                logger.error(f"网络请求失败: {e}")
     
     def _fetch_page_content(self, url):
         """获取页面内容，使用错误处理器进行重试
@@ -252,14 +254,28 @@ class CrawlSite:
         # 使用常规HTTP请求，使用类中配置的错误处理器进行重试
         @self.error_handler.retry
         def _do_request():
-            response = requests.get(url, headers=headers, timeout=10)
+            from config import DEFAULT_REQUEST_TIMEOUT
+            response = requests.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT)
             response.raise_for_status()
             return response.text
         
         return _do_request()
     
-    def _crawl_page(self, url, depth):
-        """抓取页面"""
+    def _crawl_page(self, url: str, depth: int) -> None:
+        """抓取单个页面
+        
+        该方法是抓取的核心逻辑，包括：
+        1. 检查深度和访问状态
+        2. 检查文件更新需求
+        3. 获取页面内容
+        4. 暂存页面（如果需要）
+        5. 提取并下载静态资源
+        6. 提取页面链接并添加到队列
+        
+        Args:
+            url: 要抓取的页面URL
+            depth: 当前抓取深度
+        """
         # 检查是否达到深度限制
         if depth > self.max_depth:
             return
@@ -380,20 +396,27 @@ class CrawlSite:
         # 添加延迟
         self._add_delay()
     
-    def _is_same_domain(self, url):
-        """检查是否为同域名"""
+    def _is_same_domain(self, url: str) -> bool:
+        """检查是否为同域名
+        
+        Args:
+            url: 要检查的URL
+            
+        Returns:
+            bool: 是否与目标URL同域名
+        """
         target_domain = urlparse(self.target_url).netloc
         current_domain = urlparse(url).netloc
         return target_domain == current_domain
     
-    def _is_in_target_directory(self, url):
+    def _is_in_target_directory(self, url: str) -> bool:
         """检查 URL 是否在起始目录及其子目录中
         
         Args:
-            url: 要检查的 URL
+            url: 要检查的URL
             
         Returns:
-            布尔值，表示该 URL 是否在起始目录及其子目录中
+            bool: URL是否在起始目录及其子目录中
         """
         parsed_url = urlparse(url)
         url_path = parsed_url.path
