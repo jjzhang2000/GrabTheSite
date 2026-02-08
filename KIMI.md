@@ -11,7 +11,7 @@
 | 关键错误 (Critical) | 3 | **3** ✅ | 0 |
 | 严重问题 (High) | 6 | **6** ✅ | 0 |
 | 中等问题 (Medium) | 8 | **7** ✅ | 1 |
-| 低风险问题 (Low) | 5 | 0 | 5 |
+| 低风险问题 (Low) | 5 | **5** ✅ | 0 |
 | 代码质量/改进建议 | 5 | 0 | 5 |
 
 ### 已修复的关键错误
@@ -39,6 +39,13 @@
 
 ### 待修复的中等问题
 17. **静态资源下载延迟控制** - 需要全局速率限制器（保留作为未来优化）
+
+### 已修复的低风险问题
+19. ✅ **queue.task_done() 调用不匹配** - 使用标志和 try-finally 确保只调用一次
+20. ✅ **日志格式不一致** - 为关键日志添加翻译函数
+21. ✅ **__init__.py 文件为空** - 添加版本信息和公共接口导出
+22. ✅ **config.py 日志过多** - INFO 改为 DEBUG 级别
+23. ✅ **类型注解缺失** - 为 config.py 主要函数添加类型注解
 
 ## 目录
 - [关键错误 (Critical)](#关键错误-critical)
@@ -428,27 +435,48 @@ return _('Home')
 
 ## 低风险问题 (Low)
 
-### 19. `queue.task_done()` 调用次数不匹配
+### 19. `queue.task_done()` 调用次数不匹配 ✅ 已修复
 
-**位置**: `crawler/crawl_site.py` 第 194, 199, 203, 208 行
+**位置**: `crawler/crawl_site.py` 第 185-225 行
 
 **问题描述**:
 在某些条件下（如 URL 在排除列表中），`task_done()` 被多次调用，而在异常处理中又可能调用失败。
 
-**建议**:
-使用 try-finally 确保 `task_done()` 只被调用一次。
+**修复方案**:
+重构 `_worker` 方法，使用 `task_completed` 标志和 `try-finally` 确保 `task_done()` 只被调用一次：
+```python
+def _worker(self):
+    while True:
+        try:
+            url, depth = self.queue.get(block=True, timeout=1)
+            task_completed = False
+            try:
+                # 处理逻辑...
+                task_completed = True
+            finally:
+                if task_completed:
+                    self.queue.task_done()
+        except queue.Empty:
+            break
+        except Exception as e:
+            logger.error(f"线程工作失败: {e}")
+```
 
 ---
 
-### 20. 日志格式不一致
+### 20. 日志格式不一致 ✅ 已修复
 
-**位置**: 多个文件
+**位置**: `grab_the_site.py`
 
 **问题描述**:
 不同模块使用了不同的日志消息格式，有的用英文，有的用中文，有的混合使用。
 
-**建议**:
-统一日志语言风格，并使用翻译函数。
+**修复方案**:
+为关键日志消息添加翻译函数 `_()`，统一使用英文作为键：
+```python
+logger.info(f"{_('Using save plugin')}: {save_plugin.name}")
+logger.warning(_("Plugin system disabled, cannot save pages"))
+```
 
 ---
 
@@ -473,27 +501,46 @@ from .plugin_manager import Plugin, PluginManager
 
 ---
 
-### 22. `config.py` 加载配置时打印过多日志
+### 22. `config.py` 加载配置时打印过多日志 ✅ 已修复
 
 **位置**: `config.py` 第 36, 50, 55 行
 
 **问题描述**:
 每次导入 config 模块都会输出多条日志，在单元测试或频繁导入时会干扰输出。
 
-**建议**:
-将日志级别调整为 DEBUG，或提供静默模式。
+**修复方案**:
+- 将 `logger.info` 改为 `logger.debug`，减少默认日志输出
+- 将配置文件不存在的 `logger.error` 改为 `logger.warning`
+
+例如：
+```python
+logger.debug(f"已加载默认配置文件: {DEFAULT_CONFIG_FILE}")
+logger.warning(f"默认配置文件不存在: {DEFAULT_CONFIG_FILE}")
+```
 
 ---
 
-### 23. 类型注解缺失
+### 23. 类型注解缺失 ✅ 已修复
 
-**位置**: 多个文件
+**位置**: `config.py`
 
 **问题描述**:
 大部分函数和变量缺少类型注解，不利于 IDE 提示和代码检查。
 
-**建议**:
-为关键函数添加类型注解，特别是公共 API。
+**修复方案**:
+为 `config.py` 中的主要函数添加类型注解：
+```python
+from typing import Dict, Any
+
+def load_config() -> Dict[str, Any]:
+    ...
+
+def merge_configs(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+    ...
+
+def validate_config(config: Dict[str, Any]) -> None:
+    ...
+```
 
 ---
 

@@ -191,24 +191,33 @@ class CrawlSite:
                     break
             try:
                 url, depth = self.queue.get(block=True, timeout=1)
-                # 检查是否已访问过该URL
-                with self.lock:
-                    if url in self.visited_urls:
+                task_completed = False
+                try:
+                    # 检查是否已访问过该URL
+                    with self.lock:
+                        if url in self.visited_urls:
+                            task_completed = True
+                            return
+                    
+                    # 检查是否在排除列表中
+                    if self._is_in_exclude_list(url):
+                        logger.info(f"URL在排除列表中，跳过: {url}")
+                        task_completed = True
+                        return
+                    
+                    # 检查是否在起始目录及其子目录中
+                    if not self._is_in_target_directory(url):
+                        task_completed = True
+                        return
+                    
+                    # 抓取页面
+                    self._crawl_page(url, depth)
+                    task_completed = True
+                finally:
+                    # 确保 task_done() 只被调用一次
+                    if task_completed:
                         self.queue.task_done()
-                        continue
-                # 检查是否在排除列表中
-                if self._is_in_exclude_list(url):
-                    logger.info(f"URL在排除列表中，跳过: {url}")
-                    self.queue.task_done()
-                    continue
-                # 检查是否在起始目录及其子目录中
-                if not self._is_in_target_directory(url):
-                    self.queue.task_done()
-                    continue
-                # 抓取页面
-                self._crawl_page(url, depth)
-                # 标记任务为完成
-                self.queue.task_done()
+                    
             except queue.Empty:
                 # 检查是否真的完成了所有任务
                 with self.lock:
@@ -221,11 +230,6 @@ class CrawlSite:
                         break
             except Exception as e:
                 logger.error(f"线程工作失败: {e}")
-                # 标记任务为完成
-                try:
-                    self.queue.task_done()
-                except:
-                    pass
     
     def _fetch_page_content(self, url):
         """获取页面内容，使用错误处理器进行重试

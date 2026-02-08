@@ -425,9 +425,9 @@ def main(args_list=None):
         plugin_manager.call_hook("on_crawl_end", pages)
     
     logger.info(_(f"抓取完成，开始保存页面，共 {len(pages)} 个页面"))
-    logger.info(f"pages类型: {type(pages)}")
+    logger.debug(f"Pages type: {type(pages)}")
     if pages:
-        logger.info(f"pages前5个元素: {list(pages.items())[:5]}")
+        logger.debug(f"First 5 pages: {list(pages.items())[:5]}")
     
     # 调用插件的 on_save_start 钩子
     if plugin_enable:
@@ -447,22 +447,22 @@ def main(args_list=None):
         if save_plugins:
             saved_files = []
             for save_plugin in save_plugins:
-                logger.info(f"使用保存插件: {save_plugin.name}")
+                logger.info(f"{_('Using save plugin')}: {save_plugin.name}")
                 try:
                     # 使用保存插件保存页面
                     plugin_saved_files = save_plugin.save_site(pages)
                     saved_files.extend(plugin_saved_files)
-                    logger.info(f"保存插件 {save_plugin.name} 执行完成，保存 {len(plugin_saved_files)} 个文件")
+                    logger.info(f"{_('Save plugin')} {save_plugin.name} {_('completed, saved')} {len(plugin_saved_files)} {_('files')}")
                 except Exception as e:
-                    logger.error(f"保存插件 {save_plugin.name} 执行失败: {e}")
+                    logger.error(f"{_('Save plugin')} {save_plugin.name} {_('execution failed')}: {e}")
             
             # 调用插件的 on_save_end 钩子
             plugin_manager.call_hook("on_save_end", saved_files)
-            logger.info(f"所有保存插件执行完成，共保存 {len(saved_files)} 个文件")
+            logger.info(f"{_('All save plugins completed, total saved')} {len(saved_files)} {_('files')}")
         else:
-            logger.warning("未找到保存插件，没有页面被保存。请确保启用了实现了 save_site 方法的插件（如 save_plugin）")
+            logger.warning(_("No save plugin found, no pages saved. Please ensure a plugin implementing save_site method is enabled (e.g., save_plugin)"))
     else:
-        logger.warning("插件系统已禁用，无法保存页面。请启用插件系统以保存抓取的内容")
+        logger.warning(_("Plugin system disabled, cannot save pages. Please enable plugin system to save crawled content"))
     
     # 生成站点地图
     sitemap_config = config["output"].get("sitemap", {})

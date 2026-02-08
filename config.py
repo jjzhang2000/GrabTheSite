@@ -1,6 +1,7 @@
 # 配置管理模块
 
 import os
+from typing import Dict, Any
 import yaml
 from logger import setup_logger
 
@@ -16,7 +17,7 @@ DEFAULT_CONFIG_FILE = os.path.join(CONFIG_DIR, "default.yaml")
 USER_CONFIG_FILE = os.path.join(CONFIG_DIR, "config.yaml")
 
 
-def load_config():
+def load_config() -> Dict[str, Any]:
     """加载配置文件
     
     Returns:
@@ -33,12 +34,12 @@ def load_config():
                 default_config = yaml.safe_load(f)
                 if default_config:
                     config = merge_configs(config, default_config)
-                    logger.info(f"已加载默认配置文件: {DEFAULT_CONFIG_FILE}")
+                    logger.debug(f"已加载默认配置文件: {DEFAULT_CONFIG_FILE}")
                     config_loaded = True
         except Exception as e:
             logger.error(f"加载默认配置文件失败: {e}")
     else:
-        logger.error(f"默认配置文件不存在: {DEFAULT_CONFIG_FILE}")
+        logger.warning(f"默认配置文件不存在: {DEFAULT_CONFIG_FILE}")
     
     # 加载用户配置文件
     if os.path.exists(USER_CONFIG_FILE):
@@ -47,12 +48,12 @@ def load_config():
                 user_config = yaml.safe_load(f)
                 if user_config:
                     config = merge_configs(config, user_config)
-                    logger.info(f"已加载用户配置文件: {USER_CONFIG_FILE}")
+                    logger.debug(f"已加载用户配置文件: {USER_CONFIG_FILE}")
                     config_loaded = True
         except Exception as e:
             logger.error(f"加载用户配置文件失败: {e}")
     else:
-        logger.info(f"用户配置文件不存在: {USER_CONFIG_FILE}")
+        logger.debug(f"用户配置文件不存在: {USER_CONFIG_FILE}")
     
     # 检查配置是否加载成功
     if not config_loaded:
@@ -141,7 +142,7 @@ def load_config():
     return config
 
 
-def merge_configs(base, override):
+def merge_configs(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
     """合并配置
     
     Args:
@@ -159,7 +160,7 @@ def merge_configs(base, override):
     return base
 
 
-def validate_config(config):
+def validate_config(config: Dict[str, Any]) -> None:
     """验证配置
     
     Args:
