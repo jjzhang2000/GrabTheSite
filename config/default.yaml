@@ -1,68 +1,73 @@
 # 默认配置文件
+# 此文件包含所有默认配置项，不建议直接修改
+# 如需自定义配置，请复制到 config.yaml 并修改
 
-# 目标网站 URL
+# 目标网站 URL - 抓取的起点
 target_url: "https://www.mir.com.my/rb/photography/"
 
 # 抓取参数配置
 crawl:
-  max_depth: 1          # 最大抓取深度
-  max_files: 10         # 最大文件数量
-  delay: 1              # 请求间隔（秒）
-  random_delay: true    # 是否使用随机延迟
-  threads: 4            # 线程数
-  incremental: true     # 是否启用增量抓取
+  max_depth: 1          # 最大抓取深度（0=只抓取当前页）
+  max_files: 10         # 最大文件数量（防止抓取过多）
+  delay: 1              # 请求间隔（秒），避免对服务器造成压力
+  random_delay: true    # 启用随机延迟（0.5~1.5倍delay），模拟真人访问
+  threads: 4            # 并发线程数（建议 2-8）
+  incremental: true     # 启用增量抓取（只下载更新的文件）
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
 
 # 错误处理配置
 error_handling:
-  retry_count: 3        # 重试次数
-  retry_delay: 2        # 重试间隔（秒）
-  exponential_backoff: true  # 是否使用指数退避
-  retryable_errors:     # 可重试的错误状态码
-    - 429               # Too Many Requests
-    - 500               # Internal Server Error
-    - 502               # Bad Gateway
-    - 503               # Service Unavailable
-    - 504               # Gateway Timeout
-  fail_strategy: "log"  # 失败策略：log（仅记录）, skip（跳过）, raise（抛出异常）
+  retry_count: 3              # 请求失败时的重试次数
+  retry_delay: 2              # 每次重试的间隔（秒）
+  exponential_backoff: true   # 启用指数退避（重试间隔逐渐增大）
+  retryable_errors:           # 以下HTTP状态码会触发重试
+    - 429                     # Too Many Requests - 请求过多
+    - 500                     # Internal Server Error - 服务器内部错误
+    - 502                     # Bad Gateway - 网关错误
+    - 503                     # Service Unavailable - 服务不可用
+    - 504                     # Gateway Timeout - 网关超时
+  fail_strategy: "log"        # 失败处理策略：log=仅记录, skip=跳过, raise=抛出异常
 
 # 断点续传配置
 resume:
-  enable: true          # 是否启用断点续传
-  state_file: "state/grabthesite.json"  # 状态文件路径
-  save_interval: 300    # 状态保存间隔（秒）
+  enable: true                    # 启用断点续传（中断后可恢复）
+  state_file: "state/grabthesite.json"  # 状态文件保存路径
+  save_interval: 300              # 自动保存状态间隔（秒）
 
-# JavaScript渲染配置
+# JavaScript渲染配置（用于抓取动态加载内容）
 js_rendering:
-  enable: false         # 是否启用JavaScript渲染
-  timeout: 30           # 渲染超时时间（秒）
+  enable: false         # 是否启用（需要安装Pyppeteer和Chrome）
+  timeout: 30           # 页面渲染超时时间（秒）
 
 # 输出配置
 output:
-  base_dir: "output"     # 基础输出目录
+  base_dir: "output"     # 输出根目录
   sitemap:
-    enable: true         # 是否生成站点地图
-    enable_html: true    # 是否生成 HTML 格式的站点地图
+    enable: true         # 生成XML站点地图（sitemap.xml）
+    enable_html: true    # 生成HTML站点地图（sitemap.html）
 
-# 排除列表
+# 排除列表 - 以下URL及其子目录不会被抓取
+# 示例：
 # exclude:
-#   - 可以添加更多排除的URL
+#   - "https://example.com/private/"
+#   - "https://example.com/admin/"
 
 # 日志配置
 logging:
-  level: "INFO"         # 日志级别
-  file: "logs/grabthesite.log"  # 日志文件路径
-  max_bytes: 10485760   # 日志文件最大字节数（10MB）
-  backup_count: 5       # 保留的日志文件数量
+  level: "INFO"                   # 日志级别：DEBUG/INFO/WARNING/ERROR
+  file: "logs/grabthesite.log"    # 日志文件路径
+  max_bytes: 10485760             # 单个日志文件最大大小（10MB）
+  backup_count: 5                 # 保留的日志备份数量
 
 # 国际化配置
 i18n:
-  lang: "en"            # 默认语言代码
-  available_langs:      # 可用语言列表
+  lang: "en"                      # 界面语言：en=英文, zh_CN=中文
+  available_langs:                # 支持的语言列表
     - "en"
     - "zh_CN"
 
 # 插件系统配置
 plugins:
-  enable: true          # 是否启用插件系统
-  enabled_plugins: []    # 启用的插件名称列表，空列表表示启用所有插件
+  enable: true                    # 启用插件系统
+  enabled_plugins: []             # 指定启用的插件（空列表=启用所有）
+                                  # 示例：["save_plugin", "example_plugin"]
