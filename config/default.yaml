@@ -66,8 +66,9 @@ i18n:
     - "en"
     - "zh_CN"
 
-# 插件系统配置
+# 插件配置
+# 每个插件可以单独启用/禁用
+# 格式：plugin_name: true/false
 plugins:
-  enable: true                    # 启用插件系统
-  enabled_plugins: []             # 指定启用的插件（空列表=启用所有）
-                                  # 示例：["save_plugin", "example_plugin"]
+  save_plugin: true      # 保存插件（核心插件，建议保持启用）
+  example_plugin: false  # 示例插件（演示用，默认禁用）

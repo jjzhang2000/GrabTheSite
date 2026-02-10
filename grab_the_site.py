@@ -14,6 +14,7 @@
 import os
 import sys
 import argparse
+from urllib.parse import urlparse
 from config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG, PLUGIN_CONFIG, RESUME_CONFIG, JS_RENDERING_CONFIG
 from crawler.crawl_site import CrawlSite
 from logger import setup_logger
@@ -162,18 +163,14 @@ def parse_args():
     )
     
     # 插件相关参数
+    # 格式: --plugins plugin_name:+ 或 --plugins plugin_name:-
+    # +: 启用, -: 禁用
     parser.add_argument(
         "--plugins",
         type=str,
         nargs="*",
         default=None,
-        help="启用的插件名称列表"
-    )
-    
-    parser.add_argument(
-        "--no-plugins",
-        action="store_true",
-        help="禁用插件系统"
+        help="插件配置，格式: plugin_name:+ 或 plugin_name:- (+启用, -禁用)"
     )
     
     # 抓取相关参数
@@ -288,12 +285,17 @@ def update_config(args):
         config["crawl"]["user_agent"] = args.user_agent
     
     # 插件配置
-    if "plugins" not in config:
-        config["plugins"] = {}
-    if args.no_plugins:
-        config["plugins"]["enable"] = False
+    # 格式: --plugins plugin_name:+ 或 plugin_name:-
     if args.plugins is not None:
-        config["plugins"]["enabled_plugins"] = args.plugins
+        if "plugins" not in config:
+            config["plugins"] = {}
+        for plugin_setting in args.plugins:
+            if ":" in plugin_setting:
+                plugin_name, action = plugin_setting.rsplit(":", 1)
+                config["plugins"][plugin_name] = (action == "+")
+            else:
+                # 默认启用
+                config["plugins"][plugin_setting] = True
     
     # 计算完整输出路径
     if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
@@ -333,25 +335,22 @@ def main(args_list=None):
     init_i18n(current_lang)
     
     # 初始化插件系统
-    plugin_config = config.get("plugins", PLUGIN_CONFIG)
-    plugin_enable = plugin_config.get("enable", True)
-    enabled_plugins = plugin_config.get("enabled_plugins", [])
+    # 插件配置格式: {plugin_name: True/False}
+    # 例如: {'save_plugin': True, 'example_plugin': False}
+    plugin_config = config.get("plugins", {})
     
     # 创建插件管理器实例
     plugin_manager = PluginManager(config)
     
-    # 如果启用了插件系统
-    if plugin_enable:
-        # 发现插件
-        plugin_manager.discover_plugins()
-        # 加载插件
-        plugin_manager.load_plugins()
-        # 启用插件
-        plugin_manager.enable_plugins(enabled_plugins)
-        logger.info(f"插件系统: 启用")
-        logger.info(f"启用的插件: {enabled_plugins if enabled_plugins else '所有插件'}")
-    else:
-        logger.info(f"插件系统: 禁用")
+    # 发现插件
+    plugin_manager.discover_plugins()
+    # 加载插件
+    plugin_manager.load_plugins()
+    # 启用插件（根据配置）
+    plugin_manager.enable_plugins(plugin_config)
+    
+    enabled_count = len(plugin_manager.enabled_plugins)
+    logger.info(f"插件系统: 已加载 {enabled_count} 个插件")
     
     # 使用导出的配置常量
     target_url = config.get("target_url", TARGET_URL)
@@ -394,25 +393,26 @@ def main(args_list=None):
     # 显示语言配置
     logger.info(f"{_("当前语言")}: {current_lang}")
     
-    # 创建抓取器实例
-    crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads, plugin_manager=plugin_manager if plugin_enable else None, force_download=args.force_download)
+    # 创建抓取器实例（始终传递 plugin_manager，内部根据 enabled_plugins 判断）
+    has_enabled_plugins = len(plugin_manager.enabled_plugins) > 0
+    crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads, plugin_manager=plugin_manager if has_enabled_plugins else None, force_download=args.force_download)
     
     # 调用插件的 on_crawl_start 钩子
-    if plugin_enable:
+    if has_enabled_plugins:
         plugin_manager.call_hook("on_crawl_start", crawler)
     
     # 抓取网站，获取暂存页面
     pages = crawler.crawl_site()
     
     # 调用插件的 on_crawl_end 钩子
-    if plugin_enable:
+    if has_enabled_plugins:
         plugin_manager.call_hook("on_crawl_end", pages)
     
     logger.info(_(f"抓取完成，共 {len(pages)} 个页面"))
     logger.debug(f"Pages type: {type(pages)}")
     
     # 调用插件的 on_save_start 钩子
-    if plugin_enable:
+    if has_enabled_plugins:
         saver_data = {
             'target_url': target_url,
             'output_dir': output_dir,
@@ -465,7 +465,7 @@ def main(args_list=None):
         sitemap_generator.generate_html_sitemap(sitemap_data)
     
     # 清理插件
-    if plugin_enable:
+    if has_enabled_plugins:
         plugin_manager.cleanup()
     
     logger.info(_("抓取完成！"))

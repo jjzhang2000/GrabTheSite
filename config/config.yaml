@@ -24,6 +24,11 @@ output:
 #   - "https://example.com/private/"
 #   - "https://example.com/admin/"
 
+# 插件配置
+# plugins:
+#   save_plugin: true      # 启用保存插件
+#   example_plugin: false  # 禁用示例插件
+
 # 日志配置
 logging:
   level: "INFO"                   # 日志级别

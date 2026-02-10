@@ -206,4 +206,5 @@ ERROR_HANDLING_CONFIG = config.get("error_handling", {})
 RESUME_CONFIG = config.get("resume", {})
 JS_RENDERING_CONFIG = config.get("js_rendering", {})
 I18N_CONFIG = config.get("i18n", {})
+# 插件配置格式: {plugin_name: True/False}
 PLUGIN_CONFIG = config.get("plugins", {})

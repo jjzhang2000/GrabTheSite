@@ -187,25 +187,14 @@ class PluginConfigPanel(ttk.Frame):
         """初始化插件配置面板"""
         super().__init__(parent)
         
-        # 不使用插件配置
-        self.no_plugins_var = tk.BooleanVar(value=False)
-        self.no_plugins_checkbutton = ttk.Checkbutton(self, text=_('不使用插件'), variable=self.no_plugins_var)
-        self.no_plugins_checkbutton.pack(anchor=tk.W, padx=5, pady=5)
-        
-        # 插件列表
-        self.plugin_list_frame = ttk.LabelFrame(self, text=_('可用插件'), padding="10")
+        # 插件列表框架
+        self.plugin_list_frame = ttk.LabelFrame(self, text=_('插件配置'), padding="10")
         self.plugin_list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
-        # 创建插件列表
-        self.plugin_list = tk.Listbox(self.plugin_list_frame, selectmode=tk.MULTIPLE)
-        self.plugin_list.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
+        # 存储插件复选框变量
+        self.plugin_vars = {}
         
-        # 添加滚动条
-        self.plugin_scrollbar = ttk.Scrollbar(self.plugin_list_frame, orient=tk.VERTICAL, command=self.plugin_list.yview)
-        self.plugin_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.plugin_list.config(yscrollcommand=self.plugin_scrollbar.set)
-        
-        # 填充插件列表（模拟数据）
+        # 填充插件列表
         self._populate_plugin_list()
     
     def _populate_plugin_list(self):
@@ -215,19 +204,25 @@ class PluginConfigPanel(ttk.Frame):
             from utils.plugin_manager import PluginManager
             plugin_manager = PluginManager()
             plugins = plugin_manager.get_available_plugins()
-            for plugin in plugins:
-                self.plugin_list.insert(tk.END, plugin)
-        except Exception as e:
+        except Exception:
             # 如果获取插件列表失败，使用默认插件
-            plugins = ['save_plugin']
-            for plugin in plugins:
-                self.plugin_list.insert(tk.END, plugin)
+            plugins = ['save_plugin', 'example_plugin']
+        
+        # 为每个插件创建复选框（默认启用 save_plugin）
+        for plugin in plugins:
+            var = tk.BooleanVar(value=(plugin == 'save_plugin'))
+            self.plugin_vars[plugin] = var
+            cb = ttk.Checkbutton(
+                self.plugin_list_frame, 
+                text=plugin, 
+                variable=var
+            )
+            cb.pack(anchor=tk.W, padx=5, pady=2)
     
-    def get_enabled_plugins(self):
-        """获取启用的插件"""
-        selected_indices = self.plugin_list.curselection()
-        return [self.plugin_list.get(i) for i in selected_indices]
-    
-    def get_no_plugins(self):
-        """获取是否不使用插件"""
-        return self.no_plugins_var.get()
+    def get_plugin_config(self):
+        """获取插件配置
+        
+        Returns:
+            dict: 插件配置字典，格式为 {plugin_name: True/False}
+        """
+        return {name: var.get() for name, var in self.plugin_vars.items()}

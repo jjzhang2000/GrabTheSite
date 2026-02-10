@@ -22,6 +22,11 @@ output:
 # exclude:
 #   - "https://example.com/private/"
 
+# 插件配置 - 测试环境启用所有插件
+plugins:
+  save_plugin: true
+  example_plugin: true
+
 # 日志配置 - 使用独立的测试日志
 logging:
   level: "INFO"                        # 日志级别

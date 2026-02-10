@@ -177,23 +177,34 @@ class PluginManager:
             self.plugins.append(plugin)
             logger.info(f"注册插件: {plugin.name}")
     
-    def enable_plugins(self, plugin_names=None):
+    def enable_plugins(self, plugin_config=None):
         """启用插件
         
         Args:
-            plugin_names: 要启用的插件模块名（目录名）列表，如果为None则启用所有插件
+            plugin_config: 插件配置字典，格式为 {plugin_name: True/False}
+                          如果为None或空字典，则启用所有发现的插件
         """
         self.enabled_plugins = []
         
         for plugin in self.plugins:
-            if plugin_names is None or getattr(plugin, 'module_name', None) in plugin_names:
+            module_name = getattr(plugin, 'module_name', None)
+            
+            # 确定插件是否启用
+            if plugin_config and module_name in plugin_config:
+                # 根据配置决定是否启用
+                enabled = plugin_config[module_name]
+            else:
+                # 默认启用（向后兼容）
+                enabled = True
+            
+            if enabled:
                 plugin.enabled = True
                 self.enabled_plugins.append(plugin)
                 plugin.on_init()
                 logger.info(f"启用插件: {plugin.name}")
             else:
                 plugin.enabled = False
-                logger.info(f"禁用插件: {plugin.name}")
+                logger.debug(f"禁用插件: {plugin.name}")
         
         logger.info(f"启用了 {len(self.enabled_plugins)} 个插件")
     

@@ -97,8 +97,7 @@ class MainWindow(tk.Tk):
         config = {
             "url": self.url_panel.get_url(),
             **self.advanced_config_panel.get_config(),
-            "plugins": self.plugin_config_panel.get_enabled_plugins(),
-            "no_plugins": self.plugin_config_panel.get_no_plugins()
+            "plugins": self.plugin_config_panel.get_plugin_config()
         }
         
         # 验证配置

@@ -39,15 +39,15 @@ def init_i18n(lang='en'):
     
     if lang not in _translators:
         try:
-                translator = gettext.translation(
-                    DOMAIN,
-                    localedir=LOCALE_DIR,
-                    languages=[lang],
-                    fallback=True
-                )
-                _translators[lang] = translator
-                logger.info(f"加载语言: {lang}")
-            except Exception as e:
+            translator = gettext.translation(
+                DOMAIN,
+                localedir=LOCALE_DIR,
+                languages=[lang],
+                fallback=True
+            )
+            _translators[lang] = translator
+            logger.info(f"加载语言: {lang}")
+        except Exception as e:
                 logger.warning(f"使用gettext.translation加载语言 {lang} 失败: {e}")
                 # 降级：使用基于字典的翻译器
                 translations = {}
