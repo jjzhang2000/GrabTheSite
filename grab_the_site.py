@@ -12,12 +12,14 @@
 """
 
 import os
+import sys
 import argparse
-from config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG, PLUGIN_CONFIG
+from config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG, PLUGIN_CONFIG, RESUME_CONFIG, JS_RENDERING_CONFIG
 from crawler.crawl_site import CrawlSite
 from logger import setup_logger
 from utils.i18n import init_i18n, gettext as _
 from utils.plugin_manager import PluginManager
+from utils.sitemap_generator import SitemapGenerator
 
 logger = setup_logger(__name__)
 
@@ -312,7 +314,6 @@ def main(args_list=None):
     # 解析命令行参数
     if args_list:
         # 从参数列表解析
-        import sys
         original_argv = sys.argv.copy()
         sys.argv = ['grab_the_site.py'] + args_list
         try:
@@ -327,8 +328,9 @@ def main(args_list=None):
     config = update_config(args)
     
     # 初始化国际化模块
-    lang = config.get("i18n", {}).get("lang", I18N_CONFIG.get("lang", "en"))
-    init_i18n(lang)
+    i18n_config = config.get("i18n", I18N_CONFIG)
+    current_lang = i18n_config.get("lang", "en")
+    init_i18n(current_lang)
     
     # 初始化插件系统
     plugin_config = config.get("plugins", PLUGIN_CONFIG)
@@ -374,7 +376,7 @@ def main(args_list=None):
     logger.info(f"{_('输出路径')}: {output_dir}")
     
     # 显示断点续传配置
-    resume_config = config.get("resume", {})
+    resume_config = config.get("resume", RESUME_CONFIG)
     resume_enable = resume_config.get("enable", True)
     state_file = resume_config.get("state_file", "state/grabthesite.json")
     logger.info(f"{_("断点续传")}: {'启用' if resume_enable else '禁用'}")
@@ -382,7 +384,7 @@ def main(args_list=None):
         logger.info(f"{_("状态文件")}: {state_file}")
     
     # 显示JavaScript渲染配置
-    js_rendering_config = config.get("js_rendering", {})
+    js_rendering_config = config.get("js_rendering", JS_RENDERING_CONFIG)
     js_rendering_enable = js_rendering_config.get("enable", False)
     js_rendering_timeout = js_rendering_config.get("timeout", 30)
     logger.info(f"{_("JavaScript渲染")}: {'启用' if js_rendering_enable else '禁用'}")
@@ -390,8 +392,6 @@ def main(args_list=None):
         logger.info(f"{_("渲染超时")}: {js_rendering_timeout}{_("秒")}")
     
     # 显示语言配置
-    i18n_config = config.get("i18n", {})
-    current_lang = i18n_config.get("lang", "en")
     logger.info(f"{_("当前语言")}: {current_lang}")
     
     # 创建抓取器实例
@@ -408,10 +408,8 @@ def main(args_list=None):
     if plugin_enable:
         plugin_manager.call_hook("on_crawl_end", pages)
     
-    logger.info(_(f"抓取完成，开始保存页面，共 {len(pages)} 个页面"))
+    logger.info(_(f"抓取完成，共 {len(pages)} 个页面"))
     logger.debug(f"Pages type: {type(pages)}")
-    if pages:
-        logger.debug(f"First 5 pages: {list(pages.items())[:5]}")
     
     # 调用插件的 on_save_start 钩子
     if plugin_enable:
@@ -449,12 +447,11 @@ def main(args_list=None):
         logger.warning(_("Plugin system disabled, cannot save pages. Please enable plugin system to save crawled content"))
     
     # 生成站点地图
-    sitemap_config = config["output"].get("sitemap", {})
+    sitemap_config = config["output"].get("sitemap", CONFIG["output"]["sitemap"])
     sitemap_enable = sitemap_config.get("enable", False)
     sitemap_html_enable = sitemap_config.get("enable_html", False)
     
     if sitemap_enable:
-        from utils.sitemap_generator import SitemapGenerator
         sitemap_generator = SitemapGenerator(target_url, output_dir)
         # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
         sitemap_data = pages if pages else crawler.visited_urls
@@ -462,7 +459,6 @@ def main(args_list=None):
     
     # 生成 HTML 格式的站点地图
     if sitemap_html_enable:
-        from utils.sitemap_generator import SitemapGenerator
         sitemap_generator = SitemapGenerator(target_url, output_dir)
         # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
         sitemap_data = pages if pages else crawler.visited_urls
