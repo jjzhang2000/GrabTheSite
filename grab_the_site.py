@@ -13,7 +13,7 @@
 
 import os
 import argparse
-from config import load_config, CONFIG
+from config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG, PLUGIN_CONFIG
 from crawler.crawl_site import CrawlSite
 from logger import setup_logger
 from utils.i18n import init_i18n, gettext as _
@@ -327,11 +327,11 @@ def main(args_list=None):
     config = update_config(args)
     
     # 初始化国际化模块
-    lang = config.get("i18n", {}).get("lang", "en")
+    lang = config.get("i18n", {}).get("lang", I18N_CONFIG.get("lang", "en"))
     init_i18n(lang)
     
     # 初始化插件系统
-    plugin_config = config.get("plugins", {})
+    plugin_config = config.get("plugins", PLUGIN_CONFIG)
     plugin_enable = plugin_config.get("enable", True)
     enabled_plugins = plugin_config.get("enabled_plugins", [])
     
@@ -351,17 +351,17 @@ def main(args_list=None):
     else:
         logger.info(f"插件系统: 禁用")
     
-    # 提取配置参数
-    target_url = config["target_url"]
-    max_depth = config["crawl"].get("max_depth", 1)
-    max_files = config["crawl"].get("max_files", 10)
-    output_dir = config["output"].get("full_path", "output")
+    # 使用导出的配置常量
+    target_url = config.get("target_url", TARGET_URL)
+    max_depth = config.get("crawl", {}).get("max_depth", MAX_DEPTH)
+    max_files = config.get("crawl", {}).get("max_files", MAX_FILES)
+    output_dir = config.get("output", {}).get("full_path", OUTPUT_DIR)
     
-    # 提取延迟相关配置
-    delay = config["crawl"].get("delay", 1)
-    random_delay = config["crawl"].get("random_delay", True)
-    threads = config["crawl"].get("threads", 4)
-    user_agent = config["crawl"].get("user_agent", "")
+    # 使用导出的延迟相关配置
+    delay = config.get("crawl", {}).get("delay", DELAY)
+    random_delay = config.get("crawl", {}).get("random_delay", RANDOM_DELAY)
+    threads = config.get("crawl", {}).get("threads", THREADS)
+    user_agent = config.get("crawl", {}).get("user_agent", USER_AGENT)
     
     logger.info(_("开始抓取网站..."))
     logger.info(f"{_('目标网站')}: {target_url}")

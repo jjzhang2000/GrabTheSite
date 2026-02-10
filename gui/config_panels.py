@@ -9,6 +9,7 @@
 import tkinter as tk
 from tkinter import ttk
 from utils.i18n import gettext as _
+from config import MAX_DEPTH, MAX_FILES, DELAY, BASE_OUTPUT_DIR
 
 
 class URLPanel(ttk.Frame):
@@ -47,7 +48,7 @@ class AdvancedConfigPanel(ttk.Frame):
         self.depth_label = ttk.Label(self, text=_('抓取深度:'))
         self.depth_label.grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.depth_var = tk.IntVar(value=1)
+        self.depth_var = tk.IntVar(value=MAX_DEPTH)
         self.depth_spinbox = ttk.Spinbox(self, from_=0, to=10, textvariable=self.depth_var, width=10)
         self.depth_spinbox.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
         
@@ -55,7 +56,7 @@ class AdvancedConfigPanel(ttk.Frame):
         self.max_files_label = ttk.Label(self, text=_('最大文件数:'))
         self.max_files_label.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.max_files_var = tk.IntVar(value=1000)
+        self.max_files_var = tk.IntVar(value=MAX_FILES)
         self.max_files_spinbox = ttk.Spinbox(self, from_=1, to=10000, textvariable=self.max_files_var, width=10)
         self.max_files_spinbox.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
         
@@ -63,7 +64,7 @@ class AdvancedConfigPanel(ttk.Frame):
         self.output_label = ttk.Label(self, text=_('输出目录:'))
         self.output_label.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.output_var = tk.StringVar(value='output')
+        self.output_var = tk.StringVar(value=BASE_OUTPUT_DIR)
         self.output_entry = ttk.Entry(self, textvariable=self.output_var, width=40)
         self.output_entry.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
         
@@ -71,7 +72,7 @@ class AdvancedConfigPanel(ttk.Frame):
         self.delay_label = ttk.Label(self, text=_('请求延迟(秒):'))
         self.delay_label.grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.delay_var = tk.DoubleVar(value=0.2)
+        self.delay_var = tk.DoubleVar(value=DELAY)
         self.delay_spinbox = ttk.Spinbox(self, from_=0.0, to=10.0, increment=0.1, textvariable=self.delay_var, width=10)
         self.delay_spinbox.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
         
