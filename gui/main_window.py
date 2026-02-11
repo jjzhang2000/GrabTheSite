@@ -9,6 +9,7 @@ GUI应用程序的主窗口，包含：
 """
 
 import tkinter as tk
+import threading
 from tkinter import ttk
 from gui.config_panels import URLPanel, AdvancedConfigPanel, PluginConfigPanel
 from gui.log_panel import LogPanel
