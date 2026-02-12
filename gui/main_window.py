@@ -23,16 +23,16 @@ class MainWindow(tk.Tk):
         """初始化主窗口"""
         super().__init__()
         self.title(_("GrabTheSite - 网站抓取工具"))
-        self.geometry("900x700")
-        self.minsize(800, 600)
+        self.geometry("750x550")
+        self.minsize(650, 450)
         
         # 创建主框架
-        self.main_frame = ttk.Frame(self, padding="10")
+        self.main_frame = ttk.Frame(self, padding="5")
         self.main_frame.pack(fill=tk.BOTH, expand=True)
         
         # 创建顶部框架（用于URL和基本配置）
-        self.top_frame = ttk.LabelFrame(self.main_frame, text=_("基本配置"), padding="10")
-        self.top_frame.pack(fill=tk.X, pady=(0, 10))
+        self.top_frame = ttk.LabelFrame(self.main_frame, text=_("基本配置"), padding="5")
+        self.top_frame.pack(fill=tk.X, pady=(0, 5))
         
         # 创建URL面板
         self.url_panel = URLPanel(self.top_frame)
@@ -40,7 +40,7 @@ class MainWindow(tk.Tk):
         
         # 创建中间框架（用于选项卡）
         self.tab_frame = ttk.Notebook(self.main_frame)
-        self.tab_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        self.tab_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 5))
         
         # 创建高级配置选项卡
         self.advanced_tab = ttk.Frame(self.tab_frame)
@@ -68,7 +68,7 @@ class MainWindow(tk.Tk):
         
         # 创建底部框架（用于按钮）
         self.bottom_frame = ttk.Frame(self.main_frame)
-        self.bottom_frame.pack(fill=tk.X, pady=(10, 0))
+        self.bottom_frame.pack(fill=tk.X, pady=(5, 0))
         
         # 创建开始抓取按钮
         self.start_button = ttk.Button(self.bottom_frame, text=_("开始抓取"), command=self.on_start)
