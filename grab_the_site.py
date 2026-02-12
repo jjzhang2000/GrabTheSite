@@ -15,7 +15,7 @@ import os
 import sys
 import argparse
 from urllib.parse import urlparse
-from config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG, PLUGIN_CONFIG, RESUME_CONFIG, JS_RENDERING_CONFIG
+from config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG, PLUGIN_CONFIG, JS_RENDERING_CONFIG
 from crawler.crawl_site import CrawlSite
 from logger import setup_logger
 from utils.i18n import init_i18n, gettext as _
@@ -105,25 +105,6 @@ def parse_args():
         "--no-html-sitemap",
         action="store_true",
         help="不生成 HTML 格式的站点地图"
-    )
-    
-    parser.add_argument(
-        "--resume",
-        action="store_true",
-        help="启用断点续传"
-    )
-    
-    parser.add_argument(
-        "--no-resume",
-        action="store_true",
-        help="禁用断点续传"
-    )
-    
-    parser.add_argument(
-        "--state-file",
-        type=str,
-        default=None,
-        help="状态文件路径"
     )
     
     # JavaScript渲染相关参数
@@ -252,16 +233,6 @@ def update_config(args):
     elif args.no_html_sitemap:
         config["output"]["sitemap"]["enable_html"] = False
     
-    # 断点续传配置
-    if "resume" not in config:
-        config["resume"] = {}
-    if args.resume:
-        config["resume"]["enable"] = True
-    elif args.no_resume:
-        config["resume"]["enable"] = False
-    if args.state_file:
-        config["resume"]["state_file"] = args.state_file
-    
     # JavaScript渲染配置
     if "js_rendering" not in config:
         config["js_rendering"] = {}
@@ -373,14 +344,6 @@ def main(args_list=None):
     logger.info(f"{_('线程数')}: {threads}")
     logger.info(f"{_('用户代理')}: {user_agent[:50]}..." if len(user_agent) > 50 else f"{_('用户代理')}: {user_agent}")
     logger.info(f"{_('输出路径')}: {output_dir}")
-    
-    # 显示断点续传配置
-    resume_config = config.get("resume", RESUME_CONFIG)
-    resume_enable = resume_config.get("enable", True)
-    state_file = resume_config.get("state_file", "state/grabthesite.json")
-    logger.info(f"{_("断点续传")}: {'启用' if resume_enable else '禁用'}")
-    if resume_enable:
-        logger.info(f"{_("状态文件")}: {state_file}")
     
     # 显示JavaScript渲染配置
     js_rendering_config = config.get("js_rendering", JS_RENDERING_CONFIG)

@@ -28,12 +28,6 @@ error_handling:
     - 504                     # Gateway Timeout - 网关超时
   fail_strategy: "log"        # 失败处理策略：log=仅记录, skip=跳过, raise=抛出异常
 
-# 断点续传配置
-resume:
-  enable: true                    # 启用断点续传（中断后可恢复）
-  state_file: "state/grabthesite.json"  # 状态文件保存路径
-  save_interval: 300              # 自动保存状态间隔（秒）
-
 # JavaScript渲染配置（用于抓取动态加载内容）
 js_rendering:
   enable: false         # 是否启用（需要安装Pyppeteer和Chrome）

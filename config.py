@@ -39,11 +39,6 @@ DEFAULT_CONFIG = {
         "retryable_errors": [429, 500, 502, 503, 504],
         "fail_strategy": "log"
     },
-    "resume": {
-        "enable": True,
-        "state_file": "state/grabthesite.json",
-        "save_interval": 300
-    },
     "js_rendering": {
         "enable": False,
         "timeout": 30
@@ -203,7 +198,6 @@ EXCLUDE_LIST = config.get("exclude", [])
 # 子配置字典
 LOGGING_CONFIG = config.get("logging", {})
 ERROR_HANDLING_CONFIG = config.get("error_handling", {})
-RESUME_CONFIG = config.get("resume", {})
 JS_RENDERING_CONFIG = config.get("js_rendering", {})
 I18N_CONFIG = config.get("i18n", {})
 # 插件配置格式: {plugin_name: True/False}

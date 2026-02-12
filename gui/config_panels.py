@@ -14,7 +14,7 @@ from utils.i18n import gettext as _
 from config import MAX_DEPTH, MAX_FILES, DELAY, BASE_OUTPUT_DIR
 
 # GUI状态文件路径
-GUI_STATE_FILE = "state/gui_state.json"
+GUI_STATE_FILE = "config/gui_state.json"
 
 
 def load_gui_state():
@@ -144,19 +144,6 @@ class AdvancedConfigPanel(ttk.Frame):
         self.html_sitemap_checkbutton = ttk.Checkbutton(self, text=_('生成HTML站点地图'), variable=self.html_sitemap_var)
         self.html_sitemap_checkbutton.grid(row=7, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
         
-        # 恢复抓取配置
-        self.resume_var = tk.BooleanVar(value=False)
-        self.resume_checkbutton = ttk.Checkbutton(self, text=_('恢复抓取'), variable=self.resume_var)
-        self.resume_checkbutton.grid(row=8, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
-        
-        # 状态文件配置
-        self.state_file_label = ttk.Label(self, text=_('状态文件:'))
-        self.state_file_label.grid(row=9, column=0, sticky=tk.W, padx=5, pady=5)
-        
-        self.state_file_var = tk.StringVar(value='crawl_state.json')
-        self.state_file_entry = ttk.Entry(self, textvariable=self.state_file_var, width=40)
-        self.state_file_entry.grid(row=9, column=1, sticky=tk.W, padx=5, pady=5)
-        
         # JS渲染配置
         self.js_rendering_var = tk.BooleanVar(value=False)
         self.js_rendering_checkbutton = ttk.Checkbutton(self, text=_('启用JS渲染'), variable=self.js_rendering_var)
@@ -202,8 +189,6 @@ class AdvancedConfigPanel(ttk.Frame):
             "threads": self.threads_var.get(),
             "sitemap": self.sitemap_var.get(),
             "html_sitemap": self.html_sitemap_var.get(),
-            "resume": self.resume_var.get(),
-            "state_file": self.state_file_var.get(),
             "js_rendering": self.js_rendering_var.get(),
             "js_timeout": self.js_timeout_var.get(),
             "lang": self.lang_var.get(),

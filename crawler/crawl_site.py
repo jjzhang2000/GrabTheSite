@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from crawler.downloader import download_file, Downloader
 from logger import setup_logger
-from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, ERROR_HANDLING_CONFIG, RESUME_CONFIG, JS_RENDERING_CONFIG
+from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, ERROR_HANDLING_CONFIG, JS_RENDERING_CONFIG
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler
 from utils.state_manager import StateManager
@@ -86,20 +86,17 @@ class CrawlSite:
             fail_strategy=ERROR_HANDLING_CONFIG.get('fail_strategy', 'log')
         )
         
-        # 初始化状态管理器
-        self.resume_enabled = RESUME_CONFIG.get('enable', True)
-        self.save_interval = RESUME_CONFIG.get('save_interval', 300)
-        if self.resume_enabled:
-            state_file = RESUME_CONFIG.get('state_file', 'state/grabthesite.json')
-            # 如果状态文件路径是相对路径，转换为绝对路径
-            if not os.path.isabs(state_file):
-                state_file = os.path.join(os.getcwd(), state_file)
-            self.state_manager = StateManager(state_file)
-            # 从状态管理器加载已访问的URL
-            if not self.force_download:
-                self.visited_urls.update(self.state_manager.state.get('visited_urls', set()))
-        else:
-            self.state_manager = None
+        # 初始化状态管理器（断点续传默认开启）
+        self.resume_enabled = True
+        self.save_interval = 300
+        state_file = 'logs/grabthesite.json'
+        # 如果状态文件路径是相对路径，转换为绝对路径
+        if not os.path.isabs(state_file):
+            state_file = os.path.join(os.getcwd(), state_file)
+        self.state_manager = StateManager(state_file)
+        # 从状态管理器加载已访问的URL
+        if not self.force_download:
+            self.visited_urls.update(self.state_manager.state.get('visited_urls', set()))
         
         # 初始化JavaScript渲染器
         self.js_rendering_enabled = JS_RENDERING_CONFIG.get('enable', False)

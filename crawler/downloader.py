@@ -14,7 +14,7 @@ import queue
 import requests
 from urllib.parse import urlparse
 from logger import setup_logger
-from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, RESUME_CONFIG, USER_AGENT
+from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, USER_AGENT
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler, retry
 from utils.state_manager import StateManager
