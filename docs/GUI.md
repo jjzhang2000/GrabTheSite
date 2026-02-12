@@ -5,7 +5,7 @@
 要启动GUI界面，只需运行以下命令：
 
 ```bash
-python gui_app.py
+python grab_gui.py
 ```
 
 ## GUI界面布局
