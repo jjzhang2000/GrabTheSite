@@ -278,11 +278,12 @@ def update_config(args):
     return config
 
 
-def main(args_list=None):
+def main(args_list=None, stop_event=None):
     """主函数
     
     Args:
         args_list: 可选的参数列表，用于从GUI传递参数
+        stop_event: 可选的停止事件，用于通知抓取线程停止
     """
     # 解析命令行参数
     if args_list:
@@ -358,7 +359,7 @@ def main(args_list=None):
     
     # 创建抓取器实例（始终传递 plugin_manager，内部根据 enabled_plugins 判断）
     has_enabled_plugins = len(plugin_manager.enabled_plugins) > 0
-    crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads, plugin_manager=plugin_manager if has_enabled_plugins else None, force_download=args.force_download)
+    crawler = CrawlSite(target_url, max_depth, max_files, output_dir, threads=threads, plugin_manager=plugin_manager if has_enabled_plugins else None, force_download=args.force_download, stop_event=stop_event)
     
     # 调用插件的 on_crawl_start 钩子
     if has_enabled_plugins:

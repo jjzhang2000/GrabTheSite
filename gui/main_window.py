@@ -82,6 +82,7 @@ class MainWindow(tk.Tk):
         # 抓取状态
         self.is_crawling = False
         self.stop_event = threading.Event()  # 用于通知抓取线程停止
+        self.crawl_thread = None  # 抓取线程引用
     
     def on_start(self):
         """开始抓取按钮点击事件"""
@@ -143,8 +144,8 @@ class MainWindow(tk.Tk):
                         args_list.append(f"--{arg_name}")
                         args_list.append(str(value))
                 
-                # 调用主抓取函数
-                grab_main(args_list)
+                # 调用主抓取函数，传递stop_event
+                grab_main(args_list, self.stop_event)
                 
                 # 记录完成日志
                 self.log_panel.add_log(_("抓取完成!"))
@@ -152,13 +153,17 @@ class MainWindow(tk.Tk):
                 # 记录错误日志
                 self.log_panel.add_log(_("错误: {}").format(str(e)))
             finally:
-                # 停止抓取
-                self.on_stop()
+                # 抓取结束（正常完成或被停止），重置UI状态
+                # 注意：这里不调用on_stop，因为on_stop会等待线程结束，可能导致死锁
+                if self.is_crawling:
+                    self.is_crawling = False
+                    self.start_button.config(state=tk.NORMAL)
+                    self.stop_button.config(state=tk.DISABLED)
         
         # 启动抓取线程
-        thread = threading.Thread(target=crawl_thread)
-        thread.daemon = True
-        thread.start()
+        self.crawl_thread = threading.Thread(target=crawl_thread)
+        self.crawl_thread.daemon = True
+        self.crawl_thread.start()
     
     def on_stop(self):
         """停止按钮点击事件"""
@@ -168,13 +173,20 @@ class MainWindow(tk.Tk):
         # 设置停止标志，通知抓取线程
         self.stop_event.set()
         
-        # 启用开始按钮，禁用停止按钮
-        self.start_button.config(state=tk.NORMAL)
-        self.stop_button.config(state=tk.DISABLED)
-        self.is_crawling = False
-        
         # 记录停止日志
         self.log_panel.add_log(_("正在停止抓取..."))
+        
+        # 等待抓取线程结束（最多等待10秒）
+        if self.crawl_thread and self.crawl_thread.is_alive():
+            self.crawl_thread.join(timeout=10)
+            if self.crawl_thread.is_alive():
+                self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
+        
+        # 重置状态
+        self.is_crawling = False
+        self.start_button.config(state=tk.NORMAL)
+        self.stop_button.config(state=tk.DISABLED)
+        self.log_panel.add_log(_("抓取已停止"))
     
     def on_exit(self):
         """退出按钮点击事件"""

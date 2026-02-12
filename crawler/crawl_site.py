@@ -31,7 +31,7 @@ logger = setup_logger(__name__)
 class CrawlSite:
     """网站抓取类，负责抓取网站内容并返回暂存的页面"""
     
-    def __init__(self, target_url, max_depth, max_files, output_dir, threads=THREADS, plugin_manager=None, force_download=False):
+    def __init__(self, target_url, max_depth, max_files, output_dir, threads=THREADS, plugin_manager=None, force_download=False, stop_event=None):
         """初始化抓取器
         
         Args:
@@ -42,8 +42,10 @@ class CrawlSite:
             threads: 线程数
             plugin_manager: 插件管理器实例
             force_download: 是否强制重新下载页面
+            stop_event: 停止事件，用于通知抓取线程停止
         """
         self.force_download = force_download
+        self.stop_event = stop_event  # 停止事件
         self.target_url = target_url
         self.max_depth = max_depth
         self.max_files = max_files
@@ -188,14 +190,25 @@ class CrawlSite:
     def _worker(self):
         """工作线程函数"""
         while True:
+            # 检查是否收到停止信号
+            if self.stop_event and self.stop_event.is_set():
+                logger.info("工作线程收到停止信号，正在退出...")
+                break
+            
             # 检查是否达到文件数量限制
             with self.lock:
                 if self.downloaded_files >= self.max_files:
                     break
             try:
-                url, depth = self.queue.get(block=True, timeout=1)
+                url, depth = self.queue.get(block=True, timeout=0.5)
                 task_completed = False
                 try:
+                    # 检查是否收到停止信号
+                    if self.stop_event and self.stop_event.is_set():
+                        logger.info("任务处理前收到停止信号，跳过任务")
+                        task_completed = True
+                        return
+                    
                     # 检查是否已访问过该URL
                     with self.lock:
                         if url in self.visited_urls:
