@@ -57,6 +57,12 @@ class MainWindow(tk.Tk):
         self.log_panel = LogPanel(self.log_frame)
         self.log_panel.pack(fill=tk.BOTH, expand=True)
         
+        # 设置日志处理器，将日志输出到GUI
+        import logging
+        self.log_panel.setup_logger_handler()  # 设置根logger
+        # 也为 grab_the_site 模块设置
+        self.log_panel.setup_logger_handler('grab_the_site')
+        
         # 创建底部框架（用于按钮）
         self.bottom_frame = ttk.Frame(self.main_frame)
         self.bottom_frame.pack(fill=tk.X, pady=(10, 0))

@@ -4,11 +4,34 @@ GUI中的日志显示组件：
 - 实时显示日志
 - 支持滚动查看
 - 自动滚动到底部
+- 通过GUIHandler与logging系统集成
 """
 
+import logging
 import tkinter as tk
 from tkinter import ttk
 from utils.i18n import gettext as _
+
+
+class GUIHandler(logging.Handler):
+    """自定义日志处理器，将日志消息发送到GUI"""
+    
+    def __init__(self, log_panel):
+        """初始化处理器
+        
+        Args:
+            log_panel: LogPanel实例，用于显示日志
+        """
+        super().__init__()
+        self.log_panel = log_panel
+    
+    def emit(self, record):
+        """处理日志记录"""
+        try:
+            msg = self.format(record)
+            self.log_panel.add_log(msg)
+        except Exception:
+            self.handleError(record)
 
 
 class LogPanel(ttk.Frame):
@@ -67,3 +90,28 @@ class LogPanel(ttk.Frame):
         
         # 禁用文本框编辑
         self.log_text.config(state=tk.DISABLED)
+    
+    def setup_logger_handler(self, logger_name=None):
+        """设置日志处理器，将日志输出到GUI
+        
+        Args:
+            logger_name: logger名称，如果为None则使用根logger
+        """
+        # 获取logger
+        logger = logging.getLogger(logger_name)
+        
+        # 检查是否已添加GUIHandler
+        for handler in logger.handlers:
+            if isinstance(handler, GUIHandler):
+                return  # 已存在，不再添加
+        
+        # 创建GUI处理器
+        gui_handler = GUIHandler(self)
+        gui_handler.setLevel(logging.INFO)
+        
+        # 设置格式（与文件日志一致）
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        gui_handler.setFormatter(formatter)
+        
+        # 添加到logger
+        logger.addHandler(gui_handler)
