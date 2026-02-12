@@ -24,7 +24,8 @@ class LogPanel(ttk.Frame):
         
         # 创建日志文本框，默认设置为禁用状态，防止用户编辑
         # wrap=tk.WORD 表示自动换行，以单词为单位
-        self.log_text = tk.Text(self, wrap=tk.WORD, state=tk.DISABLED)
+        # height=8 设置固定高度为8行
+        self.log_text = tk.Text(self, wrap=tk.WORD, state=tk.DISABLED, height=8)
         self.log_text.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
         
         # 添加垂直滚动条，以便在日志过多时可以滚动查看

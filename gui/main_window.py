@@ -23,8 +23,8 @@ class MainWindow(tk.Tk):
         """初始化主窗口"""
         super().__init__()
         self.title(_("GrabTheSite - 网站抓取工具"))
-        self.geometry("750x550")
-        self.minsize(650, 450)
+        self.geometry("750x800")
+        self.minsize(650, 700)
         
         # 创建主框架
         self.main_frame = ttk.Frame(self, padding="10")
@@ -40,7 +40,7 @@ class MainWindow(tk.Tk):
         
         # 创建中间框架（用于选项卡）
         self.tab_frame = ttk.Notebook(self.main_frame)
-        self.tab_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        self.tab_frame.pack(fill=tk.X, pady=(0, 10))
         
         # 创建高级配置选项卡
         self.advanced_tab = ttk.Frame(self.tab_frame)
@@ -48,14 +48,13 @@ class MainWindow(tk.Tk):
         
         # 创建高级配置面板（包含插件配置）
         self.advanced_config_panel = AdvancedConfigPanel(self.advanced_tab)
-        self.advanced_config_panel.pack(fill=tk.BOTH, expand=True)
+        self.advanced_config_panel.pack(fill=tk.X, expand=False)
         
-        # 创建日志选项卡
-        self.log_tab = ttk.Frame(self.tab_frame)
-        self.tab_frame.add(self.log_tab, text=_("日志"))
+        # 创建日志面板（放在选项卡下方，按钮上方）
+        self.log_frame = ttk.LabelFrame(self.main_frame, text=_("日志"), padding="5")
+        self.log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
-        # 创建日志面板
-        self.log_panel = LogPanel(self.log_tab)
+        self.log_panel = LogPanel(self.log_frame)
         self.log_panel.pack(fill=tk.BOTH, expand=True)
         
         # 创建底部框架（用于按钮）
