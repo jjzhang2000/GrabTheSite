@@ -6,10 +6,49 @@
 - 插件配置面板
 """
 
+import json
+import os
 import tkinter as tk
 from tkinter import ttk
 from utils.i18n import gettext as _
 from config import MAX_DEPTH, MAX_FILES, DELAY, BASE_OUTPUT_DIR
+
+# GUI状态文件路径
+GUI_STATE_FILE = "state/gui_state.json"
+
+
+def load_gui_state():
+    """加载GUI状态"""
+    if os.path.exists(GUI_STATE_FILE):
+        try:
+            with open(GUI_STATE_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def save_gui_state(state):
+    """保存GUI状态"""
+    try:
+        os.makedirs(os.path.dirname(GUI_STATE_FILE), exist_ok=True)
+        with open(GUI_STATE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(state, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
+def get_last_url():
+    """获取上次使用的URL"""
+    state = load_gui_state()
+    return state.get('last_url', '')
+
+
+def set_last_url(url):
+    """设置上次使用的URL"""
+    state = load_gui_state()
+    state['last_url'] = url
+    save_gui_state(state)
 
 
 class URLPanel(ttk.Frame):
@@ -23,14 +62,20 @@ class URLPanel(ttk.Frame):
         self.url_label = ttk.Label(self, text=_("目标URL:"))
         self.url_label.pack(side=tk.LEFT, padx=(0, 5))
         
-        # 创建URL输入框
-        self.url_var = tk.StringVar()
+        # 创建URL输入框，默认值为上次使用的URL
+        self.url_var = tk.StringVar(value=get_last_url())
         self.url_entry = ttk.Entry(self, textvariable=self.url_var, width=80)
         self.url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
     
     def get_url(self):
         """获取URL"""
         return self.url_var.get()
+    
+    def save_url(self):
+        """保存当前URL到状态文件"""
+        url = self.url_var.get().strip()
+        if url:
+            set_last_url(url)
 
 
 class AdvancedConfigPanel(ttk.Frame):

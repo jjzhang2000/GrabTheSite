@@ -101,6 +101,9 @@ class MainWindow(tk.Tk):
             "plugins": self.plugin_config_panel.get_plugin_config()
         }
         
+        # 保存当前URL到状态文件
+        self.url_panel.save_url()
+        
         # 验证配置
         if not config["url"]:
             self.log_panel.add_log(_("错误: 目标URL不能为空"))
@@ -126,19 +129,21 @@ class MainWindow(tk.Tk):
                     self.log_panel.add_log(_("抓取已被用户取消"))
                     return
                 
-                # 将配置转换为命令行参数
+                # 将配置转换为命令行参数（将snake_case转换为kebab-case）
                 args_list = []
                 for key, value in config.items():
+                    # 将下划线转换为短横线（如max_files -> max-files）
+                    arg_name = key.replace('_', '-')
                     if value is True:
-                        args_list.append(f"--{key}")
+                        args_list.append(f"--{arg_name}")
                     elif value is False:
                         continue
                     elif isinstance(value, list):
                         if value:
-                            args_list.append(f"--{key}")
+                            args_list.append(f"--{arg_name}")
                             args_list.extend(value)
                     else:
-                        args_list.append(f"--{key}")
+                        args_list.append(f"--{arg_name}")
                         args_list.append(str(value))
                 
                 # 调用主抓取函数

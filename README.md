@@ -61,7 +61,7 @@ GrabTheSite/
 ├── logger.py             # 日志系统
 ├── config.py             # 配置管理
 ├── grab_the_site.py      # 命令行主脚本
-└── grab_gui.py            # GUI应用程序入口
+└── grab_gui.py           # GUI应用程序入口
 ```
 
 ## 依赖安装
