@@ -27,12 +27,12 @@ class MainWindow(tk.Tk):
         self.minsize(650, 450)
         
         # 创建主框架
-        self.main_frame = ttk.Frame(self, padding="5")
+        self.main_frame = ttk.Frame(self, padding="10")
         self.main_frame.pack(fill=tk.BOTH, expand=True)
         
         # 创建顶部框架（用于URL和基本配置）
-        self.top_frame = ttk.LabelFrame(self.main_frame, text=_("基本配置"), padding="5")
-        self.top_frame.pack(fill=tk.X, pady=(0, 5))
+        self.top_frame = ttk.LabelFrame(self.main_frame, text=_("基本配置"), padding="8")
+        self.top_frame.pack(fill=tk.X, pady=(0, 10))
         
         # 创建URL面板
         self.url_panel = URLPanel(self.top_frame)
@@ -40,7 +40,7 @@ class MainWindow(tk.Tk):
         
         # 创建中间框架（用于选项卡）
         self.tab_frame = ttk.Notebook(self.main_frame)
-        self.tab_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 5))
+        self.tab_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
         # 创建高级配置选项卡
         self.advanced_tab = ttk.Frame(self.tab_frame)
@@ -60,15 +60,15 @@ class MainWindow(tk.Tk):
         
         # 创建底部框架（用于按钮）
         self.bottom_frame = ttk.Frame(self.main_frame)
-        self.bottom_frame.pack(fill=tk.X, pady=(5, 0))
+        self.bottom_frame.pack(fill=tk.X, pady=(10, 0))
         
         # 创建开始抓取按钮
         self.start_button = ttk.Button(self.bottom_frame, text=_("开始抓取"), command=self.on_start)
-        self.start_button.pack(side=tk.LEFT, padx=(0, 10))
+        self.start_button.pack(side=tk.LEFT, padx=(0, 15))
         
         # 创建停止按钮
         self.stop_button = ttk.Button(self.bottom_frame, text=_("停止"), command=self.on_stop, state=tk.DISABLED)
-        self.stop_button.pack(side=tk.LEFT, padx=(0, 10))
+        self.stop_button.pack(side=tk.LEFT, padx=(0, 15))
         
         # 创建退出按钮
         self.exit_button = ttk.Button(self.bottom_frame, text=_("退出"), command=self.on_exit)

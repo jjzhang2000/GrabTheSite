@@ -109,13 +109,13 @@ class URLPanel(ttk.Frame):
         
         # 创建URL标签
         self.url_label = ttk.Label(self, text=_("目标URL:"))
-        self.url_label.pack(side=tk.LEFT, padx=(0, 3))
+        self.url_label.pack(side=tk.LEFT, padx=(5, 5))
         
         # 创建URL输入框，默认值为配置文件中的target_url
         initial_url = config.get('target_url', '')
         self.url_var = tk.StringVar(value=initial_url)
         self.url_entry = ttk.Entry(self, textvariable=self.url_var, width=55)
-        self.url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
     
     def get_url(self):
         """获取URL"""
