@@ -6,84 +6,143 @@
 - 插件配置面板
 """
 
-import json
 import os
 import tkinter as tk
 from tkinter import ttk
+import yaml
 from utils.i18n import gettext as _
-from config import MAX_DEPTH, MAX_FILES, DELAY, BASE_OUTPUT_DIR
-
-# GUI状态文件路径
-GUI_STATE_FILE = "config/gui_state.json"
+from config import MAX_DEPTH, MAX_FILES, DELAY, BASE_OUTPUT_DIR, USER_CONFIG_FILE, load_config
 
 
-def load_gui_state():
-    """加载GUI状态"""
-    if os.path.exists(GUI_STATE_FILE):
-        try:
-            with open(GUI_STATE_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
-
-
-def save_gui_state(state):
-    """保存GUI状态"""
+def save_config_to_yaml(config):
+    """保存配置到config.yaml
+    
+    Args:
+        config: 配置字典，包含 url, depth, max_files 等
+    """
     try:
-        os.makedirs(os.path.dirname(GUI_STATE_FILE), exist_ok=True)
-        with open(GUI_STATE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(state, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
-
-
-def get_last_url():
-    """获取上次使用的URL"""
-    state = load_gui_state()
-    return state.get('last_url', '')
-
-
-def set_last_url(url):
-    """设置上次使用的URL"""
-    state = load_gui_state()
-    state['last_url'] = url
-    save_gui_state(state)
+        # 加载现有配置
+        existing_config = {}
+        if os.path.exists(USER_CONFIG_FILE):
+            try:
+                with open(USER_CONFIG_FILE, 'r', encoding='utf-8') as f:
+                    existing_config = yaml.safe_load(f) or {}
+            except Exception:
+                existing_config = {}
+        
+        # 构建新的配置结构
+        new_config = existing_config.copy()
+        
+        # 更新 target_url
+        if 'url' in config and config['url']:
+            new_config['target_url'] = config['url']
+        
+        # 更新 crawl 配置
+        if 'crawl' not in new_config:
+            new_config['crawl'] = {}
+        if 'depth' in config:
+            new_config['crawl']['max_depth'] = config['depth']
+        if 'max_files' in config:
+            new_config['crawl']['max_files'] = config['max_files']
+        if 'delay' in config:
+            new_config['crawl']['delay'] = config['delay']
+        if 'no_random_delay' in config:
+            new_config['crawl']['random_delay'] = not config['no_random_delay']
+        if 'threads' in config:
+            new_config['crawl']['threads'] = config['threads']
+        if 'user_agent' in config:
+            new_config['crawl']['user_agent'] = config['user_agent']
+        
+        # 更新 output 配置
+        if 'output' not in new_config:
+            new_config['output'] = {}
+        if 'output' in config:
+            new_config['output']['base_dir'] = config['output']
+        if 'sitemap' in config:
+            if 'sitemap' not in new_config['output']:
+                new_config['output']['sitemap'] = {}
+            new_config['output']['sitemap']['enable'] = config['sitemap']
+        if 'html_sitemap' in config:
+            if 'sitemap' not in new_config['output']:
+                new_config['output']['sitemap'] = {}
+            new_config['output']['sitemap']['enable_html'] = config['html_sitemap']
+        
+        # 更新 js_rendering 配置
+        if 'js_rendering' not in new_config:
+            new_config['js_rendering'] = {}
+        if 'js_rendering' in config:
+            new_config['js_rendering']['enable'] = config['js_rendering']
+        if 'js_timeout' in config:
+            new_config['js_rendering']['timeout'] = config['js_timeout']
+        
+        # 更新 i18n 配置
+        if 'i18n' not in new_config:
+            new_config['i18n'] = {}
+        if 'lang' in config:
+            new_config['i18n']['lang'] = config['lang']
+        
+        # 保存到文件
+        with open(USER_CONFIG_FILE, 'w', encoding='utf-8') as f:
+            yaml.dump(new_config, f, allow_unicode=True, sort_keys=False)
+        
+        return True
+    except Exception as e:
+        print(f"保存配置失败: {e}")
+        return False
 
 
 class URLPanel(ttk.Frame):
     """URL配置面板"""
     
-    def __init__(self, parent):
-        """初始化URL面板"""
+    def __init__(self, parent, config=None):
+        """初始化URL面板
+        
+        Args:
+            parent: 父窗口
+            config: 配置字典，如果为None则从配置文件加载
+        """
         super().__init__(parent)
+        
+        # 获取配置
+        if config is None:
+            config = load_config()
         
         # 创建URL标签
         self.url_label = ttk.Label(self, text=_("目标URL:"))
         self.url_label.pack(side=tk.LEFT, padx=(0, 5))
         
-        # 创建URL输入框，默认值为上次使用的URL
-        self.url_var = tk.StringVar(value=get_last_url())
+        # 创建URL输入框，默认值为配置文件中的target_url
+        initial_url = config.get('target_url', '')
+        self.url_var = tk.StringVar(value=initial_url)
         self.url_entry = ttk.Entry(self, textvariable=self.url_var, width=80)
         self.url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
     
     def get_url(self):
         """获取URL"""
         return self.url_var.get()
-    
-    def save_url(self):
-        """保存当前URL到状态文件"""
-        url = self.url_var.get().strip()
-        if url:
-            set_last_url(url)
 
 
 class AdvancedConfigPanel(ttk.Frame):
     """高级配置面板"""
     
-    def __init__(self, parent):
-        """初始化高级配置面板"""
+    def __init__(self, parent, config=None):
+        """初始化高级配置面板
+        
+        Args:
+            parent: 父窗口
+            config: 配置字典，如果为None则从配置文件加载
+        """
         super().__init__(parent)
+        
+        # 获取配置
+        if config is None:
+            config = load_config()
+        
+        crawl_config = config.get('crawl', {})
+        output_config = config.get('output', {})
+        sitemap_config = output_config.get('sitemap', {})
+        js_config = config.get('js_rendering', {})
+        i18n_config = config.get('i18n', {})
         
         # 创建网格布局
         self.grid_columnconfigure(0, weight=1)
@@ -93,7 +152,7 @@ class AdvancedConfigPanel(ttk.Frame):
         self.depth_label = ttk.Label(self, text=_('抓取深度:'))
         self.depth_label.grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.depth_var = tk.IntVar(value=MAX_DEPTH)
+        self.depth_var = tk.IntVar(value=crawl_config.get('max_depth', MAX_DEPTH))
         self.depth_spinbox = ttk.Spinbox(self, from_=0, to=10, textvariable=self.depth_var, width=10)
         self.depth_spinbox.grid(row=0, column=1, sticky=tk.W, padx=5, pady=5)
         
@@ -101,7 +160,7 @@ class AdvancedConfigPanel(ttk.Frame):
         self.max_files_label = ttk.Label(self, text=_('最大文件数:'))
         self.max_files_label.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.max_files_var = tk.IntVar(value=MAX_FILES)
+        self.max_files_var = tk.IntVar(value=crawl_config.get('max_files', MAX_FILES))
         self.max_files_spinbox = ttk.Spinbox(self, from_=1, to=10000, textvariable=self.max_files_var, width=10)
         self.max_files_spinbox.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
         
@@ -109,7 +168,7 @@ class AdvancedConfigPanel(ttk.Frame):
         self.output_label = ttk.Label(self, text=_('输出目录:'))
         self.output_label.grid(row=2, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.output_var = tk.StringVar(value=BASE_OUTPUT_DIR)
+        self.output_var = tk.StringVar(value=output_config.get('base_dir', BASE_OUTPUT_DIR))
         self.output_entry = ttk.Entry(self, textvariable=self.output_var, width=40)
         self.output_entry.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
         
@@ -117,12 +176,13 @@ class AdvancedConfigPanel(ttk.Frame):
         self.delay_label = ttk.Label(self, text=_('请求延迟(秒):'))
         self.delay_label.grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.delay_var = tk.DoubleVar(value=DELAY)
+        self.delay_var = tk.DoubleVar(value=crawl_config.get('delay', DELAY))
         self.delay_spinbox = ttk.Spinbox(self, from_=0.0, to=10.0, increment=0.1, textvariable=self.delay_var, width=10)
         self.delay_spinbox.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
         
         # 无随机延迟配置
-        self.no_random_delay_var = tk.BooleanVar(value=False)
+        random_delay = crawl_config.get('random_delay', True)
+        self.no_random_delay_var = tk.BooleanVar(value=not random_delay)
         self.no_random_delay_checkbutton = ttk.Checkbutton(self, text=_('无随机延迟'), variable=self.no_random_delay_var)
         self.no_random_delay_checkbutton.grid(row=4, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
         
@@ -130,22 +190,22 @@ class AdvancedConfigPanel(ttk.Frame):
         self.threads_label = ttk.Label(self, text=_('线程数:'))
         self.threads_label.grid(row=5, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.threads_var = tk.IntVar(value=4)
+        self.threads_var = tk.IntVar(value=crawl_config.get('threads', 4))
         self.threads_spinbox = ttk.Spinbox(self, from_=1, to=32, textvariable=self.threads_var, width=10)
         self.threads_spinbox.grid(row=5, column=1, sticky=tk.W, padx=5, pady=5)
         
         # 生成站点地图配置
-        self.sitemap_var = tk.BooleanVar(value=False)
+        self.sitemap_var = tk.BooleanVar(value=sitemap_config.get('enable', False))
         self.sitemap_checkbutton = ttk.Checkbutton(self, text=_('生成XML站点地图'), variable=self.sitemap_var)
         self.sitemap_checkbutton.grid(row=6, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
         
         # 生成HTML站点地图配置
-        self.html_sitemap_var = tk.BooleanVar(value=False)
+        self.html_sitemap_var = tk.BooleanVar(value=sitemap_config.get('enable_html', False))
         self.html_sitemap_checkbutton = ttk.Checkbutton(self, text=_('生成HTML站点地图'), variable=self.html_sitemap_var)
         self.html_sitemap_checkbutton.grid(row=7, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
         
         # JS渲染配置
-        self.js_rendering_var = tk.BooleanVar(value=False)
+        self.js_rendering_var = tk.BooleanVar(value=js_config.get('enable', False))
         self.js_rendering_checkbutton = ttk.Checkbutton(self, text=_('启用JS渲染'), variable=self.js_rendering_var)
         self.js_rendering_checkbutton.grid(row=10, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)
         
@@ -153,7 +213,7 @@ class AdvancedConfigPanel(ttk.Frame):
         self.js_timeout_label = ttk.Label(self, text=_('JS渲染超时(秒):'))
         self.js_timeout_label.grid(row=11, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.js_timeout_var = tk.IntVar(value=30)
+        self.js_timeout_var = tk.IntVar(value=js_config.get('timeout', 30))
         self.js_timeout_spinbox = ttk.Spinbox(self, from_=1, to=300, textvariable=self.js_timeout_var, width=10)
         self.js_timeout_spinbox.grid(row=11, column=1, sticky=tk.W, padx=5, pady=5)
         
@@ -161,19 +221,20 @@ class AdvancedConfigPanel(ttk.Frame):
         self.lang_label = ttk.Label(self, text=_('语言:'))
         self.lang_label.grid(row=12, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.lang_var = tk.StringVar(value='zh_CN')
+        self.lang_var = tk.StringVar(value=i18n_config.get('lang', 'zh_CN'))
         self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh_CN', 'en'], width=10)
         self.lang_combobox.grid(row=12, column=1, sticky=tk.W, padx=5, pady=5)
         
         # 用户代理配置
+        default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         self.user_agent_label = ttk.Label(self, text=_('用户代理:'))
         self.user_agent_label.grid(row=13, column=0, sticky=tk.W, padx=5, pady=5)
         
-        self.user_agent_var = tk.StringVar(value='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+        self.user_agent_var = tk.StringVar(value=crawl_config.get('user_agent', default_ua))
         self.user_agent_entry = ttk.Entry(self, textvariable=self.user_agent_var, width=40)
         self.user_agent_entry.grid(row=13, column=1, sticky=tk.W, padx=5, pady=5)
         
-        # 强制下载配置
+        # 强制下载配置（不从配置文件读取，默认为False）
         self.force_download_var = tk.BooleanVar(value=False)
         self.force_download_checkbutton = ttk.Checkbutton(self, text=_('强制下载所有文件'), variable=self.force_download_var)
         self.force_download_checkbutton.grid(row=14, column=0, columnspan=2, sticky=tk.W, padx=5, pady=5)

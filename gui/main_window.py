@@ -11,7 +11,7 @@ GUI应用程序的主窗口，包含：
 import tkinter as tk
 import threading
 from tkinter import ttk
-from gui.config_panels import URLPanel, AdvancedConfigPanel, PluginConfigPanel
+from gui.config_panels import URLPanel, AdvancedConfigPanel, PluginConfigPanel, save_config_to_yaml
 from gui.log_panel import LogPanel
 from utils.i18n import gettext as _
 
@@ -101,8 +101,9 @@ class MainWindow(tk.Tk):
             "plugins": self.plugin_config_panel.get_plugin_config()
         }
         
-        # 保存当前URL到状态文件
-        self.url_panel.save_url()
+        # 保存配置到config.yaml
+        save_config_to_yaml(config)
+        self.log_panel.add_log(_("配置已保存到 config.yaml"))
         
         # 验证配置
         if not config["url"]:

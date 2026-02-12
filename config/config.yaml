@@ -1,37 +1,25 @@
-# 用户配置文件
-# 此文件用于覆盖默认配置，仅定义需要修改的项即可
-# 修改后无需重启，下次运行自动生效
-
-# 抓取参数配置
 crawl:
-  max_depth: 2          # 最大抓取深度
-  max_files: 50         # 最大文件数量
-  delay: 0.5            # 请求间隔（秒）
-  random_delay: true    # 启用随机延迟
-  threads: 4            # 并发线程数
-  incremental: true     # 启用增量抓取
-
-# 输出配置
+  max_depth: 1
+  max_files: 45
+  delay: 0.5
+  random_delay: true
+  threads: 4
+  incremental: true
+  user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
+    like Gecko) Chrome/91.0.4472.124 Safari/537.36
 output:
-  base_dir: "output"           # 输出目录
+  base_dir: output
   sitemap:
-    enable: true               # 生成XML站点地图
-    enable_html: true          # 生成HTML站点地图
-
-# 排除列表 - 不抓取的URL模式
-# 示例：排除 /private/ 和 /admin/ 目录
-# exclude:
-#   - "https://example.com/private/"
-#   - "https://example.com/admin/"
-
-# 插件配置
-# plugins:
-#   save_plugin: true      # 启用保存插件
-#   example_plugin: false  # 禁用示例插件
-
-# 日志配置
+    enable: true
+    enable_html: true
 logging:
-  level: "INFO"                   # 日志级别
-  file: "logs/grabthesite.log"    # 日志文件路径
-  max_bytes: 10485760             # 单个日志文件最大10MB
-  backup_count: 5                 # 保留5个备份
+  level: INFO
+  file: logs/grabthesite.log
+  max_bytes: 10485760
+  backup_count: 5
+target_url: https://www.mir.com.my/rb/photography/
+js_rendering:
+  enable: false
+  timeout: 30
+i18n:
+  lang: zh_CN
