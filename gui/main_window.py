@@ -11,7 +11,7 @@ GUI应用程序的主窗口，包含：
 import tkinter as tk
 import threading
 from tkinter import ttk
-from gui.config_panels import URLPanel, AdvancedConfigPanel, PluginConfigPanel, save_config_to_yaml
+from gui.config_panels import URLPanel, AdvancedConfigPanel, save_config_to_yaml
 from gui.log_panel import LogPanel
 from utils.i18n import gettext as _
 
@@ -46,17 +46,9 @@ class MainWindow(tk.Tk):
         self.advanced_tab = ttk.Frame(self.tab_frame)
         self.tab_frame.add(self.advanced_tab, text=_("高级配置"))
         
-        # 创建高级配置面板
+        # 创建高级配置面板（包含插件配置）
         self.advanced_config_panel = AdvancedConfigPanel(self.advanced_tab)
         self.advanced_config_panel.pack(fill=tk.BOTH, expand=True)
-        
-        # 创建插件配置选项卡
-        self.plugin_tab = ttk.Frame(self.tab_frame)
-        self.tab_frame.add(self.plugin_tab, text=_("插件配置"))
-        
-        # 创建插件配置面板
-        self.plugin_config_panel = PluginConfigPanel(self.plugin_tab)
-        self.plugin_config_panel.pack(fill=tk.BOTH, expand=True)
         
         # 创建日志选项卡
         self.log_tab = ttk.Frame(self.tab_frame)
@@ -97,8 +89,7 @@ class MainWindow(tk.Tk):
         # 获取配置
         config = {
             "url": self.url_panel.get_url(),
-            **self.advanced_config_panel.get_config(),
-            "plugins": self.plugin_config_panel.get_plugin_config()
+            **self.advanced_config_panel.get_config()
         }
         
         # 保存配置到config.yaml

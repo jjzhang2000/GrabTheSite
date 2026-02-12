@@ -165,13 +165,17 @@ class AdvancedConfigPanel(ttk.Frame):
         self.max_files_spinbox = ttk.Spinbox(self, from_=1, to=10000, textvariable=self.max_files_var, width=8)
         self.max_files_spinbox.grid(row=1, column=1, sticky=tk.W, padx=3, pady=2)
         
-        # 输出目录配置
+        # 输出目录配置（输入框 + 浏览按钮）
         self.output_label = ttk.Label(self, text=_('输出目录:'))
         self.output_label.grid(row=2, column=0, sticky=tk.W, padx=3, pady=2)
         
         self.output_var = tk.StringVar(value=output_config.get('base_dir', BASE_OUTPUT_DIR))
-        self.output_entry = ttk.Entry(self, textvariable=self.output_var, width=30)
-        self.output_entry.grid(row=2, column=1, columnspan=2, sticky=tk.W+tk.E, padx=3, pady=2)
+        self.output_entry = ttk.Entry(self, textvariable=self.output_var, width=25)
+        self.output_entry.grid(row=2, column=1, sticky=tk.W+tk.E, padx=3, pady=2)
+        
+        # 浏览按钮
+        self.browse_button = ttk.Button(self, text=_('浏览...'), command=self._browse_output_dir, width=8)
+        self.browse_button.grid(row=2, column=2, sticky=tk.W, padx=3, pady=2)
         
         # 延迟配置 + 无随机延迟（同一行显示）
         self.delay_label = ttk.Label(self, text=_('请求延迟(秒):'))
@@ -196,50 +200,89 @@ class AdvancedConfigPanel(ttk.Frame):
         self.threads_spinbox = ttk.Spinbox(self, from_=1, to=32, textvariable=self.threads_var, width=6)
         self.threads_spinbox.grid(row=4, column=1, sticky=tk.W, padx=3, pady=2)
         
-        # 生成站点地图配置
+        # 生成站点地图配置（XML和HTML并列显示）
         self.sitemap_var = tk.BooleanVar(value=sitemap_config.get('enable', False))
         self.sitemap_checkbutton = ttk.Checkbutton(self, text=_('生成XML站点地图'), variable=self.sitemap_var)
-        self.sitemap_checkbutton.grid(row=5, column=0, columnspan=3, sticky=tk.W, padx=3, pady=2)
+        self.sitemap_checkbutton.grid(row=5, column=0, columnspan=2, sticky=tk.W, padx=3, pady=2)
         
-        # 生成HTML站点地图配置
+        # 生成HTML站点地图配置（与XML并列）
         self.html_sitemap_var = tk.BooleanVar(value=sitemap_config.get('enable_html', False))
         self.html_sitemap_checkbutton = ttk.Checkbutton(self, text=_('生成HTML站点地图'), variable=self.html_sitemap_var)
-        self.html_sitemap_checkbutton.grid(row=6, column=0, columnspan=3, sticky=tk.W, padx=3, pady=2)
+        self.html_sitemap_checkbutton.grid(row=5, column=2, sticky=tk.W, padx=3, pady=2)
         
-        # JS渲染配置
+        # JS渲染配置 + JS超时（同一行显示）
         self.js_rendering_var = tk.BooleanVar(value=js_config.get('enable', False))
         self.js_rendering_checkbutton = ttk.Checkbutton(self, text=_('启用JS渲染'), variable=self.js_rendering_var)
-        self.js_rendering_checkbutton.grid(row=7, column=0, columnspan=3, sticky=tk.W, padx=3, pady=2)
+        self.js_rendering_checkbutton.grid(row=6, column=0, sticky=tk.W, padx=3, pady=2)
         
-        # JS超时配置
-        self.js_timeout_label = ttk.Label(self, text=_('JS渲染超时(秒):'))
-        self.js_timeout_label.grid(row=8, column=0, sticky=tk.W, padx=3, pady=2)
+        # JS超时配置（与启用JS渲染并列）
+        self.js_timeout_label = ttk.Label(self, text=_('超时(秒):'))
+        self.js_timeout_label.grid(row=6, column=1, sticky=tk.W, padx=(15, 3), pady=2)
         
         self.js_timeout_var = tk.IntVar(value=js_config.get('timeout', 30))
         self.js_timeout_spinbox = ttk.Spinbox(self, from_=1, to=300, textvariable=self.js_timeout_var, width=6)
-        self.js_timeout_spinbox.grid(row=8, column=1, sticky=tk.W, padx=3, pady=2)
+        self.js_timeout_spinbox.grid(row=6, column=2, sticky=tk.W, padx=3, pady=2)
         
         # 语言配置
         self.lang_label = ttk.Label(self, text=_('语言:'))
-        self.lang_label.grid(row=9, column=0, sticky=tk.W, padx=3, pady=2)
+        self.lang_label.grid(row=7, column=0, sticky=tk.W, padx=3, pady=2)
         
         self.lang_var = tk.StringVar(value=i18n_config.get('lang', 'zh_CN'))
         self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh_CN', 'en'], width=8)
-        self.lang_combobox.grid(row=9, column=1, sticky=tk.W, padx=3, pady=2)
+        self.lang_combobox.grid(row=7, column=1, sticky=tk.W, padx=3, pady=2)
         
         # 用户代理配置
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         self.user_agent_label = ttk.Label(self, text=_('用户代理:'))
-        self.user_agent_label.grid(row=10, column=0, sticky=tk.W, padx=3, pady=2)
+        self.user_agent_label.grid(row=8, column=0, sticky=tk.W, padx=3, pady=2)
         
         self.user_agent_var = tk.StringVar(value=crawl_config.get('user_agent', default_ua))
         self.user_agent_entry = ttk.Entry(self, textvariable=self.user_agent_var, width=35)
-        self.user_agent_entry.grid(row=10, column=1, columnspan=2, sticky=tk.W+tk.E, padx=3, pady=2)
+        self.user_agent_entry.grid(row=8, column=1, columnspan=2, sticky=tk.W+tk.E, padx=3, pady=2)
         
         # 强制下载配置（不从配置文件读取，默认为False）
         self.force_download_var = tk.BooleanVar(value=False)
         self.force_download_checkbutton = ttk.Checkbutton(self, text=_('强制下载所有文件'), variable=self.force_download_var)
-        self.force_download_checkbutton.grid(row=11, column=0, columnspan=3, sticky=tk.W, padx=3, pady=2)
+        self.force_download_checkbutton.grid(row=9, column=0, columnspan=3, sticky=tk.W, padx=3, pady=2)
+        
+        # 插件配置（放在高级配置面板中）
+        self._init_plugin_config()
+    
+    def _init_plugin_config(self):
+        """初始化插件配置区域"""
+        # 插件配置标签框架
+        self.plugin_frame = ttk.LabelFrame(self, text=_('插件配置'), padding="5")
+        self.plugin_frame.grid(row=10, column=0, columnspan=3, sticky=tk.W+tk.E, padx=3, pady=(10, 2))
+        
+        # 存储插件复选框变量
+        self.plugin_vars = {}
+        
+        # 获取插件列表
+        try:
+            from utils.plugin_manager import PluginManager
+            plugin_manager = PluginManager()
+            plugins = plugin_manager.get_available_plugins()
+        except Exception:
+            # 如果获取插件列表失败，使用默认插件
+            plugins = ['save_plugin', 'example_plugin']
+        
+        # 为每个插件创建复选框（默认启用 save_plugin）
+        for i, plugin in enumerate(plugins):
+            var = tk.BooleanVar(value=(plugin == 'save_plugin'))
+            self.plugin_vars[plugin] = var
+            cb = ttk.Checkbutton(
+                self.plugin_frame, 
+                text=plugin, 
+                variable=var
+            )
+            cb.pack(side=tk.LEFT, padx=5, pady=2)
+    
+    def _browse_output_dir(self):
+        """浏览选择输出目录"""
+        from tkinter import filedialog
+        directory = filedialog.askdirectory(initialdir=self.output_var.get() or '.')
+        if directory:
+            self.output_var.set(directory)
     
     def get_config(self):
         """获取所有配置参数"""
@@ -256,8 +299,13 @@ class AdvancedConfigPanel(ttk.Frame):
             "js_timeout": self.js_timeout_var.get(),
             "lang": self.lang_var.get(),
             "user_agent": self.user_agent_var.get(),
-            "force_download": self.force_download_var.get()
+            "force_download": self.force_download_var.get(),
+            "plugins": self.get_plugin_config()
         }
+    
+    def get_plugin_config(self):
+        """获取插件配置"""
+        return {name: var.get() for name, var in self.plugin_vars.items()}
     
     # 保留一些常用的getter方法，以便向后兼容
     def get_depth(self):
