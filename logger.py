@@ -20,6 +20,18 @@ DEFAULT_BACKUP_COUNT = 5
 DEFAULT_ENCODING = 'utf-8'
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
+# 控制台输出开关（GUI模式下可关闭）
+CONSOLE_OUTPUT_ENABLED = True
+
+
+def disable_console_output():
+    """禁用控制台日志输出（用于GUI模式）
+    
+    调用此函数后，所有logger将只输出到文件，不输出到控制台
+    """
+    global CONSOLE_OUTPUT_ENABLED
+    CONSOLE_OUTPUT_ENABLED = False
+
 
 def _load_logging_config():
     """加载日志配置
@@ -100,18 +112,19 @@ def setup_logger(name=__name__):
         )
         file_handler.setLevel(log_level)
         
-        # 创建控制台处理器，用于输出到控制台
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(console_level)
-        
         # 定义日志格式
         formatter = logging.Formatter(LOG_FORMAT)
         file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
         
-        # 添加处理器到 logger
+        # 添加文件处理器到 logger
         logger.addHandler(file_handler)
-        logger.addHandler(console_handler)
+        
+        # 创建控制台处理器，用于输出到控制台（仅在控制台输出启用时）
+        if CONSOLE_OUTPUT_ENABLED:
+            console_handler = logging.StreamHandler()
+            console_handler.setLevel(console_level)
+            console_handler.setFormatter(formatter)
+            logger.addHandler(console_handler)
     
     # 添加翻译方法
     logger._ = _

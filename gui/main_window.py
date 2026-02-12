@@ -11,6 +11,11 @@ GUI应用程序的主窗口，包含：
 import tkinter as tk
 import threading
 from tkinter import ttk
+
+# 禁用控制台日志输出（必须在导入其他模块之前）
+from logger import disable_console_output
+disable_console_output()
+
 from gui.config_panels import URLPanel, AdvancedConfigPanel, save_config_to_yaml
 from gui.log_panel import LogPanel
 from utils.i18n import gettext as _
