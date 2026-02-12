@@ -141,7 +141,6 @@ class AdvancedConfigPanel(ttk.Frame):
         crawl_config = config.get('crawl', {})
         output_config = config.get('output', {})
         sitemap_config = output_config.get('sitemap', {})
-        js_config = config.get('js_rendering', {})
         i18n_config = config.get('i18n', {})
         
         # 创建网格布局 - 第0列是标签，第1列是输入框，第2列是额外选项
@@ -151,99 +150,86 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 深度配置
         self.depth_label = ttk.Label(self, text=_('抓取深度:'))
-        self.depth_label.grid(row=0, column=0, sticky=tk.W, padx=3, pady=2)
+        self.depth_label.grid(row=0, column=0, sticky=tk.W, padx=3, pady=5)
         
         self.depth_var = tk.IntVar(value=crawl_config.get('max_depth', MAX_DEPTH))
         self.depth_spinbox = ttk.Spinbox(self, from_=0, to=10, textvariable=self.depth_var, width=8)
-        self.depth_spinbox.grid(row=0, column=1, sticky=tk.W, padx=3, pady=2)
+        self.depth_spinbox.grid(row=0, column=1, sticky=tk.W, padx=3, pady=5)
         
         # 最大文件数配置
         self.max_files_label = ttk.Label(self, text=_('最大文件数:'))
-        self.max_files_label.grid(row=1, column=0, sticky=tk.W, padx=3, pady=2)
+        self.max_files_label.grid(row=1, column=0, sticky=tk.W, padx=3, pady=5)
         
         self.max_files_var = tk.IntVar(value=crawl_config.get('max_files', MAX_FILES))
         self.max_files_spinbox = ttk.Spinbox(self, from_=1, to=10000, textvariable=self.max_files_var, width=8)
-        self.max_files_spinbox.grid(row=1, column=1, sticky=tk.W, padx=3, pady=2)
+        self.max_files_spinbox.grid(row=1, column=1, sticky=tk.W, padx=3, pady=5)
         
         # 输出目录配置（输入框 + 浏览按钮）
         self.output_label = ttk.Label(self, text=_('输出目录:'))
-        self.output_label.grid(row=2, column=0, sticky=tk.W, padx=3, pady=2)
+        self.output_label.grid(row=2, column=0, sticky=tk.W, padx=3, pady=5)
         
         self.output_var = tk.StringVar(value=output_config.get('base_dir', BASE_OUTPUT_DIR))
         self.output_entry = ttk.Entry(self, textvariable=self.output_var, width=25)
-        self.output_entry.grid(row=2, column=1, sticky=tk.W+tk.E, padx=3, pady=2)
+        self.output_entry.grid(row=2, column=1, sticky=tk.W+tk.E, padx=3, pady=5)
         
         # 浏览按钮
         self.browse_button = ttk.Button(self, text=_('浏览...'), command=self._browse_output_dir, width=8)
-        self.browse_button.grid(row=2, column=2, sticky=tk.W, padx=3, pady=2)
+        self.browse_button.grid(row=2, column=2, sticky=tk.W, padx=3, pady=5)
         
         # 延迟配置 + 无随机延迟（同一行显示）
         self.delay_label = ttk.Label(self, text=_('请求延迟(秒):'))
-        self.delay_label.grid(row=3, column=0, sticky=tk.W, padx=3, pady=2)
+        self.delay_label.grid(row=3, column=0, sticky=tk.W, padx=3, pady=5)
         
         # 延迟输入框（宽度缩小，放在左侧）
         self.delay_var = tk.DoubleVar(value=crawl_config.get('delay', DELAY))
         self.delay_spinbox = ttk.Spinbox(self, from_=0.0, to=10.0, increment=0.1, textvariable=self.delay_var, width=6)
-        self.delay_spinbox.grid(row=3, column=1, sticky=tk.W, padx=3, pady=2)
+        self.delay_spinbox.grid(row=3, column=1, sticky=tk.W, padx=3, pady=5)
         
         # 无随机延迟复选框（放在同一行右侧）
         random_delay = crawl_config.get('random_delay', True)
         self.no_random_delay_var = tk.BooleanVar(value=not random_delay)
         self.no_random_delay_checkbutton = ttk.Checkbutton(self, text=_('无随机延迟'), variable=self.no_random_delay_var)
-        self.no_random_delay_checkbutton.grid(row=3, column=2, sticky=tk.W, padx=3, pady=2)
+        self.no_random_delay_checkbutton.grid(row=3, column=2, sticky=tk.W, padx=3, pady=5)
         
         # 线程数配置
         self.threads_label = ttk.Label(self, text=_('线程数:'))
-        self.threads_label.grid(row=4, column=0, sticky=tk.W, padx=3, pady=2)
+        self.threads_label.grid(row=4, column=0, sticky=tk.W, padx=3, pady=5)
         
         self.threads_var = tk.IntVar(value=crawl_config.get('threads', 4))
         self.threads_spinbox = ttk.Spinbox(self, from_=1, to=32, textvariable=self.threads_var, width=6)
-        self.threads_spinbox.grid(row=4, column=1, sticky=tk.W, padx=3, pady=2)
+        self.threads_spinbox.grid(row=4, column=1, sticky=tk.W, padx=3, pady=5)
         
         # 生成站点地图配置（XML和HTML并列显示）
         self.sitemap_var = tk.BooleanVar(value=sitemap_config.get('enable', False))
         self.sitemap_checkbutton = ttk.Checkbutton(self, text=_('生成XML站点地图'), variable=self.sitemap_var)
-        self.sitemap_checkbutton.grid(row=5, column=0, columnspan=2, sticky=tk.W, padx=3, pady=2)
+        self.sitemap_checkbutton.grid(row=5, column=0, columnspan=2, sticky=tk.W, padx=3, pady=5)
         
         # 生成HTML站点地图配置（与XML并列）
         self.html_sitemap_var = tk.BooleanVar(value=sitemap_config.get('enable_html', False))
         self.html_sitemap_checkbutton = ttk.Checkbutton(self, text=_('生成HTML站点地图'), variable=self.html_sitemap_var)
-        self.html_sitemap_checkbutton.grid(row=5, column=2, sticky=tk.W, padx=3, pady=2)
-        
-        # JS渲染配置 + JS超时（同一行显示）
-        self.js_rendering_var = tk.BooleanVar(value=js_config.get('enable', False))
-        self.js_rendering_checkbutton = ttk.Checkbutton(self, text=_('启用JS渲染'), variable=self.js_rendering_var)
-        self.js_rendering_checkbutton.grid(row=6, column=0, sticky=tk.W, padx=3, pady=2)
-        
-        # JS超时配置（与启用JS渲染并列）
-        self.js_timeout_label = ttk.Label(self, text=_('超时(秒):'))
-        self.js_timeout_label.grid(row=6, column=1, sticky=tk.W, padx=(15, 3), pady=2)
-        
-        self.js_timeout_var = tk.IntVar(value=js_config.get('timeout', 30))
-        self.js_timeout_spinbox = ttk.Spinbox(self, from_=1, to=300, textvariable=self.js_timeout_var, width=6)
-        self.js_timeout_spinbox.grid(row=6, column=2, sticky=tk.W, padx=3, pady=2)
+        self.html_sitemap_checkbutton.grid(row=5, column=2, sticky=tk.W, padx=3, pady=5)
         
         # 语言配置
         self.lang_label = ttk.Label(self, text=_('语言:'))
-        self.lang_label.grid(row=7, column=0, sticky=tk.W, padx=3, pady=2)
+        self.lang_label.grid(row=6, column=0, sticky=tk.W, padx=3, pady=5)
         
         self.lang_var = tk.StringVar(value=i18n_config.get('lang', 'zh_CN'))
         self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh_CN', 'en'], width=8)
-        self.lang_combobox.grid(row=7, column=1, sticky=tk.W, padx=3, pady=2)
+        self.lang_combobox.grid(row=6, column=1, sticky=tk.W, padx=3, pady=5)
         
         # 用户代理配置
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         self.user_agent_label = ttk.Label(self, text=_('用户代理:'))
-        self.user_agent_label.grid(row=8, column=0, sticky=tk.W, padx=3, pady=2)
+        self.user_agent_label.grid(row=7, column=0, sticky=tk.W, padx=3, pady=5)
         
         self.user_agent_var = tk.StringVar(value=crawl_config.get('user_agent', default_ua))
         self.user_agent_entry = ttk.Entry(self, textvariable=self.user_agent_var, width=35)
-        self.user_agent_entry.grid(row=8, column=1, columnspan=2, sticky=tk.W+tk.E, padx=3, pady=2)
+        self.user_agent_entry.grid(row=7, column=1, columnspan=2, sticky=tk.W+tk.E, padx=3, pady=5)
         
         # 强制下载配置（不从配置文件读取，默认为False）
         self.force_download_var = tk.BooleanVar(value=False)
         self.force_download_checkbutton = ttk.Checkbutton(self, text=_('强制下载所有文件'), variable=self.force_download_var)
-        self.force_download_checkbutton.grid(row=9, column=0, columnspan=3, sticky=tk.W, padx=3, pady=2)
+        self.force_download_checkbutton.grid(row=8, column=0, columnspan=3, sticky=tk.W, padx=3, pady=5)
         
         # 插件配置（放在高级配置面板中）
         self._init_plugin_config()
@@ -252,7 +238,7 @@ class AdvancedConfigPanel(ttk.Frame):
         """初始化插件配置区域"""
         # 插件配置标签框架
         self.plugin_frame = ttk.LabelFrame(self, text=_('插件配置'), padding="5")
-        self.plugin_frame.grid(row=10, column=0, columnspan=3, sticky=tk.W+tk.E, padx=3, pady=(10, 2))
+        self.plugin_frame.grid(row=9, column=0, columnspan=3, sticky=tk.W+tk.E, padx=3, pady=(15, 5))
         
         # 存储插件复选框变量
         self.plugin_vars = {}
@@ -285,7 +271,7 @@ class AdvancedConfigPanel(ttk.Frame):
             self.output_var.set(directory)
     
     def get_config(self):
-        """获取所有配置参数"""
+        """获取所有配置参数（JS渲染相关配置从config.yaml读取，不在GUI中设置）"""
         return {
             "depth": self.depth_var.get(),
             "max_files": self.max_files_var.get(),
@@ -295,8 +281,6 @@ class AdvancedConfigPanel(ttk.Frame):
             "threads": self.threads_var.get(),
             "sitemap": self.sitemap_var.get(),
             "html_sitemap": self.html_sitemap_var.get(),
-            "js_rendering": self.js_rendering_var.get(),
-            "js_timeout": self.js_timeout_var.get(),
             "lang": self.lang_var.get(),
             "user_agent": self.user_agent_var.get(),
             "force_download": self.force_download_var.get(),
