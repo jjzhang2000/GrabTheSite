@@ -12,7 +12,11 @@ from datetime import datetime
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from logger import setup_logger
-from utils.i18n import gettext as _
+# 动态翻译函数，支持运行时语言切换
+def _(message):
+    """翻译函数"""
+    from utils.i18n import gettext
+    return gettext(message)
 
 # 获取 logger 实例
 logger = setup_logger(__name__)

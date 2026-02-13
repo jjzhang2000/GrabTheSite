@@ -10,7 +10,7 @@ import os
 import tkinter as tk
 from tkinter import ttk
 import yaml
-from utils.i18n import gettext as _
+from utils.i18n import gettext as _, init_i18n, register_language_change_callback, get_current_lang
 from config import MAX_DEPTH, MAX_FILES, DELAY, BASE_OUTPUT_DIR, USER_CONFIG_FILE, load_config
 
 
@@ -233,6 +233,45 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 插件配置（放在高级配置面板中）
         self._init_plugin_config()
+        
+        # 绑定语言选择变化事件
+        self.lang_combobox.bind('<<ComboboxSelected>>', self._on_language_changed)
+        
+        # 注册语言切换回调，用于更新界面文本（必须在所有UI元素初始化完成后）
+        register_language_change_callback(self._update_ui_texts)
+    
+    def _on_language_changed(self, event=None):
+        """语言选择改变时触发"""
+        new_lang = self.lang_var.get()
+        
+        # 保存语言配置到 config.yaml
+        config = {
+            'lang': new_lang
+        }
+        save_config_to_yaml(config)
+        
+        # 切换语言
+        init_i18n(new_lang)
+    
+    def _update_ui_texts(self):
+        """更新界面文本（语言切换后调用）"""
+        # 重新导入gettext以确保使用最新的翻译
+        from utils.i18n import gettext as _
+        
+        # 更新标签文本
+        self.depth_label.config(text=_('抓取深度:'))
+        self.max_files_label.config(text=_('最大文件数:'))
+        self.output_label.config(text=_('输出目录:'))
+        self.browse_button.config(text=_('浏览...'))
+        self.delay_label.config(text=_('请求延迟(秒):'))
+        self.no_random_delay_checkbutton.config(text=_('无随机延迟'))
+        self.threads_label.config(text=_('线程数:'))
+        self.sitemap_checkbutton.config(text=_('生成XML站点地图'))
+        self.html_sitemap_checkbutton.config(text=_('生成HTML站点地图'))
+        self.lang_label.config(text=_('语言:'))
+        self.user_agent_label.config(text=_('用户代理:'))
+        self.force_download_checkbutton.config(text=_('强制下载所有文件'))
+        self.plugin_frame.config(text=_('插件配置'))
     
     def _init_plugin_config(self):
         """初始化插件配置区域"""

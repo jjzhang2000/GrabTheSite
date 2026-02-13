@@ -10,7 +10,7 @@ GUI中的日志显示组件：
 import logging
 import tkinter as tk
 from tkinter import ttk
-from utils.i18n import gettext as _
+
 
 
 class GUIHandler(logging.Handler):

@@ -18,7 +18,13 @@ from urllib.parse import urlparse
 from config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG, PLUGIN_CONFIG, JS_RENDERING_CONFIG
 from crawler.crawl_site import CrawlSite
 from logger import setup_logger
-from utils.i18n import init_i18n, gettext as _
+from utils.i18n import init_i18n, get_current_lang
+
+# 动态翻译函数，支持运行时语言切换
+def _(message):
+    """翻译函数"""
+    from utils.i18n import gettext
+    return gettext(message)
 from utils.plugin_manager import PluginManager
 from utils.sitemap_generator import SitemapGenerator
 
@@ -301,10 +307,13 @@ def main(args_list=None, stop_event=None):
     # 更新配置
     config = update_config(args)
     
-    # 初始化国际化模块
+    # 初始化国际化模块（如果尚未通过GUI设置）
     i18n_config = config.get("i18n", I18N_CONFIG)
-    current_lang = i18n_config.get("lang", "en")
-    init_i18n(current_lang)
+    config_lang = i18n_config.get("lang", "en")
+    # 如果当前语言与配置不同，使用配置语言（GUI已设置时会保持一致）
+    current_lang = get_current_lang()
+    if current_lang != config_lang:
+        init_i18n(config_lang)
     
     # 初始化插件系统
     # 插件配置格式: {plugin_name: True/False}

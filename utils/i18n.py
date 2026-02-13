@@ -7,7 +7,7 @@
 """
 
 import os
-import gettext
+import gettext as gettext_module
 from logger import setup_logger
 
 # 获取 logger 实例
@@ -27,6 +27,38 @@ if not os.path.exists(LOCALE_DIR):
 _translators = {}
 _current_lang = 'en'
 
+# 语言切换回调列表
+_on_language_changed_callbacks = []
+
+
+def register_language_change_callback(callback):
+    """注册语言切换回调函数
+    
+    Args:
+        callback: 回调函数，无参数
+    """
+    if callback not in _on_language_changed_callbacks:
+        _on_language_changed_callbacks.append(callback)
+
+
+def unregister_language_change_callback(callback):
+    """取消注册语言切换回调函数
+    
+    Args:
+        callback: 回调函数
+    """
+    if callback in _on_language_changed_callbacks:
+        _on_language_changed_callbacks.remove(callback)
+
+
+def _notify_language_changed():
+    """通知所有注册的回调函数语言已切换"""
+    for callback in _on_language_changed_callbacks:
+        try:
+            callback()
+        except Exception as e:
+            logger.warning(f"语言切换回调执行失败: {e}")
+
 
 def init_i18n(lang='en'):
     """初始化国际化模块
@@ -39,7 +71,7 @@ def init_i18n(lang='en'):
     
     if lang not in _translators:
         try:
-            translator = gettext.translation(
+            translator = gettext_module.translation(
                 DOMAIN,
                 localedir=LOCALE_DIR,
                 languages=[lang],
@@ -99,7 +131,7 @@ def init_i18n(lang='en'):
             # 使用默认翻译器
             if 'en' not in _translators:
                 try:
-                    translator = gettext.translation(
+                    translator = gettext_module.translation(
                         DOMAIN,
                         localedir=LOCALE_DIR,
                         languages=['en'],
@@ -127,6 +159,13 @@ def init_i18n(lang='en'):
     translator = _translators.get(_current_lang, _translators.get('en'))
     if translator:
         translator.install()
+    
+    # 同时手动安装到 builtins，确保所有模块都能使用
+    import builtins
+    builtins._ = gettext
+    
+    # 通知语言已切换
+    _notify_language_changed()
 
 
 def gettext(message):
@@ -196,3 +235,9 @@ def get_available_languages():
 # 导出常用函数
 _ = gettext
 N_ = lambda message: message  # 用于标记需要翻译但不立即翻译的消息
+
+# 模块加载时自动初始化默认语言
+try:
+    init_i18n('en')
+except Exception:
+    pass  # 如果初始化失败，使用默认的空翻译

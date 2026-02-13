@@ -77,12 +77,15 @@ LOG_DIR, _, _, _, _, _ = _get_log_settings()
 # 创建日志目录
 os.makedirs(LOG_DIR, exist_ok=True)
 
-# 尝试导入翻译函数，避免循环导入
-try:
-    from utils.i18n import gettext as _
-except ImportError:
-    # 如果导入失败，使用身份函数
-    _ = lambda message: message
+# 翻译函数封装，使用 builtins._ 以支持动态语言切换
+def _(message):
+    """翻译函数，从 builtins 获取实际的翻译函数"""
+    import builtins
+    # 如果 builtins._ 存在则使用，否则直接返回原消息
+    trans_func = getattr(builtins, '_', None)
+    if trans_func and callable(trans_func):
+        return trans_func(message)
+    return message
 
 # 配置日志系统
 def setup_logger(name=__name__):

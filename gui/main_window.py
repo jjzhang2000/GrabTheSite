@@ -18,7 +18,8 @@ disable_console_output()
 
 from gui.config_panels import URLPanel, AdvancedConfigPanel, save_config_to_yaml
 from gui.log_panel import LogPanel
-from utils.i18n import gettext as _
+from utils.i18n import gettext as _, register_language_change_callback, init_i18n
+from config import load_config
 
 
 class MainWindow(tk.Tk):
@@ -27,6 +28,16 @@ class MainWindow(tk.Tk):
     def __init__(self):
         """初始化主窗口"""
         super().__init__()
+        
+        # 根据配置初始化语言
+        try:
+            config = load_config()
+            i18n_config = config.get('i18n', {})
+            lang = i18n_config.get('lang', 'zh_CN')
+            init_i18n(lang)
+        except Exception:
+            init_i18n('zh_CN')  # 默认中文
+        
         self.title(_("GrabTheSite - 网站抓取工具"))
         self.geometry("750x800")
         self.minsize(650, 700)
@@ -88,6 +99,34 @@ class MainWindow(tk.Tk):
         self.is_crawling = False
         self.stop_event = threading.Event()  # 用于通知抓取线程停止
         self.crawl_thread = None  # 抓取线程引用
+        
+        # 注册语言切换回调
+        register_language_change_callback(self._update_ui_texts)
+    
+    def _update_ui_texts(self):
+        """更新界面文本（语言切换后调用）"""
+        # 重新导入gettext以确保使用最新的翻译
+        from utils.i18n import gettext as _
+        
+        # 更新窗口标题
+        self.title(_("GrabTheSite - 网站抓取工具"))
+        
+        # 更新标签框架文本
+        self.top_frame.config(text=_("基本配置"))
+        
+        # 更新选项卡文本
+        self.tab_frame.tab(self.advanced_tab, text=_("高级配置"))
+        
+        # 更新日志框架文本
+        self.log_frame.config(text=_("日志"))
+        
+        # 更新按钮文本
+        self.start_button.config(text=_("开始抓取"))
+        self.stop_button.config(text=_("停止"))
+        self.exit_button.config(text=_("退出"))
+        
+        # 更新URL面板文本
+        self.url_panel.url_label.config(text=_("目标URL:"))
     
     def on_start(self):
         """开始抓取按钮点击事件"""

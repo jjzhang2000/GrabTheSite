@@ -68,3 +68,97 @@ msgstr "启用"
 
 msgid "禁用"
 msgstr "禁用"
+
+# GUI 文本
+msgid "GrabTheSite - 网站抓取工具"
+msgstr "GrabTheSite - 网站抓取工具"
+
+msgid "基本配置"
+msgstr "基本配置"
+
+msgid "高级配置"
+msgstr "高级配置"
+
+msgid "日志"
+msgstr "日志"
+
+msgid "开始抓取"
+msgstr "开始抓取"
+
+msgid "停止"
+msgstr "停止"
+
+msgid "退出"
+msgstr "退出"
+
+msgid "目标URL:"
+msgstr "目标URL:"
+
+msgid "抓取深度:"
+msgstr "抓取深度:"
+
+msgid "最大文件数:"
+msgstr "最大文件数:"
+
+msgid "输出目录:"
+msgstr "输出目录:"
+
+msgid "浏览..."
+msgstr "浏览..."
+
+msgid "请求延迟(秒):"
+msgstr "请求延迟(秒):"
+
+msgid "无随机延迟"
+msgstr "无随机延迟"
+
+msgid "生成XML站点地图"
+msgstr "生成XML站点地图"
+
+msgid "生成HTML站点地图"
+msgstr "生成HTML站点地图"
+
+msgid "语言:"
+msgstr "语言:"
+
+msgid "用户代理:"
+msgstr "用户代理:"
+
+msgid "强制下载所有文件"
+msgstr "强制下载所有文件"
+
+msgid "插件配置"
+msgstr "插件配置"
+
+msgid "配置已保存到 config.yaml"
+msgstr "配置已保存到 config.yaml"
+
+msgid "错误: 目标URL不能为空"
+msgstr "错误: 目标URL不能为空"
+
+msgid "开始抓取网站: {}"
+msgstr "开始抓取网站: {}"
+
+msgid "抓取配置已准备就绪"
+msgstr "抓取配置已准备就绪"
+
+msgid "开始抓取..."
+msgstr "开始抓取..."
+
+msgid "抓取已被用户取消"
+msgstr "抓取已被用户取消"
+
+msgid "抓取完成!"
+msgstr "抓取完成!"
+
+msgid "错误: {}"
+msgstr "错误: {}"
+
+msgid "正在停止抓取..."
+msgstr "正在停止抓取..."
+
+msgid "抓取已停止"
+msgstr "抓取已停止"
+
+msgid "Home"
+msgstr "首页"
