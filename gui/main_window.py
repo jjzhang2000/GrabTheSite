@@ -102,6 +102,9 @@ class MainWindow(tk.Tk):
         
         # 注册语言切换回调
         register_language_change_callback(self._update_ui_texts)
+        
+        # 设置窗口关闭协议
+        self.protocol("WM_DELETE_WINDOW", self.on_exit)
     
     def _update_ui_texts(self):
         """更新界面文本（语言切换后调用）"""
@@ -234,6 +237,31 @@ class MainWindow(tk.Tk):
     
     def on_exit(self):
         """退出按钮点击事件"""
+        # 如果正在抓取，先发送停止信号
+        if self.is_crawling:
+            self.log_panel.add_log(_("正在停止抓取并退出..."))
+            self.stop_event.set()
+        
+        # 无论是否正在抓取，都确保抓取线程已结束
+        if self.crawl_thread and self.crawl_thread.is_alive():
+            self.log_panel.add_log(_("等待抓取线程结束..."))
+            
+            # 等待抓取线程结束，最多等待30秒
+            wait_time = 0
+            max_wait = 30
+            while self.crawl_thread and self.crawl_thread.is_alive() and wait_time < max_wait:
+                self.update()  # 保持UI响应
+                import time
+                time.sleep(0.5)
+                wait_time += 0.5
+            
+            # 如果线程仍在运行，强制退出整个进程
+            if self.crawl_thread and self.crawl_thread.is_alive():
+                self.log_panel.add_log(_("警告: 抓取线程未能及时停止，强制退出"))
+                import os
+                os._exit(0)
+        
+        # 销毁窗口
         self.destroy()
     
 

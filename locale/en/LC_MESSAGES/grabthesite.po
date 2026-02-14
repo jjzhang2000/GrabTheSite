@@ -163,6 +163,15 @@ msgstr "Stopping crawl..."
 msgid "抓取已停止"
 msgstr "Crawling stopped"
 
+msgid "正在停止抓取并退出..."
+msgstr "Stopping crawl and exiting..."
+
+msgid "警告: 抓取线程未能及时停止，强制退出"
+msgstr "Warning: Crawl thread failed to stop in time, forcing exit"
+
+msgid "等待抓取线程结束..."
+msgstr "Waiting for crawl thread to finish..."
+
 msgid "Home"
 msgstr "Home"
 
