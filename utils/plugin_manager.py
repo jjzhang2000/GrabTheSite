@@ -62,6 +62,21 @@ class Plugin:
         """
         pass
     
+    def on_download_resource(self, url, output_dir):
+        """下载资源文件时调用
+        
+        插件可以实现此方法来处理资源文件下载。
+        返回下载的文件路径表示下载成功，返回 None 表示下载失败或未处理。
+        
+        Args:
+            url: 资源文件URL
+            output_dir: 输出目录
+            
+        Returns:
+            str: 下载的文件路径，如果未处理或下载失败返回 None
+        """
+        return None
+    
     def on_crawl_end(self, pages):
         """抓取结束时调用
         
@@ -245,6 +260,29 @@ class PluginManager:
                         method(*args, **kwargs)
                 except Exception as e:
                     logger.error(_t("调用插件钩子失败") + f": {plugin.name}.{hook_name}, " + _t("错误") + f": {e}")
+    
+    def call_hook_with_result(self, hook_name, *args, **kwargs):
+        """调用插件钩子并返回结果
+        
+        Args:
+            hook_name: 钩子名称
+            *args: 位置参数
+            **kwargs: 关键字参数
+            
+        Returns:
+            dict: 插件名称到返回结果的映射
+        """
+        results = {}
+        for plugin in self.enabled_plugins:
+            if plugin.enabled:
+                try:
+                    method = getattr(plugin, hook_name, None)
+                    if method and callable(method):
+                        result = method(*args, **kwargs)
+                        results[plugin.name] = result
+                except Exception as e:
+                    logger.error(_t("调用插件钩子失败") + f": {plugin.name}.{hook_name}, " + _t("错误") + f": {e}")
+        return results
     
     def cleanup(self):
         """清理插件"""

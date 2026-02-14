@@ -4,9 +4,11 @@
 - 处理页面链接转换
 - 保存HTML文件
 - 创建目录结构
+- 下载静态资源文件
 """
 
 import os
+import threading
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from utils.plugin_manager import Plugin
@@ -33,11 +35,54 @@ class SavePlugin(Plugin):
         self.output_dir = None
         self.static_resources = None
         self.saved_files = []
+        self.downloaded_resources = set()  # 已下载的资源集合
+        self.downloader_lock = threading.Lock()  # 下载器锁
         
     def on_init(self):
         """插件初始化时调用"""
         super().on_init()
         self.logger.info(_t("保存插件初始化完成"))
+    
+    def on_download_resource(self, url, output_dir):
+        """下载资源文件
+        
+        使用 Downloader 类下载单个资源文件
+        
+        Args:
+            url: 资源文件URL
+            output_dir: 输出目录
+            
+        Returns:
+            str: 下载的文件路径，如果下载失败返回 None
+        """
+        # 延迟导入以避免循环导入
+        from crawler.downloader import Downloader
+        
+        # 检查是否已经下载过
+        with self.downloader_lock:
+            if url in self.downloaded_resources:
+                # 已下载过，返回文件路径
+                parsed_url = urlparse(url)
+                path = parsed_url.path
+                file_path = os.path.join(output_dir, path.lstrip('/'))
+                if os.path.exists(file_path):
+                    return file_path
+            
+        # 使用 Downloader 下载单个文件
+        try:
+            downloader = Downloader(output_dir, threads=1)
+            downloader.add_task(url)
+            results = downloader.run()
+            
+            if results and results[0][1]:
+                file_path = results[0][1]
+                with self.downloader_lock:
+                    self.downloaded_resources.add(url)
+                return file_path
+        except Exception as e:
+            self.logger.error(_t("下载资源失败") + f": {url}, " + _t("错误") + f": {str(e)}")
+        
+        return None
     
     def on_crawl_end(self, pages):
         """抓取结束时调用，准备保存参数

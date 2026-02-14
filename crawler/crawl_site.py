@@ -16,7 +16,7 @@ import queue
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
-from crawler.downloader import download_file, Downloader
+from crawler.downloader import download_file
 from logger import setup_logger, _ as _t
 from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, ERROR_HANDLING_CONFIG, JS_RENDERING_CONFIG
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
@@ -380,17 +380,25 @@ class CrawlSite:
                     if self._is_same_domain(full_url):
                         static_urls.append(full_url)
         
-        # 多线程下载静态资源
-        if static_urls:
-            downloader = Downloader(self.output_dir, threads=self.threads, state_manager=self.state_manager)
+        # 通过插件下载静态资源
+        if static_urls and self.plugin_manager:
+            self.logger.info(_t("开始下载静态资源，共") + f" {len(static_urls)} " + _t("个"))
             for static_url in static_urls:
-                downloader.add_task(static_url)
-            results = downloader.run()
-            # 记录已下载的静态资源
-            with self.lock:
-                for static_url, file_path in results:
-                    if file_path:
+                # 调用插件的 on_download_resource 钩子
+                result = self.plugin_manager.call_hook_with_result("on_download_resource", static_url, self.output_dir)
+                # 找到第一个返回有效结果的插件
+                file_path = None
+                for plugin_name, plugin_result in result.items():
+                    if plugin_result:
+                        file_path = plugin_result
+                        break
+                
+                if file_path:
+                    with self.lock:
                         self.static_resources.add(static_url)
+                    self.logger.info(_t("静态资源下载完成") + f": {static_url}")
+                else:
+                    self.logger.debug(_t("静态资源未下载") + f": {static_url}")
         
         # 处理页面链接
         for link in links:
