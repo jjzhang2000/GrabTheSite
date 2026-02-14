@@ -613,3 +613,25 @@ msgstr "List of crawled pages"
 
 msgid "示例插件清理完成"
 msgstr "Example plugin cleanup completed"
+
+# crawler/crawl_site.py 资源下载相关日志消息
+msgid "资源下载线程已启动"
+msgstr "Resource download thread started"
+
+msgid "资源下载线程已停止"
+msgstr "Resource download thread stopped"
+
+msgid "等待资源下载完成..."
+msgstr "Waiting for resource download to complete..."
+
+msgid "添加静态资源到下载队列，共"
+msgstr "Adding static resources to download queue, total"
+
+msgid "个"
+msgstr "items"
+
+msgid "静态资源下载完成"
+msgstr "Static resource download completed"
+
+msgid "静态资源未下载"
+msgstr "Static resource not downloaded"
