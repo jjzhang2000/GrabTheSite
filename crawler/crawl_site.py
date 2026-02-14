@@ -146,7 +146,7 @@ class CrawlSite:
         if self.plugin_manager:
             self.resource_thread_stop.clear()
             self.resource_thread = threading.Thread(target=self._resource_worker)
-            self.resource_thread.daemon = True
+            self.resource_thread.daemon = False  # 设置为非守护线程，确保资源下载完成
             self.resource_thread.start()
             logger.info(_t("资源下载线程已启动"))
         
@@ -424,7 +424,7 @@ class CrawlSite:
         
         # 将静态资源加入下载队列（异步下载）
         if static_urls and self.plugin_manager:
-            self.logger.info(_t("添加静态资源到下载队列，共") + f" {len(static_urls)} " + _t("个"))
+            logger.info(_t("添加静态资源到下载队列，共") + f" {len(static_urls)} " + _t("个"))
             for static_url in static_urls:
                 # 检查是否已下载过
                 with self.lock:
@@ -514,7 +514,6 @@ class CrawlSite:
                 # 检查是否已经下载过
                 with self.lock:
                     if static_url in self.static_resources:
-                        self.resource_queue.task_done()
                         continue
                 
                 # 调用插件的 on_download_resource 钩子
@@ -536,18 +535,11 @@ class CrawlSite:
                     else:
                         logger.debug(_t("静态资源未下载") + f": {static_url}")
                 
-                self.resource_queue.task_done()
-                
             except queue.Empty:
                 # 队列为空，继续循环检查停止信号
                 continue
             except Exception as e:
                 logger.error(_t("资源下载失败") + f": {e}")
-                # 确保 task_done 被调用，避免队列卡住
-                try:
-                    self.resource_queue.task_done()
-                except ValueError:
-                    pass
         
         # 处理队列中剩余的任务（非阻塞方式）
         while not self.resource_queue.empty():
@@ -557,7 +549,6 @@ class CrawlSite:
                 # 检查是否已经下载过
                 with self.lock:
                     if static_url in self.static_resources:
-                        self.resource_queue.task_done()
                         continue
                 
                 if self.plugin_manager:
@@ -574,16 +565,10 @@ class CrawlSite:
                         with self.lock:
                             self.static_resources.add(static_url)
                         logger.info(_t("静态资源下载完成") + f": {static_url}")
-                
-                self.resource_queue.task_done()
             except queue.Empty:
                 break
             except Exception as e:
                 logger.error(_t("资源下载失败") + f": {e}")
-                try:
-                    self.resource_queue.task_done()
-                except ValueError:
-                    pass
         
         logger.info(_t("资源下载线程已停止"))
     
