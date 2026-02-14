@@ -223,11 +223,17 @@ class MainWindow(tk.Tk):
         # 记录停止日志
         self.log_panel.add_log(_("正在停止抓取..."))
         
-        # 等待抓取线程结束（最多等待10秒）
+        # 等待抓取线程结束（最多等待10秒），保持UI响应
+        wait_time = 0
+        max_wait = 10
+        while self.crawl_thread and self.crawl_thread.is_alive() and wait_time < max_wait:
+            self.update()  # 保持UI响应
+            import time
+            time.sleep(0.1)
+            wait_time += 0.1
+        
         if self.crawl_thread and self.crawl_thread.is_alive():
-            self.crawl_thread.join(timeout=10)
-            if self.crawl_thread.is_alive():
-                self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
+            self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
         
         # 重置状态
         self.is_crawling = False
