@@ -10,7 +10,7 @@ import os
 import time
 import requests
 from email.utils import parsedate_to_datetime
-from logger import setup_logger
+from logger import setup_logger, _ as _t
 from config import ERROR_HANDLING_CONFIG, USER_AGENT
 from utils.error_handler import ErrorHandler, retry
 
@@ -40,7 +40,7 @@ def get_file_timestamp(file_path):
         try:
             return os.path.getmtime(file_path)
         except (IOError, OSError) as e:
-            logger.error(f"获取文件时间戳失败: {file_path}, 错误: {e}")
+            logger.error(_t("获取文件时间戳失败") + f": {file_path}, " + _t("错误") + f": {e}")
             return 0
     return 0
 
@@ -64,13 +64,13 @@ def get_remote_timestamp(url):
     
     # 检查响应状态码
     if response.status_code != 200:
-        logger.debug(f"获取远程文件头部失败: {url}, 状态码: {response.status_code}")
+        logger.debug(_t("获取远程文件头部失败") + f": {url}, " + _t("状态码") + f": {response.status_code}")
         return 0
     
     # 获取 Last-Modified 头
     last_modified = response.headers.get('Last-Modified')
     if not last_modified:
-        logger.debug(f"远程文件无 Last-Modified 头: {url}")
+        logger.debug(_t("远程文件无 Last-Modified 头") + f": {url}")
         return 0
     
     # 解析时间格式

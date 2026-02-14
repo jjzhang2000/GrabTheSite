@@ -11,7 +11,7 @@
 import os
 from typing import Dict, Any
 import yaml
-from logger import setup_logger
+from logger import setup_logger, _ as _t
 from urllib.parse import urlparse
 
 logger = setup_logger(__name__)
@@ -92,12 +92,12 @@ def load_config() -> Dict[str, Any]:
                 default_config = yaml.safe_load(f)
                 if default_config:
                     config = merge_configs(config, default_config)
-                    logger.debug(f"已加载默认配置文件: {DEFAULT_CONFIG_FILE}")
+                    logger.debug(_t("已加载默认配置文件") + f": {DEFAULT_CONFIG_FILE}")
                     config_loaded = True
         except Exception as e:
-            logger.error(f"加载默认配置文件失败: {e}")
+            logger.error(_t("加载默认配置文件失败") + f": {e}")
     else:
-        logger.warning(f"默认配置文件不存在: {DEFAULT_CONFIG_FILE}")
+        logger.warning(_t("默认配置文件不存在") + f": {DEFAULT_CONFIG_FILE}")
     
     # 加载用户配置文件
     if os.path.exists(USER_CONFIG_FILE):
@@ -106,16 +106,16 @@ def load_config() -> Dict[str, Any]:
                 user_config = yaml.safe_load(f)
                 if user_config:
                     config = merge_configs(config, user_config)
-                    logger.debug(f"已加载用户配置文件: {USER_CONFIG_FILE}")
+                    logger.debug(_t("已加载用户配置文件") + f": {USER_CONFIG_FILE}")
                     config_loaded = True
         except Exception as e:
-            logger.error(f"加载用户配置文件失败: {e}")
+            logger.error(_t("加载用户配置文件失败") + f": {e}")
     else:
-        logger.debug(f"用户配置文件不存在: {USER_CONFIG_FILE}")
+        logger.debug(_t("用户配置文件不存在") + f": {USER_CONFIG_FILE}")
     
     # 检查配置是否加载成功
     if not config_loaded:
-        logger.error("配置文件加载失败，使用默认配置")
+        logger.error(_t("配置文件加载失败，使用默认配置"))
     
     # 从 target_url 中提取域名作为 site_name
     parsed_url = urlparse(config["target_url"])
@@ -159,16 +159,16 @@ def validate_config(config: Dict[str, Any]) -> None:
     required_fields = ["target_url", "crawl", "output"]
     for field in required_fields:
         if field not in config:
-            logger.warning(f"配置缺少必填项: {field}")
+            logger.warning(_t("配置缺少必填项") + f": {field}")
     
     # 验证抓取参数
     if "crawl" in config:
         crawl_config = config["crawl"]
         if "max_depth" in crawl_config and crawl_config["max_depth"] < 0:
-            logger.warning("max_depth 不能为负数，设置为 0")
+            logger.warning(_t("max_depth 不能为负数，设置为 0"))
             crawl_config["max_depth"] = 0
         if "max_files" in crawl_config and crawl_config["max_files"] < 0:
-            logger.warning("max_files 不能为负数，设置为 0")
+            logger.warning(_t("max_files 不能为负数，设置为 0"))
             crawl_config["max_files"] = 0
 
 

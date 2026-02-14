@@ -331,7 +331,7 @@ def main(args_list=None, stop_event=None):
     plugin_manager.enable_plugins(plugin_config)
     
     enabled_count = len(plugin_manager.enabled_plugins)
-    logger.info(f"插件系统: 已加载 {enabled_count} 个插件")
+    logger.info(_("Plugin system") + f": {_('loaded')} {enabled_count} {_('plugins')}")
     
     # 使用导出的配置常量
     target_url = config.get("target_url", TARGET_URL)
@@ -350,16 +350,16 @@ def main(args_list=None, stop_event=None):
     logger.info(f"{_('最大深度')}: {max_depth}")
     logger.info(f"{_('最大文件数')}: {max_files}")
     logger.info(f"{_('请求间隔')}: {delay} {_('秒')}")
-    logger.info(f"{_('随机延迟')}: {'启用' if random_delay else '禁用'}")
+    logger.info(f"{_('随机延迟')}: {_('Enabled') if random_delay else _('Disabled')}")
     logger.info(f"{_('线程数')}: {threads}")
-    logger.info(f"{_('用户代理')}: {user_agent[:50]}..." if len(user_agent) > 50 else f"{_('用户代理')}: {user_agent}")
+    logger.info(f"{_('用户代理:')}{user_agent[:50]}..." if len(user_agent) > 50 else f"{_('用户代理:')}{user_agent}")
     logger.info(f"{_('输出路径')}: {output_dir}")
     
     # 显示JavaScript渲染配置
     js_rendering_config = config.get("js_rendering", JS_RENDERING_CONFIG)
     js_rendering_enable = js_rendering_config.get("enable", False)
     js_rendering_timeout = js_rendering_config.get("timeout", 30)
-    logger.info(f"{_("JavaScript渲染")}: {'启用' if js_rendering_enable else '禁用'}")
+    logger.info(f"{_('JavaScript渲染')}: {_('Enabled') if js_rendering_enable else _('Disabled')}")
     if js_rendering_enable:
         logger.info(f"{_("渲染超时")}: {js_rendering_timeout}{_("秒")}")
     
@@ -381,7 +381,7 @@ def main(args_list=None, stop_event=None):
     if has_enabled_plugins:
         plugin_manager.call_hook("on_crawl_end", pages)
     
-    logger.info(_(f"抓取完成，共 {len(pages)} 个页面"))
+    logger.info(_("Crawl completed") + f", {len(pages)} " + _("pages"))
     logger.debug(f"Pages type: {type(pages)}")
     
     # 调用插件的 on_save_start 钩子
@@ -402,20 +402,20 @@ def main(args_list=None, stop_event=None):
         if save_plugins:
             saved_files = []
             for save_plugin in save_plugins:
-                logger.info(f"{_('Using save plugin')}: {save_plugin.name}")
+                logger.info(_("Using save plugin") + f": {save_plugin.name}")
                 try:
                     # 使用保存插件保存页面
                     plugin_saved_files = save_plugin.save_site(pages)
                     saved_files.extend(plugin_saved_files)
-                    logger.info(f"{_('Save plugin')} {save_plugin.name} {_('completed, saved')} {len(plugin_saved_files)} {_('files')}")
+                    logger.info(_("Save plugin") + f" {save_plugin.name} " + _("completed, saved") + f" {len(plugin_saved_files)} " + _("files"))
                 except Exception as e:
-                    logger.error(f"{_('Save plugin')} {save_plugin.name} {_('execution failed')}: {e}")
+                    logger.error(_("Save plugin") + f" {save_plugin.name} " + _("execution failed") + f": {e}")
             
             # 调用插件的 on_save_end 钩子
             plugin_manager.call_hook("on_save_end", saved_files)
-            logger.info(f"{_('All save plugins completed, total saved')} {len(saved_files)} {_('files')}")
+            logger.info(_("All save plugins completed, total saved") + f" {len(saved_files)} " + _("files"))
         else:
-            logger.warning(_("No save plugin found, no pages saved. Please ensure a plugin implementing save_site method is enabled (e.g., save_plugin)"))
+            logger.warning(_("No save plugin found, no pages saved. Please ensure a plugin implementing save_site method is enabled"))
     else:
         logger.warning(_("Plugin system disabled, cannot save pages. Please enable plugin system to save crawled content"))
     

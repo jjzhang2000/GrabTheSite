@@ -6,6 +6,7 @@
 """
 
 from utils.plugin_manager import Plugin
+from logger import _ as _t
 
 
 class ExamplePlugin(Plugin):
@@ -30,7 +31,7 @@ class ExamplePlugin(Plugin):
     def on_init(self):
         """插件初始化时调用"""
         super().on_init()
-        self.logger.info("示例插件初始化完成")
+        self.logger.info(_t("示例插件初始化完成"))
     
     def on_crawl_start(self, crawler):
         """抓取开始时调用
@@ -39,7 +40,7 @@ class ExamplePlugin(Plugin):
             crawler: 抓取器实例
         """
         super().on_crawl_start(crawler)
-        self.logger.info("开始抓取，初始化页面计数器")
+        self.logger.info(_t("开始抓取，初始化页面计数器"))
         self.page_count = 0
         self.crawled_pages = []
     
@@ -53,7 +54,7 @@ class ExamplePlugin(Plugin):
         self.page_count += 1
         self.crawled_pages.append(url)
         if self.page_count % 5 == 0:
-            self.logger.info(f"已抓取 {self.page_count} 个页面")
+            self.logger.info(_t("已抓取") + f" {self.page_count} " + _t("个页面"))
     
     def on_crawl_end(self, pages):
         """抓取结束时调用
@@ -62,10 +63,10 @@ class ExamplePlugin(Plugin):
             pages: 抓取的页面字典
         """
         super().on_crawl_end(pages)
-        self.logger.info(f"抓取结束，共抓取 {self.page_count} 个页面")
-        self.logger.info(f"抓取的页面列表: {self.crawled_pages}")
+        self.logger.info(_t("抓取结束，共抓取") + f" {self.page_count} " + _t("个页面"))
+        self.logger.info(_t("抓取的页面列表") + f": {self.crawled_pages}")
     
     def on_cleanup(self):
         """插件清理时调用"""
         super().on_cleanup()
-        self.logger.info("示例插件清理完成")
+        self.logger.info(_t("示例插件清理完成"))

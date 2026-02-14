@@ -162,3 +162,442 @@ msgstr "抓取已停止"
 
 msgid "Home"
 msgstr "首页"
+
+# 爬虫日志消息
+msgid "排除列表"
+msgstr "排除列表"
+
+msgid "排除列表为空"
+msgstr "排除列表为空"
+
+msgid "开始抓取网站"
+msgstr "开始抓取网站"
+
+msgid "保存路径"
+msgstr "保存路径"
+
+msgid "最大深度"
+msgstr "最大深度"
+
+msgid "最大文件数"
+msgstr "最大文件数"
+
+msgid "线程数"
+msgstr "线程数"
+
+msgid "JavaScript渲染已启用，超时设置"
+msgstr "JavaScript渲染已启用，超时设置"
+
+msgid "JavaScript渲染已禁用"
+msgstr "JavaScript渲染已禁用"
+
+msgid "断点续传已启用，状态文件"
+msgstr "断点续传已启用，状态文件"
+
+msgid "已访问 URL 数量"
+msgstr "已访问 URL 数量"
+
+msgid "目标 URL 已访问过，跳过"
+msgstr "目标 URL 已访问过，跳过"
+
+msgid "开始多线程抓取，线程数"
+msgstr "开始多线程抓取，线程数"
+
+msgid "工作线程超时，强制结束"
+msgstr "工作线程超时，强制结束"
+
+msgid "保存最终抓取状态..."
+msgstr "保存最终抓取状态..."
+
+msgid "抓取统计信息:"
+msgstr "抓取统计信息:"
+
+msgid "总访问 URL 数量"
+msgstr "总访问 URL 数量"
+
+msgid "已下载文件数量"
+msgstr "已下载文件数量"
+
+msgid "失败 URL 数量"
+msgstr "失败 URL 数量"
+
+msgid "关闭JavaScript渲染器..."
+msgstr "关闭JavaScript渲染器..."
+
+msgid "抓取完成，共下载"
+msgstr "抓取完成，共下载"
+
+msgid "个页面"
+msgstr "个页面"
+
+msgid "暂存页面数量"
+msgstr "暂存页面数量"
+
+msgid "工作线程收到停止信号，正在退出..."
+msgstr "工作线程收到停止信号，正在退出..."
+
+msgid "任务处理前收到停止信号，跳过任务"
+msgstr "任务处理前收到停止信号，跳过任务"
+
+msgid "URL在排除列表中，跳过"
+msgstr "URL在排除列表中，跳过"
+
+msgid "尝试使用JavaScript渲染页面"
+msgstr "尝试使用JavaScript渲染页面"
+
+msgid "达到文件数量限制，跳过页面"
+msgstr "达到文件数量限制，跳过页面"
+
+msgid "抓取页面"
+msgstr "抓取页面"
+
+msgid "获取页面内容失败"
+msgstr "获取页面内容失败"
+
+msgid "暂存页面"
+msgstr "暂存页面"
+
+msgid "页面已最新，跳过下载"
+msgstr "页面已最新，跳过下载"
+
+msgid "添加随机延迟"
+msgstr "添加随机延迟"
+
+msgid "添加固定延迟"
+msgstr "添加固定延迟"
+
+msgid "文件操作失败"
+msgstr "文件操作失败"
+
+msgid "网络请求失败"
+msgstr "网络请求失败"
+
+# 下载器日志消息
+msgid "线程工作失败"
+msgstr "线程工作失败"
+
+msgid "下载文件"
+msgstr "下载文件"
+
+msgid "跳过，无文件名"
+msgstr "跳过，无文件名"
+
+msgid "文件已下载，跳过"
+msgstr "文件已下载，跳过"
+
+msgid "文件已最新，跳过下载"
+msgstr "文件已最新，跳过下载"
+
+msgid "保存文件"
+msgstr "保存文件"
+
+msgid "开始多线程下载，线程数"
+msgstr "开始多线程下载，线程数"
+
+msgid "多线程下载完成，共处理"
+msgstr "多线程下载完成，共处理"
+
+msgid "个文件"
+msgstr "个文件"
+
+# config.py 日志消息
+msgid "已加载默认配置文件"
+msgstr "已加载默认配置文件"
+
+msgid "加载默认配置文件失败"
+msgstr "加载默认配置文件失败"
+
+msgid "默认配置文件不存在"
+msgstr "默认配置文件不存在"
+
+msgid "已加载用户配置文件"
+msgstr "已加载用户配置文件"
+
+msgid "加载用户配置文件失败"
+msgstr "加载用户配置文件失败"
+
+msgid "用户配置文件不存在"
+msgstr "用户配置文件不存在"
+
+msgid "配置文件加载失败，使用默认配置"
+msgstr "配置文件加载失败，使用默认配置"
+
+msgid "配置缺少必填项"
+msgstr "配置缺少必填项"
+
+msgid "max_depth 不能为负数，设置为 0"
+msgstr "max_depth 不能为负数，设置为 0"
+
+msgid "max_files 不能为负数，设置为 0"
+msgstr "max_files 不能为负数，设置为 0"
+
+# grab_the_site.py 日志消息
+msgid "Plugin system"
+msgstr "插件系统"
+
+msgid "loaded"
+msgstr "已加载"
+
+msgid "plugins"
+msgstr "个插件"
+
+msgid "Enabled"
+msgstr "启用"
+
+msgid "Disabled"
+msgstr "禁用"
+
+msgid "Crawl completed"
+msgstr "抓取完成"
+
+msgid "pages"
+msgstr "个页面"
+
+msgid "Using save plugin"
+msgstr "使用保存插件"
+
+msgid "Save plugin"
+msgstr "保存插件"
+
+msgid "completed, saved"
+msgstr "执行完成，已保存"
+
+msgid "files"
+msgstr "个文件"
+
+msgid "execution failed"
+msgstr "执行失败"
+
+msgid "All save plugins completed, total saved"
+msgstr "所有保存插件执行完成，总共保存"
+
+msgid "No save plugin found, no pages saved. Please ensure a plugin implementing save_site method is enabled"
+msgstr "未找到保存插件，没有页面被保存。请确保启用了实现 save_site 方法的插件"
+
+msgid "Plugin system disabled, cannot save pages. Please enable plugin system to save crawled content"
+msgstr "插件系统已禁用，无法保存页面。请启用插件系统以保存抓取的内容"
+
+# utils/plugin_manager.py 日志消息
+msgid "插件初始化"
+msgstr "插件初始化"
+
+msgid "抓取开始"
+msgstr "抓取开始"
+
+msgid "抓取结束"
+msgstr "抓取结束"
+
+msgid "插件清理"
+msgstr "插件清理"
+
+msgid "发现"
+msgstr "发现"
+
+msgid "个插件目录"
+msgstr "个插件目录"
+
+msgid "加载插件"
+msgstr "加载插件"
+
+msgid "模块名"
+msgstr "模块名"
+
+msgid "加载插件失败"
+msgstr "加载插件失败"
+
+msgid "错误"
+msgstr "错误"
+
+msgid "加载了"
+msgstr "加载了"
+
+msgid "个插件"
+msgstr "个插件"
+
+msgid "注册插件"
+msgstr "注册插件"
+
+msgid "启用插件"
+msgstr "启用插件"
+
+msgid "禁用插件"
+msgstr "禁用插件"
+
+msgid "启用了"
+msgstr "启用了"
+
+msgid "禁用所有插件"
+msgstr "禁用所有插件"
+
+msgid "调用插件钩子失败"
+msgstr "调用插件钩子失败"
+
+msgid "插件清理失败"
+msgstr "插件清理失败"
+
+msgid "插件管理器清理完成"
+msgstr "插件管理器清理完成"
+
+# utils/state_manager.py 日志消息
+msgid "成功加载状态文件"
+msgstr "成功加载状态文件"
+
+msgid "成功保存状态文件"
+msgstr "成功保存状态文件"
+
+msgid "加载状态文件失败"
+msgstr "加载状态文件失败"
+
+msgid "保存状态文件失败"
+msgstr "保存状态文件失败"
+
+msgid "成功清除状态"
+msgstr "成功清除状态"
+
+msgid "清除状态失败"
+msgstr "清除状态失败"
+
+# utils/js_renderer.py 日志消息
+msgid "Pyppeteer 未安装，JavaScript 渲染功能将不可用"
+msgstr "Pyppeteer 未安装，JavaScript 渲染功能将不可用"
+
+msgid "浏览器初始化成功"
+msgstr "浏览器初始化成功"
+
+msgid "浏览器初始化失败"
+msgstr "浏览器初始化失败"
+
+msgid "页面渲染成功"
+msgstr "页面渲染成功"
+
+msgid "页面渲染失败"
+msgstr "页面渲染失败"
+
+msgid "浏览器关闭成功"
+msgstr "浏览器关闭成功"
+
+msgid "浏览器关闭失败"
+msgstr "浏览器关闭失败"
+
+msgid "同步渲染页面失败"
+msgstr "同步渲染页面失败"
+
+msgid "同步关闭浏览器失败"
+msgstr "同步关闭浏览器失败"
+
+# utils/timestamp_utils.py 日志消息
+msgid "获取文件时间戳失败"
+msgstr "获取文件时间戳失败"
+
+msgid "获取远程文件头部失败"
+msgstr "获取远程文件头部失败"
+
+msgid "状态码"
+msgstr "状态码"
+
+msgid "远程文件无 Last-Modified 头"
+msgstr "远程文件无 Last-Modified 头"
+
+# utils/sitemap_generator.py 日志消息
+msgid "提取标题失败"
+msgstr "提取标题失败"
+
+msgid "从本地文件提取标题失败"
+msgstr "从本地文件提取标题失败"
+
+msgid "生成站点地图"
+msgstr "生成站点地图"
+
+msgid "生成 HTML 站点地图"
+msgstr "生成 HTML 站点地图"
+
+# utils/i18n.py 日志消息
+msgid "语言切换回调执行失败"
+msgstr "语言切换回调执行失败"
+
+msgid "加载语言"
+msgstr "加载语言"
+
+msgid "使用gettext.translation加载语言失败"
+msgstr "使用gettext.translation加载语言失败"
+
+msgid "从.po文件加载翻译"
+msgstr "从.po文件加载翻译"
+
+msgid "读取.po文件失败"
+msgstr "读取.po文件失败"
+
+msgid "使用基于字典的翻译器"
+msgstr "使用基于字典的翻译器"
+
+msgid "加载语言失败"
+msgstr "加载语言失败"
+
+# utils/error_handler.py 日志消息
+msgid "达到最大重试次数"
+msgstr "达到最大重试次数"
+
+msgid "操作失败"
+msgstr "操作失败"
+
+msgid "秒后重试"
+msgstr "秒后重试"
+
+msgid "操作失败（不可重试）"
+msgstr "操作失败（不可重试）"
+
+msgid "跳过失败的操作"
+msgstr "跳过失败的操作"
+
+# plugins/save_plugin/__init__.py 日志消息
+msgid "保存插件初始化完成"
+msgstr "保存插件初始化完成"
+
+msgid "准备保存"
+msgstr "准备保存"
+
+msgid "保存插件准备就绪"
+msgstr "保存插件准备就绪"
+
+msgid "保存插件初始化失败：缺少必要参数"
+msgstr "保存插件初始化失败：缺少必要参数"
+
+msgid "开始统一处理链接，共"
+msgstr "开始统一处理链接，共"
+
+msgid "开始保存页面到磁盘，共"
+msgstr "开始保存页面到磁盘，共"
+
+msgid "保存完成，共保存"
+msgstr "保存完成，共保存"
+
+msgid "处理链接完成"
+msgstr "处理链接完成"
+
+msgid "处理链接失败"
+msgstr "处理链接失败"
+
+msgid "保存页面"
+msgstr "保存页面"
+
+msgid "保存页面失败"
+msgstr "保存页面失败"
+
+# plugins/example_plugin/__init__.py 日志消息
+msgid "示例插件初始化完成"
+msgstr "示例插件初始化完成"
+
+msgid "开始抓取，初始化页面计数器"
+msgstr "开始抓取，初始化页面计数器"
+
+msgid "已抓取"
+msgstr "已抓取"
+
+msgid "抓取结束，共抓取"
+msgstr "抓取结束，共抓取"
+
+msgid "抓取的页面列表"
+msgstr "抓取的页面列表"
+
+msgid "示例插件清理完成"
+msgstr "示例插件清理完成"

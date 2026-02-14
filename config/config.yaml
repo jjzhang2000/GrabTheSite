@@ -22,4 +22,4 @@ js_rendering:
   enable: false
   timeout: 30
 i18n:
-  lang: en
+  lang: zh_CN

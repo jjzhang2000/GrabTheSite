@@ -8,7 +8,7 @@
 
 import os
 import asyncio
-from logger import setup_logger
+from logger import setup_logger, _ as _t
 from config import CONFIG, USER_AGENT
 
 # JavaScript渲染配置常量
@@ -30,7 +30,7 @@ try:
 except ImportError:
     PYPPETEER_AVAILABLE = False
     logger = setup_logger(__name__)
-    logger.warning("Pyppeteer 未安装，JavaScript 渲染功能将不可用")
+    logger.warning(_t("Pyppeteer 未安装，JavaScript 渲染功能将不可用"))
 
 
 class JSRenderer:
@@ -63,10 +63,10 @@ class JSRenderer:
                 args=BROWSER_ARGS,
                 timeout=self.timeout * 1000
             )
-            logger.info("浏览器初始化成功")
+            logger.info(_t("浏览器初始化成功"))
             return True
         except Exception as e:
-            logger.error(f"浏览器初始化失败: {e}")
+            logger.error(_t("浏览器初始化失败") + f": {e}")
             return False
     
     async def render_page(self, url):
@@ -103,10 +103,10 @@ class JSRenderer:
             # 关闭页面
             await page.close()
             
-            logger.info(f"页面渲染成功: {url}")
+            logger.info(_t("页面渲染成功") + f": {url}")
             return html
         except Exception as e:
-            logger.error(f"页面渲染失败: {url}, 错误: {e}")
+            logger.error(_t("页面渲染失败") + f": {url}, " + _t("错误") + f": {e}")
             try:
                 await page.close()
             except:
@@ -124,10 +124,10 @@ class JSRenderer:
         
         try:
             await self.browser.close()
-            logger.info("浏览器关闭成功")
+            logger.info(_t("浏览器关闭成功"))
             return True
         except Exception as e:
-            logger.error(f"浏览器关闭失败: {e}")
+            logger.error(_t("浏览器关闭失败") + f": {e}")
             return False
     
     def render_page_sync(self, url):
@@ -151,7 +151,7 @@ class JSRenderer:
             html = asyncio.get_event_loop().run_until_complete(self.render_page(url))
             return html
         except Exception as e:
-            logger.error(f"同步渲染页面失败: {url}, 错误: {e}")
+            logger.error(_t("同步渲染页面失败") + f": {url}, " + _t("错误") + f": {e}")
             return None
     
     def close_sync(self):
@@ -167,7 +167,7 @@ class JSRenderer:
             result = asyncio.get_event_loop().run_until_complete(self.close())
             return result
         except Exception as e:
-            logger.error(f"同步关闭浏览器失败: {e}")
+            logger.error(_t("同步关闭浏览器失败") + f": {e}")
             return False
 
 

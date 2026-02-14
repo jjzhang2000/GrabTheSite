@@ -39,6 +39,9 @@ msgstr "Random delay"
 msgid "线程数"
 msgstr "Thread count"
 
+msgid "线程数:"
+msgstr "Threads:"
+
 msgid "输出路径"
 msgstr "Output path"
 
@@ -162,3 +165,442 @@ msgstr "Crawling stopped"
 
 msgid "Home"
 msgstr "Home"
+
+# 爬虫日志消息
+msgid "排除列表"
+msgstr "Exclude list"
+
+msgid "排除列表为空"
+msgstr "Exclude list is empty"
+
+msgid "开始抓取网站"
+msgstr "Starting to crawl website"
+
+msgid "保存路径"
+msgstr "Save path"
+
+msgid "最大深度"
+msgstr "Max depth"
+
+msgid "最大文件数"
+msgstr "Max files"
+
+msgid "线程数"
+msgstr "Thread count"
+
+msgid "JavaScript渲染已启用，超时设置"
+msgstr "JavaScript rendering enabled, timeout"
+
+msgid "JavaScript渲染已禁用"
+msgstr "JavaScript rendering disabled"
+
+msgid "断点续传已启用，状态文件"
+msgstr "Resume enabled, state file"
+
+msgid "已访问 URL 数量"
+msgstr "Visited URL count"
+
+msgid "目标 URL 已访问过，跳过"
+msgstr "Target URL already visited, skipping"
+
+msgid "开始多线程抓取，线程数"
+msgstr "Starting multi-threaded crawling, threads"
+
+msgid "工作线程超时，强制结束"
+msgstr "Worker thread timeout, forcing stop"
+
+msgid "保存最终抓取状态..."
+msgstr "Saving final crawl state..."
+
+msgid "抓取统计信息:"
+msgstr "Crawl statistics:"
+
+msgid "总访问 URL 数量"
+msgstr "Total visited URLs"
+
+msgid "已下载文件数量"
+msgstr "Downloaded files count"
+
+msgid "失败 URL 数量"
+msgstr "Failed URL count"
+
+msgid "关闭JavaScript渲染器..."
+msgstr "Closing JavaScript renderer..."
+
+msgid "抓取完成，共下载"
+msgstr "Crawl completed, downloaded"
+
+msgid "个页面"
+msgstr "pages"
+
+msgid "暂存页面数量"
+msgstr "Staged page count"
+
+msgid "工作线程收到停止信号，正在退出..."
+msgstr "Worker thread received stop signal, exiting..."
+
+msgid "任务处理前收到停止信号，跳过任务"
+msgstr "Received stop signal before task processing, skipping task"
+
+msgid "URL在排除列表中，跳过"
+msgstr "URL in exclude list, skipping"
+
+msgid "尝试使用JavaScript渲染页面"
+msgstr "Trying to render page with JavaScript"
+
+msgid "达到文件数量限制，跳过页面"
+msgstr "Reached file count limit, skipping page"
+
+msgid "抓取页面"
+msgstr "Crawling page"
+
+msgid "获取页面内容失败"
+msgstr "Failed to get page content"
+
+msgid "暂存页面"
+msgstr "Staged page"
+
+msgid "页面已最新，跳过下载"
+msgstr "Page is up to date, skipping download"
+
+msgid "添加随机延迟"
+msgstr "Adding random delay"
+
+msgid "添加固定延迟"
+msgstr "Adding fixed delay"
+
+msgid "文件操作失败"
+msgstr "File operation failed"
+
+msgid "网络请求失败"
+msgstr "Network request failed"
+
+# 下载器日志消息
+msgid "线程工作失败"
+msgstr "Thread worker failed"
+
+msgid "下载文件"
+msgstr "Downloading file"
+
+msgid "跳过，无文件名"
+msgstr "Skipping, no filename"
+
+msgid "文件已下载，跳过"
+msgstr "File already downloaded, skipping"
+
+msgid "文件已最新，跳过下载"
+msgstr "File is up to date, skipping download"
+
+msgid "保存文件"
+msgstr "Saving file"
+
+msgid "开始多线程下载，线程数"
+msgstr "Starting multi-threaded download, threads"
+
+msgid "多线程下载完成，共处理"
+msgstr "Multi-threaded download completed, processed"
+
+msgid "个文件"
+msgstr "files"
+
+# config.py 日志消息
+msgid "已加载默认配置文件"
+msgstr "Loaded default config file"
+
+msgid "加载默认配置文件失败"
+msgstr "Failed to load default config file"
+
+msgid "默认配置文件不存在"
+msgstr "Default config file does not exist"
+
+msgid "已加载用户配置文件"
+msgstr "Loaded user config file"
+
+msgid "加载用户配置文件失败"
+msgstr "Failed to load user config file"
+
+msgid "用户配置文件不存在"
+msgstr "User config file does not exist"
+
+msgid "配置文件加载失败，使用默认配置"
+msgstr "Config file loading failed, using default config"
+
+msgid "配置缺少必填项"
+msgstr "Config missing required field"
+
+msgid "max_depth 不能为负数，设置为 0"
+msgstr "max_depth cannot be negative, set to 0"
+
+msgid "max_files 不能为负数，设置为 0"
+msgstr "max_files cannot be negative, set to 0"
+
+# grab_the_site.py 日志消息
+msgid "Plugin system"
+msgstr "Plugin system"
+
+msgid "loaded"
+msgstr "loaded"
+
+msgid "plugins"
+msgstr "plugins"
+
+msgid "Enabled"
+msgstr "Enabled"
+
+msgid "Disabled"
+msgstr "Disabled"
+
+msgid "Crawl completed"
+msgstr "Crawl completed"
+
+msgid "pages"
+msgstr "pages"
+
+msgid "Using save plugin"
+msgstr "Using save plugin"
+
+msgid "Save plugin"
+msgstr "Save plugin"
+
+msgid "completed, saved"
+msgstr "completed, saved"
+
+msgid "files"
+msgstr "files"
+
+msgid "execution failed"
+msgstr "execution failed"
+
+msgid "All save plugins completed, total saved"
+msgstr "All save plugins completed, total saved"
+
+msgid "No save plugin found, no pages saved. Please ensure a plugin implementing save_site method is enabled"
+msgstr "No save plugin found, no pages saved. Please ensure a plugin implementing save_site method is enabled"
+
+msgid "Plugin system disabled, cannot save pages. Please enable plugin system to save crawled content"
+msgstr "Plugin system disabled, cannot save pages. Please enable plugin system to save crawled content"
+
+# utils/plugin_manager.py 日志消息
+msgid "插件初始化"
+msgstr "Plugin initialized"
+
+msgid "抓取开始"
+msgstr "Crawl started"
+
+msgid "抓取结束"
+msgstr "Crawl ended"
+
+msgid "插件清理"
+msgstr "Plugin cleanup"
+
+msgid "发现"
+msgstr "Found"
+
+msgid "个插件目录"
+msgstr "plugin directories"
+
+msgid "加载插件"
+msgstr "Loading plugin"
+
+msgid "模块名"
+msgstr "module name"
+
+msgid "加载插件失败"
+msgstr "Failed to load plugin"
+
+msgid "错误"
+msgstr "error"
+
+msgid "加载了"
+msgstr "Loaded"
+
+msgid "个插件"
+msgstr "plugins"
+
+msgid "注册插件"
+msgstr "Registering plugin"
+
+msgid "启用插件"
+msgstr "Enabling plugin"
+
+msgid "禁用插件"
+msgstr "Disabling plugin"
+
+msgid "启用了"
+msgstr "Enabled"
+
+msgid "禁用所有插件"
+msgstr "Disable all plugins"
+
+msgid "调用插件钩子失败"
+msgstr "Failed to call plugin hook"
+
+msgid "插件清理失败"
+msgstr "Plugin cleanup failed"
+
+msgid "插件管理器清理完成"
+msgstr "Plugin manager cleanup completed"
+
+# utils/state_manager.py 日志消息
+msgid "成功加载状态文件"
+msgstr "Successfully loaded state file"
+
+msgid "成功保存状态文件"
+msgstr "Successfully saved state file"
+
+msgid "加载状态文件失败"
+msgstr "Failed to load state file"
+
+msgid "保存状态文件失败"
+msgstr "Failed to save state file"
+
+msgid "成功清除状态"
+msgstr "Successfully cleared state"
+
+msgid "清除状态失败"
+msgstr "Failed to clear state"
+
+# utils/js_renderer.py 日志消息
+msgid "Pyppeteer 未安装，JavaScript 渲染功能将不可用"
+msgstr "Pyppeteer not installed, JavaScript rendering will be unavailable"
+
+msgid "浏览器初始化成功"
+msgstr "Browser initialized successfully"
+
+msgid "浏览器初始化失败"
+msgstr "Browser initialization failed"
+
+msgid "页面渲染成功"
+msgstr "Page rendered successfully"
+
+msgid "页面渲染失败"
+msgstr "Page rendering failed"
+
+msgid "浏览器关闭成功"
+msgstr "Browser closed successfully"
+
+msgid "浏览器关闭失败"
+msgstr "Failed to close browser"
+
+msgid "同步渲染页面失败"
+msgstr "Synchronous page rendering failed"
+
+msgid "同步关闭浏览器失败"
+msgstr "Synchronous browser closing failed"
+
+# utils/timestamp_utils.py 日志消息
+msgid "获取文件时间戳失败"
+msgstr "Failed to get file timestamp"
+
+msgid "获取远程文件头部失败"
+msgstr "Failed to get remote file headers"
+
+msgid "状态码"
+msgstr "status code"
+
+msgid "远程文件无 Last-Modified 头"
+msgstr "Remote file has no Last-Modified header"
+
+# utils/sitemap_generator.py 日志消息
+msgid "提取标题失败"
+msgstr "Failed to extract title"
+
+msgid "从本地文件提取标题失败"
+msgstr "Failed to extract title from local file"
+
+msgid "生成站点地图"
+msgstr "Generating sitemap"
+
+msgid "生成 HTML 站点地图"
+msgstr "Generating HTML sitemap"
+
+# utils/i18n.py 日志消息
+msgid "语言切换回调执行失败"
+msgstr "Language change callback execution failed"
+
+msgid "加载语言"
+msgstr "Loading language"
+
+msgid "使用gettext.translation加载语言失败"
+msgstr "Failed to load language using gettext.translation"
+
+msgid "从.po文件加载翻译"
+msgstr "Loading translation from .po file"
+
+msgid "读取.po文件失败"
+msgstr "Failed to read .po file"
+
+msgid "使用基于字典的翻译器"
+msgstr "Using dictionary-based translator"
+
+msgid "加载语言失败"
+msgstr "Failed to load language"
+
+# utils/error_handler.py 日志消息
+msgid "达到最大重试次数"
+msgstr "Maximum retry count reached"
+
+msgid "操作失败"
+msgstr "Operation failed"
+
+msgid "秒后重试"
+msgstr "seconds before retry"
+
+msgid "操作失败（不可重试）"
+msgstr "Operation failed (not retryable)"
+
+msgid "跳过失败的操作"
+msgstr "Skipping failed operation"
+
+# plugins/save_plugin/__init__.py 日志消息
+msgid "保存插件初始化完成"
+msgstr "Save plugin initialization completed"
+
+msgid "准备保存"
+msgstr "Preparing to save"
+
+msgid "保存插件准备就绪"
+msgstr "Save plugin ready"
+
+msgid "保存插件初始化失败：缺少必要参数"
+msgstr "Save plugin initialization failed: missing required parameters"
+
+msgid "开始统一处理链接，共"
+msgstr "Starting to process links uniformly, total"
+
+msgid "开始保存页面到磁盘，共"
+msgstr "Starting to save pages to disk, total"
+
+msgid "保存完成，共保存"
+msgstr "Save completed, total saved"
+
+msgid "处理链接完成"
+msgstr "Link processing completed"
+
+msgid "处理链接失败"
+msgstr "Link processing failed"
+
+msgid "保存页面"
+msgstr "Saving page"
+
+msgid "保存页面失败"
+msgstr "Failed to save page"
+
+# plugins/example_plugin/__init__.py 日志消息
+msgid "示例插件初始化完成"
+msgstr "Example plugin initialization completed"
+
+msgid "开始抓取，初始化页面计数器"
+msgstr "Starting crawl, initializing page counter"
+
+msgid "已抓取"
+msgstr "Crawled"
+
+msgid "抓取结束，共抓取"
+msgstr "Crawl ended, total crawled"
+
+msgid "抓取的页面列表"
+msgstr "List of crawled pages"
+
+msgid "示例插件清理完成"
+msgstr "Example plugin cleanup completed"

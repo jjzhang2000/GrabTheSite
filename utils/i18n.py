@@ -8,7 +8,7 @@
 
 import os
 import gettext as gettext_module
-from logger import setup_logger
+from logger import setup_logger, _ as _t
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -57,7 +57,7 @@ def _notify_language_changed():
         try:
             callback()
         except Exception as e:
-            logger.warning(f"语言切换回调执行失败: {e}")
+            logger.warning(_t("语言切换回调执行失败") + f": {e}")
 
 
 def init_i18n(lang='en'):
@@ -78,9 +78,9 @@ def init_i18n(lang='en'):
                 fallback=True
             )
             _translators[lang] = translator
-            logger.info(f"加载语言: {lang}")
+            logger.info(_t("加载语言") + f": {lang}")
         except Exception as e:
-                logger.warning(f"使用gettext.translation加载语言 {lang} 失败: {e}")
+                logger.warning(_t("使用gettext.translation加载语言失败") + f" {lang}: {e}")
                 # 降级：使用基于字典的翻译器
                 translations = {}
                 # 尝试从.po文件加载
@@ -104,9 +104,9 @@ def init_i18n(lang='en'):
                                     translations[msgid] = msgstr
                                     msgid = None
                                     msgstr = None
-                        logger.info(f"从.po文件加载翻译: {po_file}")
+                        logger.info(_t("从.po文件加载翻译") + f": {po_file}")
                     except Exception as e:
-                        logger.warning(f"读取.po文件失败: {e}")
+                        logger.warning(_t("读取.po文件失败") + f": {e}")
                 
                 # 基于字典的翻译器实现
                 class DictTranslator:
@@ -125,9 +125,9 @@ def init_i18n(lang='en'):
                 
                 translator = DictTranslator(translations)
                 _translators[lang] = translator
-                logger.info(f"使用基于字典的翻译器: {lang}")
+                logger.info(_t("使用基于字典的翻译器") + f": {lang}")
         except Exception as e:
-            logger.warning(f"加载语言 {lang} 失败: {e}")
+            logger.warning(_t("加载语言失败") + f" {lang}: {e}")
             # 使用默认翻译器
             if 'en' not in _translators:
                 try:

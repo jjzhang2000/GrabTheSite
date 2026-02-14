@@ -13,7 +13,7 @@ import threading
 import queue
 import requests
 from urllib.parse import urlparse
-from logger import setup_logger
+from logger import setup_logger, _ as _t
 from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, USER_AGENT
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler, retry
@@ -73,7 +73,7 @@ class Downloader:
             except queue.Empty:
                 break
             except Exception as e:
-                logger.error(f"线程工作失败: {e}")
+                logger.error(_t("线程工作失败") + f": {e}")
             finally:
                 self.queue.task_done()
     
@@ -87,7 +87,7 @@ class Downloader:
         Returns:
             str: 下载的文件路径，如果下载失败返回None
         """
-        logger.info(f"下载文件: {url}")
+        logger.info(_t("下载文件") + f": {url}")
         
         # 解析URL
         parsed_url = urlparse(url)
@@ -98,7 +98,7 @@ class Downloader:
         
         # 如果没有文件名，跳过
         if not filename:
-            logger.info(f"跳过，无文件名: {url}")
+            logger.info(_t("跳过，无文件名") + f": {url}")
             return None
         
         # 构建保存路径，保留目录结构
@@ -106,7 +106,7 @@ class Downloader:
         
         # 检查状态管理器，避免重复下载
         if self.state_manager and self.state_manager.is_file_downloaded(file_path):
-            logger.info(f"文件已下载，跳过: {url}")
+            logger.info(_t("文件已下载，跳过") + f": {url}")
             return file_path
         
         # 创建目录结构
@@ -117,7 +117,7 @@ class Downloader:
         remote_timestamp = get_remote_timestamp(url)
         
         if not should_update(remote_timestamp, local_timestamp):
-            logger.info(f"文件已最新，跳过下载: {url}")
+            logger.info(_t("文件已最新，跳过下载") + f": {url}")
             # 更新状态管理器
             if self.state_manager:
                 self.state_manager.add_downloaded_file(file_path)
@@ -141,7 +141,7 @@ class Downloader:
                 if chunk:
                     f.write(chunk)
         
-        logger.info(f"保存文件: {file_path}")
+        logger.info(_t("保存文件") + f": {file_path}")
         
         # 更新状态管理器
         if self.state_manager:
@@ -155,7 +155,7 @@ class Downloader:
         Returns:
             list: 下载结果列表，每个元素是(url, file_path)元组
         """
-        logger.info(f"开始多线程下载，线程数: {self.threads}")
+        logger.info(_t("开始多线程下载，线程数") + f": {self.threads}")
         
         # 创建并启动线程
         workers = []
@@ -172,7 +172,7 @@ class Downloader:
         for worker in workers:
             worker.join()
         
-        logger.info(f"多线程下载完成，共处理 {len(self.results)} 个文件")
+        logger.info(_t("多线程下载完成，共处理") + f" {len(self.results)} " + _t("个文件"))
         return self.results
 
 
@@ -201,10 +201,10 @@ def add_delay():
         if RANDOM_DELAY:
             # 随机延迟：0.5 到 1.5 倍的配置延迟时间
             delay_time = random.uniform(DELAY * 0.5, DELAY * 1.5)
-            logger.debug(f"添加随机延迟: {delay_time:.2f} 秒")
+            logger.debug(_t("添加随机延迟") + f": {delay_time:.2f} " + _t("秒"))
         else:
             # 固定延迟
             delay_time = DELAY
-            logger.debug(f"添加固定延迟: {delay_time:.2f} 秒")
+            logger.debug(_t("添加固定延迟") + f": {delay_time:.2f} " + _t("秒"))
         
         time.sleep(delay_time)

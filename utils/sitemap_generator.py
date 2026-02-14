@@ -53,7 +53,7 @@ class SitemapGenerator:
             if title_tag and title_tag.text.strip():
                 return title_tag.text.strip()
         except Exception as e:
-            logger.error(f"提取标题失败: {url}, 错误: {str(e)}")
+            logger.error(_("提取标题失败") + f": {url}, " + _("错误") + f": {str(e)}")
         
         # 如果没有找到标题，使用默认值
         parsed_url = urlparse(url)
@@ -136,7 +136,7 @@ class SitemapGenerator:
                 # 从 HTML 内容中提取标题
                 return self._extract_title(html_content, url)
         except Exception as e:
-            logger.error(f"从本地文件提取标题失败: {url}, 错误: {str(e)}")
+            logger.error(_("从本地文件提取标题失败") + f": {url}, " + _("错误") + f": {str(e)}")
         
         # 如果读取文件失败或提取标题失败，使用默认值
         parsed_url = urlparse(url)
@@ -376,7 +376,7 @@ class SitemapGenerator:
         
         # 写入文件
         tree.write(sitemap_path, encoding='utf-8', xml_declaration=True)
-        logger.info(f"生成站点地图: {sitemap_path}")
+        logger.info(_("生成站点地图") + f": {sitemap_path}")
         
         return sitemap_path
     
@@ -465,6 +465,6 @@ class SitemapGenerator:
         # 写入文件
         with open(sitemap_html_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
-        logger.info(f"生成 HTML 站点地图: {sitemap_html_path}")
+        logger.info(_("生成 HTML 站点地图") + f": {sitemap_html_path}")
         
         return sitemap_html_path

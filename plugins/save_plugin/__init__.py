@@ -10,6 +10,7 @@ import os
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from utils.plugin_manager import Plugin
+from logger import _ as _t
 
 
 class SavePlugin(Plugin):
@@ -36,7 +37,7 @@ class SavePlugin(Plugin):
     def on_init(self):
         """插件初始化时调用"""
         super().on_init()
-        self.logger.info("保存插件初始化完成")
+        self.logger.info(_t("保存插件初始化完成"))
     
     def on_crawl_end(self, pages):
         """抓取结束时调用，准备保存参数
@@ -44,7 +45,7 @@ class SavePlugin(Plugin):
         Args:
             pages: 抓取的页面字典
         """
-        self.logger.info(f"准备保存 {len(pages)} 个页面")
+        self.logger.info(_t("准备保存") + f" {len(pages)} " + _t("个页面"))
     
     def on_save_start(self, saver_data):
         """保存开始时调用
@@ -63,9 +64,9 @@ class SavePlugin(Plugin):
             # 确保路径以/结尾
             if not self.target_directory.endswith('/'):
                 self.target_directory += '/'
-            self.logger.info("保存插件准备就绪")
+            self.logger.info(_t("保存插件准备就绪"))
         else:
-            self.logger.error("保存插件初始化失败：缺少必要参数")
+            self.logger.error(_t("保存插件初始化失败：缺少必要参数"))
     
     def save_site(self, pages):
         """保存抓取的页面到磁盘
@@ -74,14 +75,14 @@ class SavePlugin(Plugin):
             pages: 暂存的页面内容，键为URL，值为页面内容
         """
         # 统一处理所有页面的链接
-        self.logger.info(f"开始统一处理链接，共 {len(pages)} 个页面")
+        self.logger.info(_t("开始统一处理链接，共") + f" {len(pages)} " + _t("个页面"))
         processed_pages = self._process_all_links(pages)
         
         # 将处理后的页面保存到磁盘
-        self.logger.info(f"开始保存页面到磁盘，共 {len(processed_pages)} 个页面")
+        self.logger.info(_t("开始保存页面到磁盘，共") + f" {len(processed_pages)} " + _t("个页面"))
         saved_count = self._save_pages(processed_pages)
         
-        self.logger.info(f"保存完成，共保存 {saved_count} 个页面")
+        self.logger.info(_t("保存完成，共保存") + f" {saved_count} " + _t("个页面"))
         return self.saved_files
     
     def _process_all_links(self, pages):
@@ -174,10 +175,10 @@ class SavePlugin(Plugin):
                                 # 其他链接保持不变
                 
                 processed_pages[url] = str(soup)
-                self.logger.info(f"处理链接完成: {url}")
+                self.logger.info(_t("处理链接完成") + f": {url}")
                 
             except (IOError, OSError, ValueError) as e:
-                self.logger.error(f"处理链接失败: {url}, 错误: {str(e)}")
+                self.logger.error(_t("处理链接失败") + f": {url}, " + _t("错误") + f": {str(e)}")
                 # 如果处理失败，使用原始内容
                 processed_pages[url] = html_content
         
@@ -208,10 +209,10 @@ class SavePlugin(Plugin):
                 
                 saved_count += 1
                 self.saved_files.append((url, file_path))
-                self.logger.info(f"保存页面: {file_path}")
+                self.logger.info(_t("保存页面") + f": {file_path}")
                 
             except (IOError, OSError) as e:
-                self.logger.error(f"保存页面失败: {url}, 错误: {str(e)}")
+                self.logger.error(_t("保存页面失败") + f": {url}, " + _t("错误") + f": {str(e)}")
         
         return saved_count
     

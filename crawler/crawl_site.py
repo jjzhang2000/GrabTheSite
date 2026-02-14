@@ -17,7 +17,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from crawler.downloader import download_file, Downloader
-from logger import setup_logger
+from logger import setup_logger, _ as _t
 from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, ERROR_HANDLING_CONFIG, JS_RENDERING_CONFIG
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler
@@ -111,9 +111,9 @@ class CrawlSite:
         
         # 打印排除列表信息
         if self.processed_exclude_list:
-            logger.info(f"排除列表: {self.processed_exclude_list}")
+            logger.info(_t("排除列表") + f": {self.processed_exclude_list}")
         else:
-            logger.info("排除列表为空")
+            logger.info(_t("排除列表为空"))
         
         # 创建输出目录
         os.makedirs(self.output_dir, exist_ok=True)
@@ -124,32 +124,32 @@ class CrawlSite:
         Returns:
             dict: 暂存的页面内容，键为URL，值为页面内容
         """
-        logger.info(f"开始抓取网站: {self.target_url}")
-        logger.info(f"保存路径: {self.output_dir}")
-        logger.info(f"最大深度: {self.max_depth}")
-        logger.info(f"最大文件数: {self.max_files}")
-        logger.info(f"线程数: {self.threads}")
+        logger.info(_t("开始抓取网站") + f": {self.target_url}")
+        logger.info(_t("保存路径") + f": {self.output_dir}")
+        logger.info(_t("最大深度") + f": {self.max_depth}")
+        logger.info(_t("最大文件数") + f": {self.max_files}")
+        logger.info(_t("线程数") + f": {self.threads}")
         
         # 检查JavaScript渲染状态
         if self.js_rendering_enabled:
-            logger.info(f"JavaScript渲染已启用，超时设置: {self.js_rendering_timeout}秒")
+            logger.info(_t("JavaScript渲染已启用，超时设置") + f": {self.js_rendering_timeout}" + _t("秒"))
         else:
-            logger.info("JavaScript渲染已禁用")
+            logger.info(_t("JavaScript渲染已禁用"))
         
         # 检查是否启用断点续传
         if self.resume_enabled and self.state_manager:
-            logger.info(f"断点续传已启用，状态文件: {self.state_manager.state_file}")
-            logger.info(f"已访问 URL 数量: {len(self.visited_urls)}")
+            logger.info(_t("断点续传已启用，状态文件") + f": {self.state_manager.state_file}")
+            logger.info(_t("已访问 URL 数量") + f": {len(self.visited_urls)}")
         
         # 添加初始任务到队列
         # 只有当目标URL未被访问过时才添加到队列
         if self.target_url not in self.visited_urls:
             self.queue.put((self.target_url, 0))
         else:
-            logger.info(f"目标 URL 已访问过，跳过: {self.target_url}")
+            logger.info(_t("目标 URL 已访问过，跳过") + f": {self.target_url}")
         
         # 开始多线程抓取
-        logger.info(f"开始多线程抓取，线程数: {self.threads}")
+        logger.info(_t("开始多线程抓取，线程数") + f": {self.threads}")
         
         # 创建并启动线程
         workers = []
@@ -166,25 +166,25 @@ class CrawlSite:
         for worker in workers:
             worker.join(timeout=60)  # 增加到60秒超时，确保任务有足够时间完成
             if worker.is_alive():
-                logger.warning("工作线程超时，强制结束")
+                logger.warning(_t("工作线程超时，强制结束"))
         
         # 保存最终状态
         if self.resume_enabled and self.state_manager:
-            logger.info("保存最终抓取状态...")
+            logger.info(_t("保存最终抓取状态..."))
             self.state_manager.save_state()
             stats = self.state_manager.get_stats()
-            logger.info(f"抓取统计信息:")
-            logger.info(f"  总访问 URL 数量: {stats.get('total_urls', 0)}")
-            logger.info(f"  已下载文件数量: {stats.get('downloaded_files', 0)}")
-            logger.info(f"  失败 URL 数量: {stats.get('failed_urls', 0)}")
+            logger.info(_t("抓取统计信息:"))
+            logger.info("  " + _t("总访问 URL 数量") + f": {stats.get('total_urls', 0)}")
+            logger.info("  " + _t("已下载文件数量") + f": {stats.get('downloaded_files', 0)}")
+            logger.info("  " + _t("失败 URL 数量") + f": {stats.get('failed_urls', 0)}")
         
         # 清理JavaScript渲染器
         if self.js_rendering_enabled and self.js_renderer:
-            logger.info("关闭JavaScript渲染器...")
+            logger.info(_t("关闭JavaScript渲染器..."))
             self.js_renderer.close_sync()
         
-        logger.info(f"抓取完成，共下载 {self.downloaded_files} 个页面")
-        logger.info(f"暂存页面数量: {len(self.pages)}")
+        logger.info(_t("抓取完成，共下载") + f" {self.downloaded_files} " + _t("个页面"))
+        logger.info(_t("暂存页面数量") + f": {len(self.pages)}")
         return self.pages
     
     def _worker(self):
@@ -192,7 +192,7 @@ class CrawlSite:
         while True:
             # 检查是否收到停止信号
             if self.stop_event and self.stop_event.is_set():
-                logger.info("工作线程收到停止信号，正在退出...")
+                logger.info(_t("工作线程收到停止信号，正在退出..."))
                 break
             
             # 检查是否达到文件数量限制
@@ -205,7 +205,7 @@ class CrawlSite:
                 try:
                     # 检查是否收到停止信号
                     if self.stop_event and self.stop_event.is_set():
-                        logger.info("任务处理前收到停止信号，跳过任务")
+                        logger.info(_t("任务处理前收到停止信号，跳过任务"))
                         task_completed = True
                         return
                     
@@ -217,7 +217,7 @@ class CrawlSite:
                     
                     # 检查是否在排除列表中
                     if self._is_in_exclude_list(url):
-                        logger.info(f"URL在排除列表中，跳过: {url}")
+                        logger.info(_t("URL在排除列表中，跳过") + f": {url}")
                         task_completed = True
                         return
                     
@@ -245,9 +245,9 @@ class CrawlSite:
                     else:
                         break
             except (IOError, OSError) as e:
-                logger.error(f"文件操作失败: {e}")
+                logger.error(_t("文件操作失败") + f": {e}")
             except requests.RequestException as e:
-                logger.error(f"网络请求失败: {e}")
+                logger.error(_t("网络请求失败") + f": {e}")
     
     def _fetch_page_content(self, url):
         """获取页面内容，使用错误处理器进行重试
@@ -262,7 +262,7 @@ class CrawlSite:
         
         # 尝试使用JavaScript渲染
         if self.js_rendering_enabled and self.js_renderer:
-            logger.debug(f"尝试使用JavaScript渲染页面: {url}")
+            logger.debug(_t("尝试使用JavaScript渲染页面") + f": {url}")
             page_content = self.js_renderer.render_page_sync(url)
             if page_content:
                 return page_content
@@ -327,15 +327,15 @@ class CrawlSite:
             with self.lock:
                 if self.downloaded_files >= self.max_files:
                     # 达到文件数量限制，不处理该页面
-                    logger.info(f"达到文件数量限制，跳过页面: {url}")
+                    logger.info(_t("达到文件数量限制，跳过页面") + f": {url}")
                     return
         
         # 获取网页内容（无论是否需要更新，都需要获取内容来处理链接）
-        logger.info(f"抓取页面: {url}")
+        logger.info(_t("抓取页面") + f": {url}")
         
         page_content = self._fetch_page_content(url)
         if not page_content:
-            logger.error(f"获取页面内容失败: {url}")
+            logger.error(_t("获取页面内容失败") + f": {url}")
             return
         
         # 调用插件的on_page_crawled钩子
@@ -347,16 +347,16 @@ class CrawlSite:
             with self.lock:
                 if self.downloaded_files >= self.max_files:
                     # 再次检查文件数量限制，避免竞争条件
-                    logger.info(f"达到文件数量限制，跳过页面: {url}")
+                    logger.info(_t("达到文件数量限制，跳过页面") + f": {url}")
                     return
                 self.pages[url] = page_content
                 self.downloaded_files += 1
                 # 更新状态管理器
                 if self.resume_enabled and self.state_manager:
                     self.state_manager.add_downloaded_file(file_path)
-            logger.info(f"暂存页面: {url}")
+            logger.info(_t("暂存页面") + f": {url}")
         else:
-            logger.info(f"页面已最新，跳过下载: {url}")
+            logger.info(_t("页面已最新，跳过下载") + f": {url}")
         
         # 检查是否需要保存状态
         if self.resume_enabled and self.state_manager:
@@ -467,10 +467,10 @@ class CrawlSite:
             if RANDOM_DELAY:
                 # 随机延迟：0.5 到 1.5 倍的配置延迟时间
                 delay_time = random.uniform(DELAY * 0.5, DELAY * 1.5)
-                logger.debug(f"添加随机延迟: {delay_time:.2f} 秒")
+                logger.debug(_t("添加随机延迟") + f": {delay_time:.2f} " + _t("秒"))
             else:
                 # 固定延迟
                 delay_time = DELAY
-                logger.debug(f"添加固定延迟: {delay_time:.2f} 秒")
+                logger.debug(_t("添加固定延迟") + f": {delay_time:.2f} " + _t("秒"))
             
             time.sleep(delay_time)

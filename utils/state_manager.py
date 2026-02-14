@@ -9,7 +9,7 @@
 import os
 import json
 import time
-from logger import setup_logger
+from logger import setup_logger, _ as _t
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -62,12 +62,12 @@ class StateManager:
                 if "stats" in loaded_state:
                     self.state["stats"] = loaded_state["stats"]
                 
-                logger.info(f"成功加载状态文件: {self.state_file}")
-                logger.info(f"已访问 URL 数量: {len(self.state['visited_urls'])}")
-                logger.info(f"已下载文件数量: {len(self.state['downloaded_files'])}")
+                logger.info(_t("成功加载状态文件") + f": {self.state_file}")
+                logger.info(_t("已访问 URL 数量") + f": {len(self.state['visited_urls'])}")
+                logger.info(_t("已下载文件数量") + f": {len(self.state['downloaded_files'])}")
                 return True
             except (IOError, OSError, json.JSONDecodeError) as e:
-                logger.error(f"加载状态文件失败: {e}")
+                logger.error(_t("加载状态文件失败") + f": {e}")
                 return False
         return False
     
@@ -94,10 +94,10 @@ class StateManager:
                 json.dump(state_to_save, f, indent=2, ensure_ascii=False)
             
             self.state["last_save_time"] = state_to_save["last_save_time"]
-            logger.info(f"成功保存状态文件: {self.state_file}")
+            logger.info(_t("成功保存状态文件") + f": {self.state_file}")
             return True
         except (IOError, OSError, TypeError) as e:
-            logger.error(f"保存状态文件失败: {e}")
+            logger.error(_t("保存状态文件失败") + f": {e}")
             return False
     
     def add_visited_url(self, url):
@@ -178,10 +178,10 @@ class StateManager:
             if os.path.exists(self.state_file):
                 os.remove(self.state_file)
             
-            logger.info("成功清除状态")
+            logger.info(_t("成功清除状态"))
             return True
         except (IOError, OSError) as e:
-            logger.error(f"清除状态失败: {e}")
+            logger.error(_t("清除状态失败") + f": {e}")
             return False
     
     def should_save(self, interval=300):
