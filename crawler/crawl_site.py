@@ -63,6 +63,12 @@ class CrawlSite:
         self.pages = {}
         self.static_resources = set()
         
+        # 资源下载队列和线程控制
+        self.resource_queue = queue.Queue()
+        self.resource_thread = None
+        self.resource_thread_lock = threading.Lock()
+        self.resource_thread_stop = threading.Event()
+        
         # 提取并标准化起始目录路径（确保以/结尾）
         parsed_target = urlparse(self.target_url)
         self.target_directory = parsed_target.path
@@ -136,6 +142,14 @@ class CrawlSite:
         else:
             logger.info(_t("JavaScript渲染已禁用"))
         
+        # 启动资源下载线程（如果启用了插件）
+        if self.plugin_manager:
+            self.resource_thread_stop.clear()
+            self.resource_thread = threading.Thread(target=self._resource_worker)
+            self.resource_thread.daemon = True
+            self.resource_thread.start()
+            logger.info(_t("资源下载线程已启动"))
+        
         # 检查是否启用断点续传
         if self.resume_enabled and self.state_manager:
             logger.info(_t("断点续传已启用，状态文件") + f": {self.state_manager.state_file}")
@@ -162,11 +176,20 @@ class CrawlSite:
         # 等待队列中的所有任务完成
         self.queue.join()
         
-        # 等待所有线程结束（使用更长的超时时间）
+        # 等待所有工作线程结束（使用更长的超时时间）
         for worker in workers:
             worker.join(timeout=60)  # 增加到60秒超时，确保任务有足够时间完成
             if worker.is_alive():
                 logger.warning(_t("工作线程超时，强制结束"))
+        
+        # 停止资源下载线程
+        if self.resource_thread:
+            logger.info(_t("等待资源下载完成..."))
+            self.resource_thread_stop.set()
+            # 等待资源下载线程完成，最多等待5分钟
+            self.resource_thread.join(timeout=300)
+            if self.resource_thread.is_alive():
+                logger.warning(_t("资源下载线程超时"))
         
         # 保存最终状态
         if self.resume_enabled and self.state_manager:
@@ -196,58 +219,77 @@ class CrawlSite:
                 break
             
             # 检查是否达到文件数量限制
+            reached_limit = False
             with self.lock:
                 if self.downloaded_files >= self.max_files:
-                    break
+                    reached_limit = True
+            
             try:
+                # 如果已达到文件限制，以非阻塞方式清空队列
+                if reached_limit:
+                    try:
+                        url, depth = self.queue.get(block=False)
+                        # 直接标记完成，不处理
+                        self.queue.task_done()
+                        continue
+                    except queue.Empty:
+                        # 队列已空，可以退出
+                        break
+                
+                # 正常获取任务
                 url, depth = self.queue.get(block=True, timeout=0.5)
                 task_completed = False
+                should_break = False
+                
                 try:
                     # 检查是否收到停止信号
                     if self.stop_event and self.stop_event.is_set():
                         logger.info(_t("任务处理前收到停止信号，跳过任务"))
                         task_completed = True
-                        return
+                        should_break = True
                     
                     # 检查是否已访问过该URL
-                    with self.lock:
-                        if url in self.visited_urls:
-                            task_completed = True
-                            return
+                    if not should_break:
+                        with self.lock:
+                            if url in self.visited_urls:
+                                task_completed = True
                     
                     # 检查是否在排除列表中
-                    if self._is_in_exclude_list(url):
+                    if not task_completed and self._is_in_exclude_list(url):
                         logger.info(_t("URL在排除列表中，跳过") + f": {url}")
                         task_completed = True
-                        return
                     
                     # 检查是否在起始目录及其子目录中
-                    if not self._is_in_target_directory(url):
+                    if not task_completed and not self._is_in_target_directory(url):
                         task_completed = True
-                        return
+                    
+                    # 检查是否达到文件数量限制（再次检查）
+                    if not task_completed:
+                        with self.lock:
+                            if self.downloaded_files >= self.max_files:
+                                task_completed = True
                     
                     # 抓取页面
-                    self._crawl_page(url, depth)
-                    task_completed = True
+                    if not task_completed:
+                        self._crawl_page(url, depth)
+                        task_completed = True
+                except (IOError, OSError) as e:
+                    logger.error(_t("文件操作失败") + f": {e}")
+                except requests.RequestException as e:
+                    logger.error(_t("网络请求失败") + f": {e}")
+                except Exception as e:
+                    logger.error(_t("抓取页面失败") + f": {url}, " + _t("错误") + f": {e}")
                 finally:
-                    # 确保 task_done() 只被调用一次
-                    if task_completed:
-                        self.queue.task_done()
+                    # 确保 task_done() 被调用
+                    self.queue.task_done()
+                
+                # 如果需要退出循环
+                if should_break:
+                    break
                     
             except queue.Empty:
-                # 检查是否真的完成了所有任务
-                with self.lock:
-                    if self.queue.empty() and self.downloaded_files < self.max_files:
-                        # 队列空了但还没达到文件限制，继续等待
-                        # 给其他线程一些时间来添加新任务
-                        time.sleep(0.1)
-                        continue
-                    else:
-                        break
-            except (IOError, OSError) as e:
-                logger.error(_t("文件操作失败") + f": {e}")
-            except requests.RequestException as e:
-                logger.error(_t("网络请求失败") + f": {e}")
+                # 队列空了，退出
+                break
     
     def _fetch_page_content(self, url):
         """获取页面内容，使用错误处理器进行重试
@@ -380,25 +422,16 @@ class CrawlSite:
                     if self._is_same_domain(full_url):
                         static_urls.append(full_url)
         
-        # 通过插件下载静态资源
+        # 将静态资源加入下载队列（异步下载）
         if static_urls and self.plugin_manager:
-            self.logger.info(_t("开始下载静态资源，共") + f" {len(static_urls)} " + _t("个"))
+            self.logger.info(_t("添加静态资源到下载队列，共") + f" {len(static_urls)} " + _t("个"))
             for static_url in static_urls:
-                # 调用插件的 on_download_resource 钩子
-                result = self.plugin_manager.call_hook_with_result("on_download_resource", static_url, self.output_dir)
-                # 找到第一个返回有效结果的插件
-                file_path = None
-                for plugin_name, plugin_result in result.items():
-                    if plugin_result:
-                        file_path = plugin_result
-                        break
-                
-                if file_path:
-                    with self.lock:
-                        self.static_resources.add(static_url)
-                    self.logger.info(_t("静态资源下载完成") + f": {static_url}")
-                else:
-                    self.logger.debug(_t("静态资源未下载") + f": {static_url}")
+                # 检查是否已下载过
+                with self.lock:
+                    if static_url in self.static_resources:
+                        continue
+                # 将资源URL加入队列
+                self.resource_queue.put(static_url)
         
         # 处理页面链接
         for link in links:
@@ -465,6 +498,94 @@ class CrawlSite:
             if url.startswith(exclude_url):
                 return True
         return False
+    
+    def _resource_worker(self):
+        """资源下载线程函数
+        
+        独立线程处理资源文件下载，避免阻塞页面抓取工作线程
+        """
+        logger.info(_t("资源下载线程已启动"))
+        
+        while not self.resource_thread_stop.is_set():
+            try:
+                # 从队列获取资源URL，超时1秒
+                static_url = self.resource_queue.get(block=True, timeout=1)
+                
+                # 检查是否已经下载过
+                with self.lock:
+                    if static_url in self.static_resources:
+                        self.resource_queue.task_done()
+                        continue
+                
+                # 调用插件的 on_download_resource 钩子
+                if self.plugin_manager:
+                    result = self.plugin_manager.call_hook_with_result(
+                        "on_download_resource", static_url, self.output_dir
+                    )
+                    # 找到第一个返回有效结果的插件
+                    file_path = None
+                    for plugin_name, plugin_result in result.items():
+                        if plugin_result:
+                            file_path = plugin_result
+                            break
+                    
+                    if file_path:
+                        with self.lock:
+                            self.static_resources.add(static_url)
+                        logger.info(_t("静态资源下载完成") + f": {static_url}")
+                    else:
+                        logger.debug(_t("静态资源未下载") + f": {static_url}")
+                
+                self.resource_queue.task_done()
+                
+            except queue.Empty:
+                # 队列为空，继续循环检查停止信号
+                continue
+            except Exception as e:
+                logger.error(_t("资源下载失败") + f": {e}")
+                # 确保 task_done 被调用，避免队列卡住
+                try:
+                    self.resource_queue.task_done()
+                except ValueError:
+                    pass
+        
+        # 处理队列中剩余的任务（非阻塞方式）
+        while not self.resource_queue.empty():
+            try:
+                static_url = self.resource_queue.get(block=False)
+                
+                # 检查是否已经下载过
+                with self.lock:
+                    if static_url in self.static_resources:
+                        self.resource_queue.task_done()
+                        continue
+                
+                if self.plugin_manager:
+                    result = self.plugin_manager.call_hook_with_result(
+                        "on_download_resource", static_url, self.output_dir
+                    )
+                    file_path = None
+                    for plugin_name, plugin_result in result.items():
+                        if plugin_result:
+                            file_path = plugin_result
+                            break
+                    
+                    if file_path:
+                        with self.lock:
+                            self.static_resources.add(static_url)
+                        logger.info(_t("静态资源下载完成") + f": {static_url}")
+                
+                self.resource_queue.task_done()
+            except queue.Empty:
+                break
+            except Exception as e:
+                logger.error(_t("资源下载失败") + f": {e}")
+                try:
+                    self.resource_queue.task_done()
+                except ValueError:
+                    pass
+        
+        logger.info(_t("资源下载线程已停止"))
     
     def _add_delay(self):
         """添加延迟，避免对目标服务器造成过大压力
