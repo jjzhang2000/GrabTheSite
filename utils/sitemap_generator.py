@@ -380,11 +380,12 @@ class SitemapGenerator:
         
         return sitemap_path
     
-    def generate_html_sitemap(self, pages):
+    def generate_html_sitemap(self, pages, page_depths=None):
         """生成 HTML 格式的站点地图
         
         Args:
             pages: 抓取的页面，可以是字典（键为 URL，值为页面内容）或集合（包含 URL）
+            page_depths: 页面深度信息，字典（键为 URL，值为深度）
         
         Returns:
             str: 生成的 HTML 站点地图文件路径
@@ -425,9 +426,11 @@ class SitemapGenerator:
     <ul>
 '''
         
-        # 按照下载顺序添加页面链接
+        # 收集页面信息列表
+        page_list = []
+        
         if isinstance(pages, dict):
-            # 当 pages 是字典时，按照字典的顺序（下载顺序）遍历
+            # 当 pages 是字典时
             for url, html_content_page in pages.items():
                 # 提取页面标题
                 page_title = self._extract_title(html_content_page, url)
@@ -437,10 +440,18 @@ class SitemapGenerator:
                 # 获取相对于站点地图文件的路径
                 relative_path = self._get_relative_path(local_path)
                 
-                html_content += f'        <li><a href="{relative_path}">{page_title}</a></li>\n'
+                # 获取页面深度（默认为0）
+                depth = page_depths.get(url, 0) if page_depths else 0
+                
+                page_list.append({
+                    'url': url,
+                    'title': page_title,
+                    'path': relative_path,
+                    'depth': depth
+                })
         elif isinstance(pages, set):
-            # 当 pages 是集合时，按照字母顺序排序（集合本身无序）
-            for url in sorted(pages):
+            # 当 pages 是集合时
+            for url in pages:
                 # 尝试从本地文件中读取页面内容来提取标题
                 page_title = self._extract_title_from_local_file(url)
                 
@@ -449,8 +460,25 @@ class SitemapGenerator:
                 # 获取相对于站点地图文件的路径
                 relative_path = self._get_relative_path(local_path)
                 
-                html_content += f'        <li><a href="{relative_path}">{page_title}</a></li>\n'
-
+                # 获取页面深度（默认为0）
+                depth = page_depths.get(url, 0) if page_depths else 0
+                
+                page_list.append({
+                    'url': url,
+                    'title': page_title,
+                    'path': relative_path,
+                    'depth': depth
+                })
+        
+        # 按深度排序，然后按URL排序（确保同一深度的页面有稳定顺序）
+        page_list.sort(key=lambda x: (x['depth'], x['url']))
+        
+        # 生成页面列表，按深度缩进
+        for page_info in page_list:
+            depth = page_info['depth']
+            # 每级深度缩进40像素
+            indent_style = f' style="padding-left: {depth * 40}px;"' if depth > 0 else ''
+            html_content += f'        <li{indent_style}><a href="{page_info["path"]}">{page_info["title"]}</a></li>\n'
         
         # 闭合 HTML 标签
         html_content += """

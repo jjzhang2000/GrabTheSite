@@ -61,6 +61,8 @@ class CrawlSite:
         
         # 页面暂存机制：URL -> 页面内容
         self.pages = {}
+        # 页面深度记录：URL -> 下载深度
+        self.page_depths = {}
         self.static_resources = set()
         
         # 资源下载队列和线程控制
@@ -392,6 +394,7 @@ class CrawlSite:
                     logger.info(_t("达到文件数量限制，跳过页面") + f": {url}")
                     return
                 self.pages[url] = page_content
+                self.page_depths[url] = depth
                 self.downloaded_files += 1
                 # 更新状态管理器
                 if self.resume_enabled and self.state_manager:

@@ -435,7 +435,9 @@ def main(args_list=None, stop_event=None):
         sitemap_generator = SitemapGenerator(target_url, output_dir)
         # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
         sitemap_data = pages if pages else crawler.visited_urls
-        sitemap_generator.generate_html_sitemap(sitemap_data)
+        # 传递页面深度信息
+        page_depths = crawler.page_depths if hasattr(crawler, 'page_depths') else None
+        sitemap_generator.generate_html_sitemap(sitemap_data, page_depths)
     
     # 清理插件
     if has_enabled_plugins:
