@@ -197,7 +197,8 @@ class PluginManager:
         
         Args:
             plugin_config: 插件配置字典，格式为 {plugin_name: True/False}
-                          如果为None或空字典，则启用所有发现的插件
+                          如果为None，则启用所有发现的插件（向后兼容）
+                          如果为非None（包括空字典），则只启用明确指定为True的插件
         """
         self.enabled_plugins = []
         
@@ -205,12 +206,15 @@ class PluginManager:
             module_name = getattr(plugin, 'module_name', None)
             
             # 确定插件是否启用
-            if plugin_config and module_name in plugin_config:
-                # 根据配置决定是否启用
+            if plugin_config is None:
+                # 配置为None，默认启用所有插件（向后兼容）
+                enabled = True
+            elif module_name in plugin_config:
+                # 插件在配置中明确指定，按配置值启用
                 enabled = plugin_config[module_name]
             else:
-                # 默认启用（向后兼容）
-                enabled = True
+                # 插件不在配置中，默认禁用（安全配置）
+                enabled = False
             
             if enabled:
                 plugin.enabled = True

@@ -1,12 +1,11 @@
 crawl:
-  max_depth: 2
-  max_files: 20
+  max_depth: 1
+  max_files: 10
   delay: 0.5
   random_delay: true
   threads: 4
   incremental: true
-  user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
-    like Gecko) Chrome/91.0.4472.124 Safari/537.36
+  user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 output:
   base_dir: output
   sitemap:
@@ -23,3 +22,5 @@ js_rendering:
   timeout: 30
 i18n:
   lang: zh_CN
+plugins:
+  save_plugin: true

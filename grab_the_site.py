@@ -384,6 +384,9 @@ def main(args_list=None, stop_event=None):
     logger.info(_("Crawl completed") + f", {len(pages)} " + _("pages"))
     logger.debug(f"Pages type: {type(pages)}")
     
+    # 初始化保存文件列表
+    saved_files = []
+    
     # 调用插件的 on_save_start 钩子
     if has_enabled_plugins:
         saver_data = {
@@ -419,25 +422,32 @@ def main(args_list=None, stop_event=None):
     else:
         logger.warning(_("Plugin system disabled, cannot save pages. Please enable plugin system to save crawled content"))
     
-    # 生成站点地图
+    # 生成站点地图（只有在页面被保存时才生成，因为站点地图链接指向本地文件）
     sitemap_config = config["output"].get("sitemap", CONFIG["output"]["sitemap"])
     sitemap_enable = sitemap_config.get("enable", False)
     sitemap_html_enable = sitemap_config.get("enable_html", False)
     
-    if sitemap_enable:
-        sitemap_generator = SitemapGenerator(target_url, output_dir)
-        # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
-        sitemap_data = pages if pages else crawler.visited_urls
-        sitemap_generator.generate_sitemap(sitemap_data)
+    # 检查是否有页面被保存（save_site 是否被执行且有文件保存）
+    has_saved_files = len(saved_files) > 0
     
-    # 生成 HTML 格式的站点地图
-    if sitemap_html_enable:
-        sitemap_generator = SitemapGenerator(target_url, output_dir)
-        # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
-        sitemap_data = pages if pages else crawler.visited_urls
-        # 传递页面深度信息
-        page_depths = crawler.page_depths if hasattr(crawler, 'page_depths') else None
-        sitemap_generator.generate_html_sitemap(sitemap_data, page_depths)
+    if has_saved_files:
+        if sitemap_enable:
+            sitemap_generator = SitemapGenerator(target_url, output_dir)
+            # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
+            sitemap_data = pages if pages else crawler.visited_urls
+            sitemap_generator.generate_sitemap(sitemap_data)
+        
+        # 生成 HTML 格式的站点地图
+        if sitemap_html_enable:
+            sitemap_generator = SitemapGenerator(target_url, output_dir)
+            # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
+            sitemap_data = pages if pages else crawler.visited_urls
+            # 传递页面深度信息
+            page_depths = crawler.page_depths if hasattr(crawler, 'page_depths') else None
+            sitemap_generator.generate_html_sitemap(sitemap_data, page_depths)
+    else:
+        if sitemap_enable or sitemap_html_enable:
+            logger.info(_("跳过生成站点地图") + f": {_('页面未保存')}")
     
     # 清理插件
     if has_enabled_plugins:

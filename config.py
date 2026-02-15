@@ -64,8 +64,7 @@ DEFAULT_CONFIG = {
         "available_langs": ["en", "zh_CN"]
     },
     "plugins": {
-        "enable": True,
-        "enabled_plugins": []
+        "save_plugin": True
     }
 }
 

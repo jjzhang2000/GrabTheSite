@@ -81,6 +81,10 @@ def save_config_to_yaml(config):
         if 'lang' in config:
             new_config['i18n']['lang'] = config['lang']
         
+        # 更新 plugins 配置
+        if 'plugins' in config:
+            new_config['plugins'] = config['plugins']
+        
         # 保存到文件
         with open(USER_CONFIG_FILE, 'w', encoding='utf-8') as f:
             yaml.dump(new_config, f, allow_unicode=True, sort_keys=False)
@@ -291,9 +295,19 @@ class AdvancedConfigPanel(ttk.Frame):
             # 如果获取插件列表失败，使用默认插件
             plugins = ['save_plugin', 'example_plugin']
         
-        # 为每个插件创建复选框（默认启用 save_plugin）
+        # 加载配置以获取插件启用状态
+        try:
+            config = load_config()
+            plugin_config = config.get('plugins', {})
+        except Exception:
+            plugin_config = {}
+        
+        # 为每个插件创建复选框
+        # 如果配置中有该插件的设置，使用配置值；否则默认启用 save_plugin
         for i, plugin in enumerate(plugins):
-            var = tk.BooleanVar(value=(plugin == 'save_plugin'))
+            # 从配置中读取插件状态，默认为 save_plugin 启用，其他禁用
+            default_value = (plugin == 'save_plugin')
+            var = tk.BooleanVar(value=plugin_config.get(plugin, default_value))
             self.plugin_vars[plugin] = var
             cb = ttk.Checkbutton(
                 self.plugin_frame, 
@@ -372,9 +386,18 @@ class PluginConfigPanel(ttk.Frame):
             # 如果获取插件列表失败，使用默认插件
             plugins = ['save_plugin', 'example_plugin']
         
-        # 为每个插件创建复选框（默认启用 save_plugin）
+        # 加载配置以获取插件启用状态
+        try:
+            config = load_config()
+            plugin_config = config.get('plugins', {})
+        except Exception:
+            plugin_config = {}
+        
+        # 为每个插件创建复选框
+        # 如果配置中有该插件的设置，使用配置值；否则默认启用 save_plugin
         for plugin in plugins:
-            var = tk.BooleanVar(value=(plugin == 'save_plugin'))
+            default_value = (plugin == 'save_plugin')
+            var = tk.BooleanVar(value=plugin_config.get(plugin, default_value))
             self.plugin_vars[plugin] = var
             cb = ttk.Checkbutton(
                 self.plugin_list_frame, 
