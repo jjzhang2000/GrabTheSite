@@ -3,7 +3,7 @@
 核心抓取逻辑，负责：
 1. 多线程抓取网页
 2. 链接提取和转换
-3. 静态资源下载
+3. 静态资源URL收集（供save插件下载）
 4. 增量更新支持
 5. 断点续传支持
 """
@@ -63,13 +63,8 @@ class CrawlSite:
         self.pages = {}
         # 页面深度记录：URL -> 下载深度
         self.page_depths = {}
+        # 静态资源记录：URL集合（供save插件使用）
         self.static_resources = set()
-        
-        # 资源下载队列和线程控制
-        self.resource_queue = queue.Queue()
-        self.resource_thread = None
-        self.resource_thread_lock = threading.Lock()
-        self.resource_thread_stop = threading.Event()
         
         # 提取并标准化起始目录路径（确保以/结尾）
         parsed_target = urlparse(self.target_url)
@@ -144,13 +139,7 @@ class CrawlSite:
         else:
             logger.info(_t("JavaScript渲染已禁用"))
         
-        # 启动资源下载线程（如果启用了插件）
-        if self.plugin_manager:
-            self.resource_thread_stop.clear()
-            self.resource_thread = threading.Thread(target=self._resource_worker)
-            self.resource_thread.daemon = False  # 设置为非守护线程，确保资源下载完成
-            self.resource_thread.start()
-            logger.info(_t("资源下载线程已启动"))
+
         
         # 检查是否启用断点续传
         if self.resume_enabled and self.state_manager:
@@ -184,14 +173,7 @@ class CrawlSite:
             if worker.is_alive():
                 logger.warning(_t("工作线程超时，强制结束"))
         
-        # 停止资源下载线程
-        if self.resource_thread:
-            logger.info(_t("等待资源下载完成..."))
-            self.resource_thread_stop.set()
-            # 等待资源下载线程完成，最多等待5分钟
-            self.resource_thread.join(timeout=300)
-            if self.resource_thread.is_alive():
-                logger.warning(_t("资源下载线程超时"))
+
         
         # 保存最终状态
         if self.resume_enabled and self.state_manager:
@@ -414,27 +396,16 @@ class CrawlSite:
         # 提取所有链接
         links = soup.find_all(['a', 'img', 'link', 'script'])
         
-        # 收集静态资源链接
-        static_urls = []
+        # 收集静态资源链接（供save插件下载）
         for link in links:
             if link.name in ['img', 'link', 'script']:
                 src = link.get('src') or link.get('href')
                 if src:
                     full_url = urljoin(url, src)
-                    # 只下载同域名的静态资源
+                    # 只记录同域名的静态资源
                     if self._is_same_domain(full_url):
-                        static_urls.append(full_url)
-        
-        # 将静态资源加入下载队列（异步下载）
-        if static_urls and self.plugin_manager:
-            logger.info(_t("添加静态资源到下载队列，共") + f" {len(static_urls)} " + _t("个"))
-            for static_url in static_urls:
-                # 检查是否已下载过
-                with self.lock:
-                    if static_url in self.static_resources:
-                        continue
-                # 将资源URL加入队列
-                self.resource_queue.put(static_url)
+                        with self.lock:
+                            self.static_resources.add(full_url)
         
         # 处理页面链接
         for link in links:
@@ -502,78 +473,7 @@ class CrawlSite:
                 return True
         return False
     
-    def _resource_worker(self):
-        """资源下载线程函数
-        
-        独立线程处理资源文件下载，避免阻塞页面抓取工作线程
-        """
-        logger.info(_t("资源下载线程已启动"))
-        
-        while not self.resource_thread_stop.is_set():
-            try:
-                # 从队列获取资源URL，超时1秒
-                static_url = self.resource_queue.get(block=True, timeout=1)
-                
-                # 检查是否已经下载过
-                with self.lock:
-                    if static_url in self.static_resources:
-                        continue
-                
-                # 调用插件的 on_download_resource 钩子
-                if self.plugin_manager:
-                    result = self.plugin_manager.call_hook_with_result(
-                        "on_download_resource", static_url, self.output_dir
-                    )
-                    # 找到第一个返回有效结果的插件
-                    file_path = None
-                    for plugin_name, plugin_result in result.items():
-                        if plugin_result:
-                            file_path = plugin_result
-                            break
-                    
-                    if file_path:
-                        with self.lock:
-                            self.static_resources.add(static_url)
-                        logger.info(_t("静态资源下载完成") + f": {static_url}")
-                    else:
-                        logger.debug(_t("静态资源未下载") + f": {static_url}")
-                
-            except queue.Empty:
-                # 队列为空，继续循环检查停止信号
-                continue
-            except Exception as e:
-                logger.error(_t("资源下载失败") + f": {e}")
-        
-        # 处理队列中剩余的任务（非阻塞方式）
-        while not self.resource_queue.empty():
-            try:
-                static_url = self.resource_queue.get(block=False)
-                
-                # 检查是否已经下载过
-                with self.lock:
-                    if static_url in self.static_resources:
-                        continue
-                
-                if self.plugin_manager:
-                    result = self.plugin_manager.call_hook_with_result(
-                        "on_download_resource", static_url, self.output_dir
-                    )
-                    file_path = None
-                    for plugin_name, plugin_result in result.items():
-                        if plugin_result:
-                            file_path = plugin_result
-                            break
-                    
-                    if file_path:
-                        with self.lock:
-                            self.static_resources.add(static_url)
-                        logger.info(_t("静态资源下载完成") + f": {static_url}")
-            except queue.Empty:
-                break
-            except Exception as e:
-                logger.error(_t("资源下载失败") + f": {e}")
-        
-        logger.info(_t("资源下载线程已停止"))
+
     
     def _add_delay(self):
         """添加延迟，避免对目标服务器造成过大压力

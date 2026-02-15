@@ -8,6 +8,7 @@
 """
 
 import os
+import queue
 import threading
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
@@ -37,6 +38,11 @@ class SavePlugin(Plugin):
         self.saved_files = []
         self.downloaded_resources = set()  # 已下载的资源集合
         self.downloader_lock = threading.Lock()  # 下载器锁
+        
+        # 资源下载队列和线程控制
+        self.resource_queue = queue.Queue()
+        self.resource_thread = None
+        self.resource_thread_stop = threading.Event()
         
     def on_init(self):
         """插件初始化时调用"""
@@ -109,6 +115,10 @@ class SavePlugin(Plugin):
             # 确保路径以/结尾
             if not self.target_directory.endswith('/'):
                 self.target_directory += '/'
+            
+            # 启动资源下载线程
+            self._start_resource_thread()
+            
             self.logger.info(_t("保存插件准备就绪"))
         else:
             self.logger.error(_t("保存插件初始化失败：缺少必要参数"))
@@ -118,14 +128,21 @@ class SavePlugin(Plugin):
         
         Args:
             pages: 暂存的页面内容，键为URL，值为页面内容
+            
+        Returns:
+            list: 保存的文件列表
         """
-        # 统一处理所有页面的链接
+        # 统一处理所有页面的链接（同时将静态资源加入下载队列）
         self.logger.info(_t("开始统一处理链接，共") + f" {len(pages)} " + _t("个页面"))
         processed_pages = self._process_all_links(pages)
         
         # 将处理后的页面保存到磁盘
         self.logger.info(_t("开始保存页面到磁盘，共") + f" {len(processed_pages)} " + _t("个页面"))
         saved_count = self._save_pages(processed_pages)
+        
+        # 等待资源下载队列完成
+        self.logger.info(_t("等待静态资源下载完成..."))
+        self.resource_queue.join()
         
         self.logger.info(_t("保存完成，共保存") + f" {saved_count} " + _t("个页面"))
         return self.saved_files
@@ -175,8 +192,13 @@ class SavePlugin(Plugin):
                         src = link.get('src') or link.get('href')
                         if src:
                             full_url = urljoin(url, src)
-                            # 检查是否为已下载的静态资源
+                            # 检查是否为已记录的静态资源
                             if full_url in self.static_resources:
+                                # 将资源加入下载队列
+                                with self.downloader_lock:
+                                    if full_url not in self.downloaded_resources:
+                                        self.resource_queue.put(full_url)
+                                
                                 # 构建静态资源的本地路径
                                 parsed_url = urlparse(full_url)
                                 path = parsed_url.path
@@ -371,6 +393,105 @@ class SavePlugin(Plugin):
             relative_path = '.'
         
         return relative_path
+    
+    def _start_resource_thread(self):
+        """启动资源下载线程"""
+        self.resource_thread_stop.clear()
+        self.resource_thread = threading.Thread(target=self._resource_worker)
+        self.resource_thread.daemon = False
+        self.resource_thread.start()
+        self.logger.info(_t("资源下载线程已启动"))
+    
+    def _stop_resource_thread(self):
+        """停止资源下载线程"""
+        if self.resource_thread:
+            self.logger.info(_t("等待资源下载完成..."))
+            self.resource_thread_stop.set()
+            self.resource_thread.join(timeout=300)
+            if self.resource_thread.is_alive():
+                self.logger.warning(_t("资源下载线程超时"))
+    
+    def _resource_worker(self):
+        """资源下载线程函数
+        
+        独立线程处理资源文件下载，避免阻塞页面保存
+        """
+        self.logger.info(_t("资源下载线程开始工作"))
+        
+        while not self.resource_thread_stop.is_set():
+            try:
+                # 从队列获取资源URL，超时1秒
+                static_url = self.resource_queue.get(block=True, timeout=1)
+                
+                # 检查是否已经下载过
+                with self.downloader_lock:
+                    if static_url in self.downloaded_resources:
+                        self.resource_queue.task_done()
+                        continue
+                
+                # 下载资源
+                file_path = self.on_download_resource(static_url, self.output_dir)
+                
+                if file_path:
+                    with self.downloader_lock:
+                        self.downloaded_resources.add(static_url)
+                    self.logger.info(_t("静态资源下载完成") + f": {static_url}")
+                else:
+                    self.logger.debug(_t("静态资源未下载") + f": {static_url}")
+                
+                self.resource_queue.task_done()
+                
+            except queue.Empty:
+                # 队列为空，继续循环检查停止信号
+                continue
+            except Exception as e:
+                self.logger.error(_t("资源下载失败") + f": {e}")
+                try:
+                    self.resource_queue.task_done()
+                except:
+                    pass
+        
+        # 处理队列中剩余的任务（非阻塞方式）
+        while not self.resource_queue.empty():
+            try:
+                static_url = self.resource_queue.get(block=False)
+                
+                # 检查是否已经下载过
+                with self.downloader_lock:
+                    if static_url in self.downloaded_resources:
+                        self.resource_queue.task_done()
+                        continue
+                
+                # 下载资源
+                file_path = self.on_download_resource(static_url, self.output_dir)
+                
+                if file_path:
+                    with self.downloader_lock:
+                        self.downloaded_resources.add(static_url)
+                    self.logger.info(_t("静态资源下载完成") + f": {static_url}")
+                
+                self.resource_queue.task_done()
+                
+            except queue.Empty:
+                break
+            except Exception as e:
+                self.logger.error(_t("资源下载失败") + f": {e}")
+                try:
+                    self.resource_queue.task_done()
+                except:
+                    pass
+        
+        self.logger.info(_t("资源下载线程已停止"))
+    
+    def on_save_end(self, saved_files):
+        """保存结束时调用
+        
+        Args:
+            saved_files: 保存的文件列表
+        """
+        # 停止资源下载线程
+        self._stop_resource_thread()
+        self.logger.info(_t("保存插件工作完成") + f", {_('共保存')} {len(saved_files)} {_('个文件')}")
 
 
 # 创建插件实例
