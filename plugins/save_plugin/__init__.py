@@ -72,21 +72,33 @@ class SavePlugin(Plugin):
                 path = parsed_url.path
                 file_path = os.path.join(output_dir, path.lstrip('/'))
                 if os.path.exists(file_path):
+                    self.logger.debug(_t("资源已下载，跳过") + f": {url}")
                     return file_path
             
         # 使用 Downloader 下载单个文件
+        self.logger.info(_t("开始下载资源") + f": {url}")
         try:
             downloader = Downloader(output_dir, threads=1)
             downloader.add_task(url)
             results = downloader.run()
             
-            if results and results[0][1]:
-                file_path = results[0][1]
-                with self.downloader_lock:
-                    self.downloaded_resources.add(url)
-                return file_path
+            self.logger.debug(_t("下载结果") + f": {results}")
+            
+            if results and len(results) > 0:
+                result_url, file_path = results[0]
+                if file_path:
+                    with self.downloader_lock:
+                        self.downloaded_resources.add(url)
+                    self.logger.info(_t("资源下载成功") + f": {url} -> {file_path}")
+                    return file_path
+                else:
+                    self.logger.warning(_t("资源下载返回空路径") + f": {url}")
+            else:
+                self.logger.warning(_t("资源下载返回空结果") + f": {url}")
         except Exception as e:
-            self.logger.error(_t("下载资源失败") + f": {url}, " + _t("错误") + f": {str(e)}")
+            self.logger.error(_t("下载资源异常") + f": {url}, " + _t("错误") + f": {str(e)}")
+            import traceback
+            self.logger.debug(traceback.format_exc())
         
         return None
     
@@ -106,7 +118,11 @@ class SavePlugin(Plugin):
         """
         self.target_url = saver_data.get('target_url')
         self.output_dir = saver_data.get('output_dir')
-        self.static_resources = saver_data.get('static_resources', set())
+        # 获取静态资源集合，并规范化所有 URL
+        raw_static_resources = saver_data.get('static_resources', set())
+        self.logger.info(_t("接收到静态资源") + f": {len(raw_static_resources)} " + _t("个"))
+        self.static_resources = {self._normalize_url(url) for url in raw_static_resources}
+        self.logger.info(_t("规范化后静态资源") + f": {len(self.static_resources)} " + _t("个"))
         
         if self.target_url and self.output_dir:
             # 提取起始目录路径
@@ -158,6 +174,10 @@ class SavePlugin(Plugin):
         """
         processed_pages = {}
         
+        # 记录静态资源统计信息
+        self.logger.info(_t("待处理静态资源数量") + f": {len(self.static_resources)}")
+        queued_resources = set()  # 跟踪已加入队列的资源
+        
         for url, html_content in pages.items():
             try:
                 soup = BeautifulSoup(html_content, 'html.parser')
@@ -165,11 +185,19 @@ class SavePlugin(Plugin):
                 # 获取当前页面的路径
                 base_parsed = urlparse(url)
                 base_path = base_parsed.path
+                # 如果路径以 index.html 或 index.htm 结尾，将其视为目录
+                # 这样可以正确计算相对路径
                 if base_path.endswith('/'):
                     base_path = base_path[:-1]
+                elif base_path.endswith('/index.html') or base_path.endswith('/index.htm'):
+                    base_path = base_path.rsplit('/', 1)[0]
+                
+                # 查找所有链接元素
+                all_links = soup.find_all(['a', 'img', 'link', 'script'])
+                self.logger.debug(_t("页面中找到链接元素") + f": {len(all_links)} " + _t("个") + f" ({url})")
                 
                 # 处理所有链接元素
-                for link in soup.find_all(['a', 'img', 'link', 'script']):
+                for link in all_links:
                     # 处理a标签的href
                     if link.name == 'a':
                         href = link.get('href')
@@ -190,14 +218,21 @@ class SavePlugin(Plugin):
                     # 处理img、link、script标签的src或href
                     elif link.name in ['img', 'link', 'script']:
                         src = link.get('src') or link.get('href')
+                        self.logger.debug(_t("发现资源标签") + f": {link.name}, src/href={src}")
                         if src:
                             full_url = urljoin(url, src)
+                            # 规范化 URL（与 crawler 中的逻辑一致）
+                            full_url = self._normalize_url(full_url)
+                            self.logger.debug(_t("规范化后URL") + f": {full_url}")
                             # 检查是否为已记录的静态资源
+                            self.logger.debug(_t("检查是否在static_resources中") + f": {full_url in self.static_resources}, static_resources数量={len(self.static_resources)}")
                             if full_url in self.static_resources:
-                                # 将资源加入下载队列
-                                with self.downloader_lock:
-                                    if full_url not in self.downloaded_resources:
-                                        self.resource_queue.put(full_url)
+                                # 将资源加入下载队列（如果尚未加入）
+                                if full_url not in queued_resources:
+                                    with self.downloader_lock:
+                                        if full_url not in self.downloaded_resources:
+                                            self.resource_queue.put(full_url)
+                                            queued_resources.add(full_url)
                                 
                                 # 构建静态资源的本地路径
                                 parsed_url = urlparse(full_url)
@@ -248,6 +283,9 @@ class SavePlugin(Plugin):
                 self.logger.error(_t("处理链接失败") + f": {url}, " + _t("错误") + f": {str(e)}")
                 # 如果处理失败，使用原始内容
                 processed_pages[url] = html_content
+        
+        # 记录静态资源处理统计
+        self.logger.info(_t("静态资源处理统计") + f": {_('已收集')} {len(self.static_resources)} {_('个')}, {_('已加入下载队列')} {len(queued_resources)} {_('个')}")
         
         return processed_pages
     
@@ -309,6 +347,26 @@ class SavePlugin(Plugin):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         
         return file_path
+    
+    def _normalize_url(self, url):
+        """规范化 URL
+        
+        统一 URL 格式，用于比较和去重：
+        - 移除 URL 片段（#后面的内容）
+        - 统一小写（域名部分）
+        
+        Args:
+            url: 原始 URL
+            
+        Returns:
+            str: 规范化后的 URL
+        """
+        parsed = urlparse(url)
+        # 移除片段，小写化 netloc
+        normalized = f"{parsed.scheme.lower()}://{parsed.netloc.lower()}{parsed.path}"
+        if parsed.query:
+            normalized += f"?{parsed.query}"
+        return normalized
     
     def _is_same_domain(self, url):
         """检查是否为同域名"""
@@ -418,7 +476,12 @@ class SavePlugin(Plugin):
         """
         self.logger.info(_t("资源下载线程开始工作"))
         
+        download_count = 0
+        skip_count = 0
+        fail_count = 0
+        
         while not self.resource_thread_stop.is_set():
+            static_url = None
             try:
                 # 从队列获取资源URL，超时1秒
                 static_url = self.resource_queue.get(block=True, timeout=1)
@@ -426,18 +489,23 @@ class SavePlugin(Plugin):
                 # 检查是否已经下载过
                 with self.downloader_lock:
                     if static_url in self.downloaded_resources:
+                        self.logger.debug(_t("资源已下载，跳过") + f": {static_url}")
+                        skip_count += 1
                         self.resource_queue.task_done()
                         continue
                 
                 # 下载资源
+                self.logger.debug(_t("线程开始下载资源") + f": {static_url}")
                 file_path = self.on_download_resource(static_url, self.output_dir)
                 
                 if file_path:
                     with self.downloader_lock:
                         self.downloaded_resources.add(static_url)
+                    download_count += 1
                     self.logger.info(_t("静态资源下载完成") + f": {static_url}")
                 else:
-                    self.logger.debug(_t("静态资源未下载") + f": {static_url}")
+                    fail_count += 1
+                    self.logger.warning(_t("静态资源下载失败") + f": {static_url}")
                 
                 self.resource_queue.task_done()
                 
@@ -445,16 +513,26 @@ class SavePlugin(Plugin):
                 # 队列为空，继续循环检查停止信号
                 continue
             except Exception as e:
-                self.logger.error(_t("资源下载失败") + f": {e}")
-                try:
-                    self.resource_queue.task_done()
-                except:
-                    pass
+                fail_count += 1
+                self.logger.error(_t("资源下载异常") + f": {static_url}, " + _t("错误") + f": {e}")
+                import traceback
+                self.logger.debug(traceback.format_exc())
+                # 确保 task_done 被调用
+                if static_url:
+                    try:
+                        self.resource_queue.task_done()
+                    except:
+                        pass
+        
+        self.logger.info(_t("资源下载线程停止前清理") + f": {_('成功')} {download_count} {_('个')}, {_('跳过')} {skip_count} {_('个')}, {_('失败')} {fail_count} {_('个')}, {_('队列剩余')} {self.resource_queue.qsize()} {_('个')}")
         
         # 处理队列中剩余的任务（非阻塞方式）
+        remaining = 0
         while not self.resource_queue.empty():
+            static_url = None
             try:
                 static_url = self.resource_queue.get(block=False)
+                remaining += 1
                 
                 # 检查是否已经下载过
                 with self.downloader_lock:
@@ -468,20 +546,25 @@ class SavePlugin(Plugin):
                 if file_path:
                     with self.downloader_lock:
                         self.downloaded_resources.add(static_url)
+                    download_count += 1
                     self.logger.info(_t("静态资源下载完成") + f": {static_url}")
+                else:
+                    fail_count += 1
                 
                 self.resource_queue.task_done()
                 
             except queue.Empty:
                 break
             except Exception as e:
-                self.logger.error(_t("资源下载失败") + f": {e}")
-                try:
-                    self.resource_queue.task_done()
-                except:
-                    pass
+                fail_count += 1
+                self.logger.error(_t("资源下载失败") + f": {static_url}, " + _t("错误") + f": {e}")
+                if static_url:
+                    try:
+                        self.resource_queue.task_done()
+                    except:
+                        pass
         
-        self.logger.info(_t("资源下载线程已停止"))
+        self.logger.info(_t("资源下载线程已停止") + f": {_('总计成功')} {download_count} {_('个')}, {_('跳过')} {skip_count} {_('个')}, {_('失败')} {fail_count} {_('个')}")
     
     def on_save_end(self, saved_files):
         """保存结束时调用

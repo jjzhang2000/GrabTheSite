@@ -1,9 +1,9 @@
 crawl:
-  max_depth: 1
-  max_files: 10
+  max_depth: 4
+  max_files: 1000
   delay: 0.5
   random_delay: true
-  threads: 4
+  threads: 5
   incremental: true
   user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 output:

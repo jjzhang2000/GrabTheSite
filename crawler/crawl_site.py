@@ -402,6 +402,8 @@ class CrawlSite:
                 src = link.get('src') or link.get('href')
                 if src:
                     full_url = urljoin(url, src)
+                    # 规范化 URL（移除片段，统一格式）
+                    full_url = self._normalize_url(full_url)
                     # 只记录同域名的静态资源
                     if self._is_same_domain(full_url):
                         with self.lock:
@@ -426,6 +428,26 @@ class CrawlSite:
         
         # 添加延迟
         self._add_delay()
+    
+    def _normalize_url(self, url: str) -> str:
+        """规范化 URL
+        
+        统一 URL 格式，用于比较和去重：
+        - 移除 URL 片段（#后面的内容）
+        - 统一小写（域名部分）
+        
+        Args:
+            url: 原始 URL
+            
+        Returns:
+            str: 规范化后的 URL
+        """
+        parsed = urlparse(url)
+        # 移除片段，小写化 netloc
+        normalized = f"{parsed.scheme.lower()}://{parsed.netloc.lower()}{parsed.path}"
+        if parsed.query:
+            normalized += f"?{parsed.query}"
+        return normalized
     
     def _is_same_domain(self, url: str) -> bool:
         """检查是否为同域名
