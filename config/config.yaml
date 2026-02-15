@@ -1,6 +1,6 @@
 crawl:
-  max_depth: 4
-  max_files: 1000
+  max_depth: 2
+  max_files: 15
   delay: 0.5
   random_delay: true
   threads: 5

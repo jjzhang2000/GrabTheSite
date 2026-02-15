@@ -98,8 +98,18 @@ class CrawlSite:
         # 如果状态文件路径是相对路径，转换为绝对路径
         if not os.path.isabs(state_file):
             state_file = os.path.join(os.getcwd(), state_file)
+        
+        # 每次开始抓取前，删除状态文件以清理之前的记录
+        # 这样可以确保从头开始抓取，而不是基于之前的状态
+        if os.path.exists(state_file):
+            try:
+                os.remove(state_file)
+                logger.info(_t("已清理抓取状态文件") + f": {state_file}")
+            except (IOError, OSError) as e:
+                logger.warning(_t("清理状态文件失败") + f": {e}")
+        
         self.state_manager = StateManager(state_file)
-        # 从状态管理器加载已访问的URL
+        # 从状态管理器加载已访问的URL（状态文件已被清理，从头开始）
         if not self.force_download:
             self.visited_urls.update(self.state_manager.state.get('visited_urls', set()))
         
@@ -322,6 +332,15 @@ class CrawlSite:
         if depth > self.max_depth:
             return
         
+        # 计算本地文件路径（提前计算用于检查文件存在性）
+        parsed_url = urlparse(url)
+        path = parsed_url.path
+        if not path:
+            path = '/'
+        if path.endswith('/'):
+            path += 'index.html'
+        file_path = os.path.join(self.output_dir, path.lstrip('/'))
+        
         # 检查是否已访问过该URL
         with self.lock:
             if url in self.visited_urls:
@@ -331,15 +350,6 @@ class CrawlSite:
             # 更新状态管理器
             if self.resume_enabled and self.state_manager:
                 self.state_manager.add_visited_url(url)
-        
-        # 计算本地文件路径
-        parsed_url = urlparse(url)
-        path = parsed_url.path
-        if not path:
-            path = '/'
-        if path.endswith('/'):
-            path += 'index.html'
-        file_path = os.path.join(self.output_dir, path.lstrip('/'))
         
         # 检查是否需要更新
         local_timestamp = get_file_timestamp(file_path)

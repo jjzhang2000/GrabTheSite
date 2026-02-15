@@ -140,13 +140,28 @@ class StateManager:
     def is_file_downloaded(self, file_path):
         """检查文件是否已下载
         
+        注意：此方法同时检查状态记录和文件实际存在性
+        如果文件被手动删除，即使状态记录存在也返回 False
+        
         Args:
             file_path: 要检查的文件路径
             
         Returns:
-            bool: 是否已下载
+            bool: 是否已下载（状态记录存在且文件实际存在且是文件）
         """
-        return file_path in self.state["downloaded_files"]
+        # 检查状态记录
+        in_state = file_path in self.state["downloaded_files"]
+        # 检查文件实际存在且是文件（不是目录）
+        file_exists = os.path.isfile(file_path)
+        
+        if in_state and not file_exists:
+            # 状态记录存在但文件不存在（被手动删除），从状态中移除
+            self.state["downloaded_files"].discard(file_path)
+            self.state["stats"]["downloaded_files"] = len(self.state["downloaded_files"])
+            logger.debug(_t("文件状态记录存在但文件已不存在，移除状态记录") + f": {file_path}")
+            return False
+        
+        return in_state and file_exists
     
     def get_stats(self):
         """获取抓取统计信息
