@@ -35,7 +35,9 @@ js_rendering:
 
 # 输出配置
 output:
-  base_dir: "output"     # 输出根目录
+  # base_dir 默认使用系统下载目录 (~/Downloads)
+  # 如需自定义，取消下面一行的注释并修改路径
+  # base_dir: "output"
   sitemap:
     enable: true         # 生成XML站点地图（sitemap.xml）
     enable_html: true    # 生成HTML站点地图（sitemap.html）

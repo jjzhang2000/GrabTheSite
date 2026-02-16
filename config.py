@@ -44,7 +44,7 @@ DEFAULT_CONFIG = {
         "timeout": 30
     },
     "output": {
-        "base_dir": "output",
+        "base_dir": os.path.join(os.path.expanduser("~"), "Downloads"),
         "sitemap": {
             "enable": False,
             "enable_html": False

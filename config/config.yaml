@@ -1,16 +1,16 @@
 crawl:
-  max_depth: 2
-  max_files: 15
+  max_depth: 5
+  max_files: 1500
   delay: 0.5
   random_delay: true
   threads: 5
   incremental: true
   user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 output:
-  base_dir: output
   sitemap:
     enable: false
     enable_html: true
+  base_dir: C:\Users\jjzha\Downloads
 logging:
   level: INFO
   file: logs/grabthesite.log
