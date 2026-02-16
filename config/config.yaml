@@ -14,12 +14,13 @@ output:
 logging:
   level: INFO
   file: logs/grabthesite.log
-  max_bytes: 10240
+  max_bytes: 10485760
   backup_count: 5
 target_url: https://www.mir.com.my/rb/photography/
 js_rendering:
   enable: false
   timeout: 30
+  engine: playwright
 i18n:
   lang: zh_CN
 plugins:

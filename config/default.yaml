@@ -30,9 +30,10 @@ error_handling:
 
 # JavaScript渲染配置（用于抓取动态加载内容）
 js_rendering:
-  enable: false         # 是否启用（需要安装Pyppeteer和Chrome）
+  enable: false         # 是否启用（需要安装Playwright或Pyppeteer）
   timeout: 30           # 页面渲染超时时间（秒）
-  # 注意：当前使用单页面复用模式，所有渲染任务共享一个浏览器页面实例
+  engine: playwright    # 渲染引擎: playwright (推荐) 或 pyppeteer
+  # 注意：推荐使用 playwright，线程管理更稳定
 
 # 输出配置
 output:

@@ -9,6 +9,7 @@
 import os
 import time
 import requests
+from requests.adapters import HTTPAdapter
 from email.utils import parsedate_to_datetime
 from logger import setup_logger, _ as _t
 from config import ERROR_HANDLING_CONFIG, USER_AGENT
@@ -16,6 +17,13 @@ from utils.error_handler import ErrorHandler, retry
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
+
+# 创建 session，禁用连接池线程
+_ts_session = requests.Session()
+_ts_session.headers.update({'Connection': 'close'})
+_ts_adapter = HTTPAdapter(pool_connections=1, pool_maxsize=1, max_retries=0)
+_ts_session.mount('http://', _ts_adapter)
+_ts_session.mount('https://', _ts_adapter)
 
 # 创建错误处理器实例
 error_handler = ErrorHandler(
@@ -60,7 +68,7 @@ def get_remote_timestamp(url):
         'User-Agent': USER_AGENT
     }
     from config import DEFAULT_REQUEST_TIMEOUT
-    response = requests.head(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT, allow_redirects=True)
+    response = _ts_session.head(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT, allow_redirects=True)
     
     # 检查响应状态码
     if response.status_code != 200:

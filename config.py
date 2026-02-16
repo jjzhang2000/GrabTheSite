@@ -41,7 +41,8 @@ DEFAULT_CONFIG = {
     },
     "js_rendering": {
         "enable": False,
-        "timeout": 30
+        "timeout": 30,
+        "engine": "playwright"  # 可选: "playwright" (推荐) 或 "pyppeteer"
     },
     "output": {
         "base_dir": os.path.join(os.path.expanduser("~"), "Downloads"),

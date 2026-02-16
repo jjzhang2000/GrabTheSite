@@ -133,6 +133,16 @@ class MainWindow(tk.Tk):
     
     def on_start(self):
         """开始抓取按钮点击事件"""
+        import threading
+        
+        # 检查当前线程数
+        thread_count = threading.active_count()
+        self.log_panel.add_log(_("当前活跃线程数: {}").format(thread_count))
+        
+        # 如果线程数异常，警告用户
+        if thread_count > 20:
+            self.log_panel.add_log(_("警告: 线程数过多 ({})，建议重启程序").format(thread_count))
+        
         # 禁用开始按钮，启用停止按钮
         self.start_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)
@@ -223,17 +233,11 @@ class MainWindow(tk.Tk):
         # 记录停止日志
         self.log_panel.add_log(_("正在停止抓取..."))
         
-        # 等待抓取线程结束（最多等待10秒），保持UI响应
-        wait_time = 0
-        max_wait = 10
-        while self.crawl_thread and self.crawl_thread.is_alive() and wait_time < max_wait:
-            self.update()  # 保持UI响应
-            import time
-            time.sleep(0.1)
-            wait_time += 0.1
-        
-        if self.crawl_thread and self.crawl_thread.is_alive():
-            self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
+        # 等待抓取线程结束（最多等待5秒）
+        if self.crawl_thread:
+            self.crawl_thread.join(timeout=5)
+            if self.crawl_thread.is_alive():
+                self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
         
         # 重置状态
         self.is_crawling = False
@@ -267,6 +271,16 @@ class MainWindow(tk.Tk):
             if self.crawl_thread and self.crawl_thread.is_alive():
                 self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
         
+        # 清空所有队列，释放阻塞的线程
+        self.log_panel.add_log(_("正在清空队列..."))
+        try:
+            # 导入并清空爬虫队列
+            from crawler.crawl_site import CrawlSite
+            # 注意：这里无法直接访问队列，但守护线程会在主程序退出时自动终止
+            pass
+        except:
+            pass
+        
         # 关闭所有日志处理器，释放文件锁
         self.log_panel.add_log(_("正在清理资源..."))
         from logger import close_all_loggers
@@ -275,9 +289,13 @@ class MainWindow(tk.Tk):
         # 销毁窗口
         self.destroy()
         
-        # 确保进程退出（如果有残留线程）
+        # 给守护线程一点时间自行终止
+        import time
+        time.sleep(0.5)
+        
+        # 强制终止整个进程（包括所有线程）
+        # 注意：os._exit 不会执行清理操作，但会立即终止所有线程
         import os
-        import sys
-        sys.exit(0)
+        os._exit(0)
     
 

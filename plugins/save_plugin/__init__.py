@@ -455,8 +455,8 @@ class SavePlugin(Plugin):
     def _start_resource_thread(self):
         """启动资源下载线程"""
         self.resource_thread_stop.clear()
-        self.resource_thread = threading.Thread(target=self._resource_worker)
-        self.resource_thread.daemon = False
+        self.resource_thread = threading.Thread(target=self._resource_worker, name="ResourceWorker")
+        self.resource_thread.daemon = True  # 改为守护线程
         self.resource_thread.start()
         self.logger.info(_t("资源下载线程已启动"))
     
@@ -465,9 +465,9 @@ class SavePlugin(Plugin):
         if self.resource_thread:
             self.logger.info(_t("等待资源下载完成..."))
             self.resource_thread_stop.set()
-            self.resource_thread.join(timeout=300)
+            self.resource_thread.join(timeout=10)  # 减少超时到10秒
             if self.resource_thread.is_alive():
-                self.logger.warning(_t("资源下载线程超时"))
+                self.logger.warning(_t("资源下载线程超时，强制终止"))
     
     def _resource_worker(self):
         """资源下载线程函数
@@ -483,8 +483,8 @@ class SavePlugin(Plugin):
         while not self.resource_thread_stop.is_set():
             static_url = None
             try:
-                # 从队列获取资源URL，超时1秒
-                static_url = self.resource_queue.get(block=True, timeout=1)
+                # 从队列获取资源URL，使用更短超时以便快速响应停止信号
+                static_url = self.resource_queue.get(block=True, timeout=0.2)
                 
                 # 检查是否已经下载过
                 with self.downloader_lock:

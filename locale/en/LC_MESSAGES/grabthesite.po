@@ -731,3 +731,25 @@ msgstr "Browser closed"
 
 msgid "渲染超时"
 msgstr "Render timeout"
+
+# Playwright
+msgid "Playwright 已加载"
+msgstr "Playwright loaded"
+
+msgid "Playwright 未安装，JavaScript 渲染功能将不可用"
+msgstr "Playwright not installed, JS rendering unavailable"
+
+msgid "安装命令: pip install playwright && playwright install chromium"
+msgstr "Install: pip install playwright && playwright install chromium"
+
+msgid "正在启动Chromium(Playwright)..."
+msgstr "Starting Chromium(Playwright)..."
+
+msgid "使用 Pyppeteer 渲染引擎"
+msgstr "Using Pyppeteer engine"
+
+msgid "使用 Playwright 渲染引擎"
+msgstr "Using Playwright engine"
+
+msgid "JS渲染线程已启动(Playwright)"
+msgstr "JS renderer thread started (Playwright)"

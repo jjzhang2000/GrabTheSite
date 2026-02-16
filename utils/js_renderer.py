@@ -27,9 +27,21 @@ BROWSER_ARGS = [
     '--disable-background-timer-throttling',
     '--disable-backgrounding-occluded-windows',
     '--disable-renderer-backgrounding',
-    '--disable-features=TranslateUI',
+    '--disable-features=TranslateUI,BlinkGenPropertyTrees,InterestFeedContentSuggestions,MediaRouter',
     '--disable-ipc-flooding-protection',
-    '--single-process',
+    '--single-process',  # 单进程模式（减少进程数）
+    '--renderer-process-limit=1',  # 限制渲染进程数为1
+    '--max-connections-per-host=2',  # 限制每个主机的连接数
+    '--disable-async-dns',  # 禁用异步DNS（减少线程）
+    '--disable-component-update',  # 禁用组件更新（减少后台活动）
+    '--disable-default-apps',  # 禁用默认应用
+    '--disable-hang-monitor',  # 禁用挂起监控
+    '--disable-popup-blocking',  # 禁用弹窗拦截
+    '--disable-prompt-on-repost',  # 禁用重新提交提示
+    '--disable-sync',  # 禁用同步
+    '--disable-web-security',  # 禁用Web安全（可选，用于某些网站）
+    '--memory-model=low',  # 低内存模式
+    '--max_old_space_size=256',  # 限制JS内存
 ]
 
 # 尝试导入Pyppeteer

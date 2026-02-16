@@ -12,6 +12,7 @@ import random
 import threading
 import queue
 import requests
+from requests.adapters import HTTPAdapter
 from urllib.parse import urlparse
 from logger import setup_logger, _ as _t
 from config import DELAY, RANDOM_DELAY, THREADS, ERROR_HANDLING_CONFIG, USER_AGENT
@@ -19,6 +20,13 @@ from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, shou
 from utils.error_handler import ErrorHandler, retry
 from utils.state_manager import StateManager
 from utils.rate_limiter import GlobalDelayManager
+
+# 创建 session，禁用连接池线程
+_download_session = requests.Session()
+_download_session.headers.update({'Connection': 'close'})
+_download_adapter = HTTPAdapter(pool_connections=1, pool_maxsize=1, max_retries=0)
+_download_session.mount('http://', _download_adapter)
+_download_session.mount('https://', _download_adapter)
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -131,7 +139,7 @@ class Downloader:
             'User-Agent': USER_AGENT
         }
         from config import DEFAULT_REQUEST_TIMEOUT, DEFAULT_CHUNK_SIZE
-        response = requests.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT, stream=True)
+        response = _download_session.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT, stream=True)
         response.raise_for_status()  # 检查HTTP错误
         
         # 保存文件
@@ -159,9 +167,9 @@ class Downloader:
         
         # 创建并启动线程
         workers = []
-        for _ in range(self.threads):
-            worker = threading.Thread(target=self._worker)
-            worker.daemon = False  # 改为非守护线程，确保下载完成后再退出
+        for i in range(self.threads):
+            worker = threading.Thread(target=self._worker, name=f"DownloaderWorker-{i}")
+            worker.daemon = True  # 改为守护线程，避免线程泄漏
             worker.start()
             workers.append(worker)
         

@@ -14,6 +14,8 @@ import random
 import threading
 import queue
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from crawler.downloader import download_file
@@ -22,10 +24,27 @@ from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, ERROR
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler
 from utils.state_manager import StateManager
-from utils.js_renderer import get_js_renderer, close_js_renderer
+
+# 创建 session，禁用连接池线程
+_session = requests.Session()
+# 禁用 keep-alive，避免后台线程
+_session.headers.update({'Connection': 'close'})
+# 限制连接池大小
+adapter = HTTPAdapter(pool_connections=1, pool_maxsize=1, max_retries=0)
+_session.mount('http://', adapter)
+_session.mount('https://', adapter)
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
+
+# 根据配置选择渲染引擎
+_js_engine = JS_RENDERING_CONFIG.get('engine', 'playwright')
+if _js_engine == 'pyppeteer':
+    from utils.js_renderer import get_js_renderer, close_js_renderer
+    logger.info(_t("使用 Pyppeteer 渲染引擎"))
+else:
+    from utils.js_renderer_playwright import get_js_renderer, close_js_renderer
+    logger.info(_t("使用 Playwright 渲染引擎"))
 
 
 class CrawlSite:
@@ -166,20 +185,22 @@ class CrawlSite:
         
         # 创建并启动线程
         workers = []
-        for _ in range(self.threads):
-            worker = threading.Thread(target=self._worker)
-            worker.daemon = False  # 设置为非守护线程，确保任务完成
+        for i in range(self.threads):
+            worker = threading.Thread(target=self._worker, name=f"CrawlerWorker-{i}")
+            worker.daemon = True  # 改为守护线程，确保主程序退出时自动终止
             worker.start()
             workers.append(worker)
         
         # 等待队列中的所有任务完成
         self.queue.join()
         
-        # 等待所有工作线程结束（使用更长的超时时间）
+        # 等待所有工作线程结束
+        logger.info(_t("等待工作线程结束..."))
         for worker in workers:
-            worker.join(timeout=60)  # 增加到60秒超时，确保任务有足够时间完成
+            worker.join(timeout=30)  # 最多等待30秒
             if worker.is_alive():
-                logger.warning(_t("工作线程超时，强制结束"))
+                logger.warning(_t("工作线程未能及时结束") + f": {worker.name}")
+                # 不强制终止，因为守护线程会在主程序退出时自动终止
         
 
         
@@ -228,8 +249,8 @@ class CrawlSite:
                         # 队列已空，可以退出
                         break
                 
-                # 正常获取任务
-                url, depth = self.queue.get(block=True, timeout=0.5)
+                # 正常获取任务 - 使用更短的超时，确保能快速响应停止信号
+                url, depth = self.queue.get(block=True, timeout=0.1)
                 task_completed = False
                 should_break = False
                 
@@ -309,7 +330,7 @@ class CrawlSite:
         @self.error_handler.retry
         def _do_request():
             from config import DEFAULT_REQUEST_TIMEOUT
-            response = requests.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT)
+            response = _session.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT)
             response.raise_for_status()
             return response.text
         
