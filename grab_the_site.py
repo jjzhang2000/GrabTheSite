@@ -454,6 +454,10 @@ def main(args_list=None, stop_event=None):
         plugin_manager.cleanup()
     
     logger.info(_("抓取完成！"))
+    
+    # 关闭日志，释放文件锁
+    from logger import close_all_loggers
+    close_all_loggers()
 
 
 if __name__ == "__main__":

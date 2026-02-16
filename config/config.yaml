@@ -1,6 +1,6 @@
 crawl:
-  max_depth: 5
-  max_files: 15
+  max_depth: 2
+  max_files: 10
   delay: 0.5
   random_delay: true
   threads: 5
@@ -14,7 +14,7 @@ output:
 logging:
   level: INFO
   file: logs/grabthesite.log
-  max_bytes: 10485760
+  max_bytes: 10240
   backup_count: 5
 target_url: https://www.mir.com.my/rb/photography/
 js_rendering:

@@ -610,3 +610,99 @@ msgstr "抓取的页面列表"
 
 msgid "示例插件清理完成"
 msgstr "示例插件清理完成"
+
+# JS Renderer 资源管理
+msgid "重启浏览器以释放资源"
+msgstr "重启浏览器以释放资源"
+
+msgid "个页面已渲染"
+msgstr "个页面已渲染"
+
+msgid "浏览器已关闭，准备重启"
+msgstr "浏览器已关闭，准备重启"
+
+msgid "浏览器渲染器已重启"
+msgstr "浏览器渲染器已重启"
+
+msgid "重启浏览器失败"
+msgstr "重启浏览器失败"
+
+msgid "创建新页面"
+msgstr "创建新页面"
+
+msgid "页面已关闭"
+msgstr "页面已关闭"
+
+msgid "关闭页面失败"
+msgstr "关闭页面失败"
+
+msgid "已关闭所有页面"
+msgstr "已关闭所有页面"
+
+msgid "关闭页面时出错"
+msgstr "关闭页面时出错"
+
+# JS Renderer 调试日志
+msgid "正在启动浏览器..."
+msgstr "正在启动浏览器..."
+
+msgid "创建复用页面实例..."
+msgstr "创建复用页面实例..."
+
+msgid "浏览器初始化成功，页面实例已创建（ID: "
+msgstr "浏览器初始化成功，页面实例已创建（ID: "
+
+msgid "浏览器已初始化，跳过"
+msgstr "浏览器已初始化，跳过"
+
+msgid "[页面 "
+msgstr "[页面 "
+
+msgid "开始渲染"
+msgstr "开始渲染"
+
+msgid "清除状态..."
+msgstr "清除状态..."
+
+msgid "导航到"
+msgstr "导航到"
+
+msgid "渲染成功"
+msgstr "渲染成功"
+
+msgid "页面已关闭"
+msgstr "页面已关闭"
+
+msgid "关闭页面失败"
+msgstr "关闭页面失败"
+
+# JS Renderer Thread
+msgid "JS渲染线程已启动"
+msgstr "JS渲染线程已启动"
+
+msgid "正在停止JS渲染线程..."
+msgstr "正在停止JS渲染线程..."
+
+msgid "JS渲染线程停止超时"
+msgstr "JS渲染线程停止超时"
+
+msgid "渲染线程正在启动浏览器..."
+msgstr "渲染线程正在启动浏览器..."
+
+msgid "浏览器初始化成功，页面实例: "
+msgstr "浏览器初始化成功，页面实例: "
+
+msgid "浏览器初始化失败，渲染线程退出"
+msgstr "浏览器初始化失败，渲染线程退出"
+
+msgid "渲染线程错误"
+msgstr "渲染线程错误"
+
+msgid "JS渲染线程已退出"
+msgstr "JS渲染线程已退出"
+
+msgid "浏览器已关闭"
+msgstr "浏览器已关闭"
+
+msgid "渲染超时"
+msgstr "渲染超时"

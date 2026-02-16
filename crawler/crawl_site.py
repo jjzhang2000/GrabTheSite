@@ -22,7 +22,7 @@ from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, ERROR
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler
 from utils.state_manager import StateManager
-from utils.js_renderer import JSRenderer
+from utils.js_renderer import get_js_renderer, close_js_renderer
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -115,14 +115,10 @@ class CrawlSite:
         if not self.force_download:
             self.visited_urls.update(self.state_manager.state.get('visited_urls', set()))
         
-        # 初始化JavaScript渲染器
+        # 初始化JavaScript渲染器（使用专用渲染线程）
         self.js_rendering_enabled = JS_RENDERING_CONFIG.get('enable', False)
         self.js_rendering_timeout = JS_RENDERING_CONFIG.get('timeout', 30)
-        self.js_renderer = None
-        if self.js_rendering_enabled:
-            self.js_renderer = JSRenderer(enable=True, timeout=self.js_rendering_timeout)
-            # 延迟初始化浏览器，避免在__init__中调用异步代码
-            # 浏览器将在首次渲染时自动初始化
+        # 使用全局渲染器实例（延迟初始化）
         
         # 打印排除列表信息
         if self.processed_exclude_list:
@@ -198,9 +194,9 @@ class CrawlSite:
             logger.info("  " + _t("失败 URL 数量") + f": {stats.get('failed_urls', 0)}")
         
         # 清理JavaScript渲染器
-        if self.js_rendering_enabled and self.js_renderer:
+        if self.js_rendering_enabled:
             logger.info(_t("关闭JavaScript渲染器..."))
-            self.js_renderer.close_sync()
+            close_js_renderer()
         
         logger.info(_t("抓取完成，共下载") + f" {self.downloaded_files} " + _t("个页面"))
         logger.info(_t("暂存页面数量") + f": {len(self.pages)}")
@@ -290,6 +286,8 @@ class CrawlSite:
     def _fetch_page_content(self, url):
         """获取页面内容，使用错误处理器进行重试
         
+        使用专用JS渲染线程，避免多线程竞争导致的线程泄漏。
+        
         Args:
             url: 页面URL
             
@@ -298,12 +296,14 @@ class CrawlSite:
         """
         headers = {'User-Agent': USER_AGENT}
         
-        # 尝试使用JavaScript渲染
-        if self.js_rendering_enabled and self.js_renderer:
+        # 尝试使用JavaScript渲染（通过专用线程）
+        if self.js_rendering_enabled:
             logger.debug(_t("尝试使用JavaScript渲染页面") + f": {url}")
-            page_content = self.js_renderer.render_page_sync(url)
-            if page_content:
-                return page_content
+            js_renderer = get_js_renderer(enable=True, timeout=self.js_rendering_timeout)
+            if js_renderer:
+                page_content = js_renderer.render_page(url, timeout=self.js_rendering_timeout + 10)
+                if page_content:
+                    return page_content
         
         # 使用常规HTTP请求，使用类中配置的错误处理器进行重试
         @self.error_handler.retry

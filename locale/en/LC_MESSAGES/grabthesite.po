@@ -635,3 +635,99 @@ msgstr "Static resource download completed"
 
 msgid "静态资源未下载"
 msgstr "Static resource not downloaded"
+
+# JS Renderer Resource Management
+msgid "重启浏览器以释放资源"
+msgstr "Restarting browser to release resources"
+
+msgid "个页面已渲染"
+msgstr "pages rendered"
+
+msgid "浏览器已关闭，准备重启"
+msgstr "Browser closed, preparing to restart"
+
+msgid "浏览器渲染器已重启"
+msgstr "Browser renderer restarted"
+
+msgid "重启浏览器失败"
+msgstr "Failed to restart browser"
+
+msgid "创建新页面"
+msgstr "Creating new page"
+
+msgid "页面已关闭"
+msgstr "Page closed"
+
+msgid "关闭页面失败"
+msgstr "Failed to close page"
+
+msgid "已关闭所有页面"
+msgstr "All pages closed"
+
+msgid "关闭页面时出错"
+msgstr "Error while closing pages"
+
+# JS Renderer Debug Logs
+msgid "正在启动浏览器..."
+msgstr "Starting browser..."
+
+msgid "创建复用页面实例..."
+msgstr "Creating reusable page instance..."
+
+msgid "浏览器初始化成功，页面实例已创建（ID: "
+msgstr "Browser initialized, page instance created (ID: "
+
+msgid "浏览器已初始化，跳过"
+msgstr "Browser already initialized, skipping"
+
+msgid "[页面 "
+msgstr "[Page "
+
+msgid "开始渲染"
+msgstr "Starting render"
+
+msgid "清除状态..."
+msgstr "Clearing state..."
+
+msgid "导航到"
+msgstr "Navigating to"
+
+msgid "渲染成功"
+msgstr "Render successful"
+
+msgid "页面已关闭"
+msgstr "Page closed"
+
+msgid "关闭页面失败"
+msgstr "Failed to close page"
+
+# JS Renderer Thread
+msgid "JS渲染线程已启动"
+msgstr "JS renderer thread started"
+
+msgid "正在停止JS渲染线程..."
+msgstr "Stopping JS renderer thread..."
+
+msgid "JS渲染线程停止超时"
+msgstr "JS renderer thread stop timeout"
+
+msgid "渲染线程正在启动浏览器..."
+msgstr "Renderer thread starting browser..."
+
+msgid "浏览器初始化成功，页面实例: "
+msgstr "Browser initialized, page instance: "
+
+msgid "浏览器初始化失败，渲染线程退出"
+msgstr "Browser initialization failed, renderer thread exiting"
+
+msgid "渲染线程错误"
+msgstr "Renderer thread error"
+
+msgid "JS渲染线程已退出"
+msgstr "JS renderer thread exited"
+
+msgid "浏览器已关闭"
+msgstr "Browser closed"
+
+msgid "渲染超时"
+msgstr "Render timeout"

@@ -243,6 +243,8 @@ class MainWindow(tk.Tk):
     
     def on_exit(self):
         """退出按钮点击事件"""
+        import logging
+        
         # 如果正在抓取，先发送停止信号
         if self.is_crawling:
             self.log_panel.add_log(_("正在停止抓取并退出..."))
@@ -252,22 +254,30 @@ class MainWindow(tk.Tk):
         if self.crawl_thread and self.crawl_thread.is_alive():
             self.log_panel.add_log(_("等待抓取线程结束..."))
             
-            # 等待抓取线程结束，最多等待30秒
+            # 等待抓取线程结束，最多等待10秒
             wait_time = 0
-            max_wait = 30
+            max_wait = 10
             while self.crawl_thread and self.crawl_thread.is_alive() and wait_time < max_wait:
                 self.update()  # 保持UI响应
                 import time
-                time.sleep(0.5)
-                wait_time += 0.5
+                time.sleep(0.2)
+                wait_time += 0.2
             
-            # 如果线程仍在运行，强制退出整个进程
+            # 如果线程仍在运行，强制终止
             if self.crawl_thread and self.crawl_thread.is_alive():
-                self.log_panel.add_log(_("警告: 抓取线程未能及时停止，强制退出"))
-                import os
-                os._exit(0)
+                self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
+        
+        # 关闭所有日志处理器，释放文件锁
+        self.log_panel.add_log(_("正在清理资源..."))
+        from logger import close_all_loggers
+        close_all_loggers()
         
         # 销毁窗口
         self.destroy()
+        
+        # 确保进程退出（如果有残留线程）
+        import os
+        import sys
+        sys.exit(0)
     
 

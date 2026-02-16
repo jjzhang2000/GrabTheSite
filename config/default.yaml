@@ -32,6 +32,7 @@ error_handling:
 js_rendering:
   enable: false         # 是否启用（需要安装Pyppeteer和Chrome）
   timeout: 30           # 页面渲染超时时间（秒）
+  # 注意：当前使用单页面复用模式，所有渲染任务共享一个浏览器页面实例
 
 # 输出配置
 output:
