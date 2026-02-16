@@ -414,8 +414,8 @@ class CrawlSite:
                     full_url = urljoin(url, src)
                     # 规范化 URL（移除片段，统一格式）
                     full_url = self._normalize_url(full_url)
-                    # 只记录同域名的静态资源
-                    if self._is_same_domain(full_url):
+                    # 只记录同域名且在目标目录中的静态资源
+                    if self._is_same_domain(full_url) and self._is_in_target_directory(full_url):
                         with self.lock:
                             self.static_resources.add(full_url)
         
