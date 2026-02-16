@@ -55,7 +55,9 @@ class CrawlSite:
         self.downloaded_files = 0
         self.visited_urls = set()
         self.lock = threading.Lock()
-        self.queue = queue.Queue()
+        # 使用 LifoQueue 实现深度优先搜索（DFS）
+        # 这样站点地图可以体现上下级层级关系
+        self.queue = queue.LifoQueue()
         
         self.exclude_list = EXCLUDE_LIST or []
         
@@ -420,6 +422,8 @@ class CrawlSite:
                             self.static_resources.add(full_url)
         
         # 处理页面链接
+        # 先收集所有子链接，然后倒序，再用 LifoQueue 实现深度优先且保持原始顺序
+        child_urls = []
         for link in links:
             if link.name == 'a':
                 href = link.get('href')
@@ -427,14 +431,18 @@ class CrawlSite:
                     full_url = urljoin(url, href)
                     # 只抓取同域名、在起始目录及其子目录中、并且深度小于最大深度的链接
                     if self._is_same_domain(full_url) and self._is_in_target_directory(full_url) and depth < self.max_depth:
-                        # 检查是否达到文件数量限制
+                        # 检查是否已访问过该URL
                         with self.lock:
-                            if self.downloaded_files >= self.max_files:
-                                break
-                            # 检查是否已访问过该URL
                             if full_url not in self.visited_urls:
-                                # 添加到队列
-                                self.queue.put((full_url, depth + 1))
+                                child_urls.append(full_url)
+        
+        # 倒序后加入队列（配合 LifoQueue 实现深度优先且保持原始顺序）
+        for full_url in reversed(child_urls):
+            # 检查是否达到文件数量限制
+            with self.lock:
+                if self.downloaded_files >= self.max_files:
+                    break
+            self.queue.put((full_url, depth + 1))
         
         # 添加延迟
         self._add_delay()
