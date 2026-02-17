@@ -16,7 +16,7 @@ from tkinter import ttk
 from logger import disable_console_output
 disable_console_output()
 
-from gui.config_panels import URLPanel, AdvancedConfigPanel, save_config_to_yaml
+from gui.config_panels import URLPanel, AdvancedConfigPanel, PluginConfigPanel, save_config_to_yaml
 from gui.log_panel import LogPanel
 from utils.i18n import gettext as _, register_language_change_callback, init_i18n
 from config import load_config
@@ -62,9 +62,17 @@ class MainWindow(tk.Tk):
         self.advanced_tab = ttk.Frame(self.tab_frame)
         self.tab_frame.add(self.advanced_tab, text=_("高级配置"))
         
-        # 创建高级配置面板（包含插件配置）
+        # 创建高级配置面板
         self.advanced_config_panel = AdvancedConfigPanel(self.advanced_tab)
         self.advanced_config_panel.pack(fill=tk.X, expand=False)
+        
+        # 创建插件配置组（放在高级配置下方，日志上方）
+        self.plugin_frame = ttk.LabelFrame(self.main_frame, text=_("插件配置"), padding="8")
+        self.plugin_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        # 创建插件配置面板
+        self.plugin_config_panel = PluginConfigPanel(self.plugin_frame)
+        self.plugin_config_panel.pack(fill=tk.X)
         
         # 创建日志面板（放在选项卡下方，按钮上方）
         self.log_frame = ttk.LabelFrame(self.main_frame, text=_("日志"), padding="5")
@@ -125,6 +133,9 @@ class MainWindow(tk.Tk):
         # 更新日志框架文本
         self.log_frame.config(text=_("日志"))
         
+        # 更新插件配置框架文本
+        self.plugin_frame.config(text=_("插件配置"))
+        
         # 更新按钮文本
         self.start_button.config(text=_("开始抓取"))
         self.stop_button.config(text=_("停止"))
@@ -154,7 +165,8 @@ class MainWindow(tk.Tk):
         # 获取配置
         config = {
             "url": self.url_panel.get_url(),
-            **self.advanced_config_panel.get_config()
+            **self.advanced_config_panel.get_config(),
+            "plugins": self.plugin_config_panel.get_plugin_config()
         }
         
         # 保存配置到config.yaml

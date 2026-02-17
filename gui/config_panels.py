@@ -154,7 +154,7 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 深度配置
         self.depth_label = ttk.Label(self, text=_('抓取深度:'))
-        self.depth_label.grid(row=0, column=0, sticky=tk.W, padx=3, pady=5)
+        self.depth_label.grid(row=0, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.depth_var = tk.IntVar(value=crawl_config.get('max_depth', MAX_DEPTH))
         self.depth_spinbox = ttk.Spinbox(self, from_=0, to=10, textvariable=self.depth_var, width=8)
@@ -162,7 +162,7 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 最大文件数配置
         self.max_files_label = ttk.Label(self, text=_('最大文件数:'))
-        self.max_files_label.grid(row=1, column=0, sticky=tk.W, padx=3, pady=5)
+        self.max_files_label.grid(row=1, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.max_files_var = tk.IntVar(value=crawl_config.get('max_files', MAX_FILES))
         self.max_files_spinbox = ttk.Spinbox(self, from_=1, to=10000, textvariable=self.max_files_var, width=8)
@@ -170,7 +170,7 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 输出目录配置（输入框 + 浏览按钮）
         self.output_label = ttk.Label(self, text=_('输出目录:'))
-        self.output_label.grid(row=2, column=0, sticky=tk.W, padx=3, pady=5)
+        self.output_label.grid(row=2, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.output_var = tk.StringVar(value=output_config.get('base_dir', BASE_OUTPUT_DIR))
         self.output_entry = ttk.Entry(self, textvariable=self.output_var, width=25)
@@ -182,7 +182,7 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 延迟配置 + 无随机延迟（同一行显示）
         self.delay_label = ttk.Label(self, text=_('请求延迟(秒):'))
-        self.delay_label.grid(row=3, column=0, sticky=tk.W, padx=3, pady=5)
+        self.delay_label.grid(row=3, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         # 延迟输入框（宽度缩小，放在左侧）
         self.delay_var = tk.DoubleVar(value=crawl_config.get('delay', DELAY))
@@ -197,7 +197,7 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 线程数配置
         self.threads_label = ttk.Label(self, text=_('线程数:'))
-        self.threads_label.grid(row=4, column=0, sticky=tk.W, padx=3, pady=5)
+        self.threads_label.grid(row=4, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.threads_var = tk.IntVar(value=crawl_config.get('threads', 4))
         self.threads_spinbox = ttk.Spinbox(self, from_=1, to=32, textvariable=self.threads_var, width=6)
@@ -206,7 +206,7 @@ class AdvancedConfigPanel(ttk.Frame):
         # 生成站点地图配置（XML和HTML并列显示）
         self.sitemap_var = tk.BooleanVar(value=sitemap_config.get('enable', False))
         self.sitemap_checkbutton = ttk.Checkbutton(self, text=_('生成XML站点地图'), variable=self.sitemap_var)
-        self.sitemap_checkbutton.grid(row=5, column=0, columnspan=2, sticky=tk.W, padx=3, pady=5)
+        self.sitemap_checkbutton.grid(row=5, column=0, columnspan=2, sticky=tk.W, padx=(15, 3), pady=5)
         
         # 生成HTML站点地图配置（与XML并列）
         self.html_sitemap_var = tk.BooleanVar(value=sitemap_config.get('enable_html', False))
@@ -215,7 +215,7 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 语言配置
         self.lang_label = ttk.Label(self, text=_('语言:'))
-        self.lang_label.grid(row=6, column=0, sticky=tk.W, padx=3, pady=5)
+        self.lang_label.grid(row=6, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.lang_var = tk.StringVar(value=i18n_config.get('lang', 'zh_CN'))
         self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh_CN', 'en'], width=8)
@@ -224,7 +224,7 @@ class AdvancedConfigPanel(ttk.Frame):
         # 用户代理配置
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         self.user_agent_label = ttk.Label(self, text=_('用户代理:'))
-        self.user_agent_label.grid(row=7, column=0, sticky=tk.W, padx=3, pady=5)
+        self.user_agent_label.grid(row=7, column=0, sticky=tk.W, padx=(20, 3), pady=5)
         
         self.user_agent_var = tk.StringVar(value=crawl_config.get('user_agent', default_ua))
         self.user_agent_entry = ttk.Entry(self, textvariable=self.user_agent_var, width=35)
@@ -233,10 +233,7 @@ class AdvancedConfigPanel(ttk.Frame):
         # 强制下载配置（不从配置文件读取，默认为False）
         self.force_download_var = tk.BooleanVar(value=False)
         self.force_download_checkbutton = ttk.Checkbutton(self, text=_('强制下载所有文件'), variable=self.force_download_var)
-        self.force_download_checkbutton.grid(row=8, column=0, columnspan=3, sticky=tk.W, padx=3, pady=5)
-        
-        # 插件配置（放在高级配置面板中）
-        self._init_plugin_config()
+        self.force_download_checkbutton.grid(row=8, column=0, columnspan=3, sticky=tk.W, padx=(15, 3), pady=5)
         
         # 绑定语言选择变化事件
         self.lang_combobox.bind('<<ComboboxSelected>>', self._on_language_changed)
@@ -275,46 +272,8 @@ class AdvancedConfigPanel(ttk.Frame):
         self.lang_label.config(text=_('语言:'))
         self.user_agent_label.config(text=_('用户代理:'))
         self.force_download_checkbutton.config(text=_('强制下载所有文件'))
-        self.plugin_frame.config(text=_('插件配置'))
     
-    def _init_plugin_config(self):
-        """初始化插件配置区域"""
-        # 插件配置标签框架
-        self.plugin_frame = ttk.LabelFrame(self, text=_('插件配置'), padding="5")
-        self.plugin_frame.grid(row=9, column=0, columnspan=3, sticky=tk.W+tk.E, padx=3, pady=(15, 5))
-        
-        # 存储插件复选框变量
-        self.plugin_vars = {}
-        
-        # 获取插件列表
-        try:
-            from utils.plugin_manager import PluginManager
-            plugin_manager = PluginManager()
-            plugins = plugin_manager.get_available_plugins()
-        except Exception:
-            # 如果获取插件列表失败，使用默认插件
-            plugins = ['save_plugin', 'example_plugin']
-        
-        # 加载配置以获取插件启用状态
-        try:
-            config = load_config()
-            plugin_config = config.get('plugins', {})
-        except Exception:
-            plugin_config = {}
-        
-        # 为每个插件创建复选框
-        # 如果配置中有该插件的设置，使用配置值；否则默认启用 save_plugin
-        for i, plugin in enumerate(plugins):
-            # 从配置中读取插件状态，默认为 save_plugin 启用，其他禁用
-            default_value = (plugin == 'save_plugin')
-            var = tk.BooleanVar(value=plugin_config.get(plugin, default_value))
-            self.plugin_vars[plugin] = var
-            cb = ttk.Checkbutton(
-                self.plugin_frame, 
-                text=plugin, 
-                variable=var
-            )
-            cb.pack(side=tk.LEFT, padx=5, pady=2)
+
     
     def _browse_output_dir(self):
         """浏览选择输出目录"""
@@ -337,12 +296,7 @@ class AdvancedConfigPanel(ttk.Frame):
             "lang": self.lang_var.get(),
             "user_agent": self.user_agent_var.get(),
             "force_download": self.force_download_var.get(),
-            "plugins": self.get_plugin_config()
         }
-    
-    def get_plugin_config(self):
-        """获取插件配置"""
-        return {name: var.get() for name, var in self.plugin_vars.items()}
     
     # 保留一些常用的getter方法，以便向后兼容
     def get_depth(self):
@@ -364,10 +318,6 @@ class PluginConfigPanel(ttk.Frame):
     def __init__(self, parent):
         """初始化插件配置面板"""
         super().__init__(parent)
-        
-        # 插件列表框架
-        self.plugin_list_frame = ttk.LabelFrame(self, text=_('插件配置'), padding="10")
-        self.plugin_list_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # 存储插件复选框变量
         self.plugin_vars = {}
@@ -393,18 +343,18 @@ class PluginConfigPanel(ttk.Frame):
         except Exception:
             plugin_config = {}
         
-        # 为每个插件创建复选框
+        # 为每个插件创建复选框（水平排列）
         # 如果配置中有该插件的设置，使用配置值；否则默认启用 save_plugin
         for plugin in plugins:
             default_value = (plugin == 'save_plugin')
             var = tk.BooleanVar(value=plugin_config.get(plugin, default_value))
             self.plugin_vars[plugin] = var
             cb = ttk.Checkbutton(
-                self.plugin_list_frame, 
+                self, 
                 text=plugin, 
                 variable=var
             )
-            cb.pack(anchor=tk.W, padx=5, pady=2)
+            cb.pack(side=tk.LEFT, padx=5, pady=2)
     
     def get_plugin_config(self):
         """获取插件配置
