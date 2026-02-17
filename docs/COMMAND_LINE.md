@@ -130,7 +130,13 @@ python grab_the_site.py --url https://example.com --no-html-sitemap
 python grab_the_site.py --url https://example.com --js-rendering
 ```
 
-这将启用JavaScript渲染功能，用于抓取使用JavaScript动态加载内容的网站。
+这将启用JavaScript渲染功能，使用Playwright抓取动态加载内容的网站。
+
+**注意**：使用此功能前需要安装 Playwright：
+```bash
+pip install playwright
+playwright install chromium
+```
 
 ### 18. 禁用JavaScript渲染
 

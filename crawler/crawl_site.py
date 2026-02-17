@@ -37,14 +37,8 @@ _session.mount('https://', adapter)
 # 获取 logger 实例
 logger = setup_logger(__name__)
 
-# 根据配置选择渲染引擎
-_js_engine = JS_RENDERING_CONFIG.get('engine', 'playwright')
-if _js_engine == 'pyppeteer':
-    from utils.js_renderer import get_js_renderer, close_js_renderer
-    logger.info(_t("使用 Pyppeteer 渲染引擎"))
-else:
-    from utils.js_renderer_playwright import get_js_renderer, close_js_renderer
-    logger.info(_t("使用 Playwright 渲染引擎"))
+# 导入 Playwright JS 渲染器
+from utils.js_renderer_playwright import get_js_renderer, close_js_renderer
 
 
 class CrawlSite:

@@ -18,9 +18,8 @@ logging:
   backup_count: 5
 target_url: https://www.mir.com.my/rb/photography/
 js_rendering:
-  enable: false
+  enable: true
   timeout: 30
-  engine: playwright
 i18n:
   lang: zh_CN
 plugins:

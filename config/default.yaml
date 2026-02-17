@@ -29,11 +29,11 @@ error_handling:
   fail_strategy: "log"        # 失败处理策略：log=仅记录, skip=跳过, raise=抛出异常
 
 # JavaScript渲染配置（用于抓取动态加载内容）
+# 使用 Playwright 进行页面渲染
+# 安装命令: pip install playwright && playwright install chromium
 js_rendering:
-  enable: false         # 是否启用（需要安装Playwright或Pyppeteer）
+  enable: true          # 是否启用（需要安装 Playwright）
   timeout: 30           # 页面渲染超时时间（秒）
-  engine: playwright    # 渲染引擎: playwright (推荐) 或 pyppeteer
-  # 注意：推荐使用 playwright，线程管理更稳定
 
 # 输出配置
 output:

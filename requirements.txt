@@ -3,8 +3,9 @@ requests>=2.28.0,<3.0
 beautifulsoup4>=4.11.0,<5.0
 lxml>=4.9.0,<5.0
 
-# JavaScript渲染支持
-pyppeteer>=1.0.0,<2.0
+# JavaScript渲染支持 (Playwright)
+# 安装后需要运行: playwright install chromium
+playwright>=1.40.0
 
 # 配置解析
 pyyaml>=6.0,<7.0

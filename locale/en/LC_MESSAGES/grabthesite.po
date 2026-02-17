@@ -753,3 +753,56 @@ msgstr "Using Playwright engine"
 
 msgid "JS渲染线程已启动(Playwright)"
 msgstr "JS renderer thread started (Playwright)"
+
+# Playwright Browser Check
+msgid "Chromium 浏览器未安装！"
+msgstr "Chromium browser not installed!"
+
+msgid "请运行以下命令安装:"
+msgstr "Please run the following command to install:"
+
+msgid "    playwright install chromium"
+msgstr "    playwright install chromium"
+
+msgid "或:"
+msgstr "Or:"
+
+msgid "    python -m playwright install chromium"
+msgstr "    python -m playwright install chromium"
+
+msgid "检查浏览器安装状态时出错: "
+msgstr "Error checking browser installation: "
+
+msgid "="
+msgstr "="
+
+# Playwright System Browser
+msgid "检测到 Microsoft Edge: "
+msgstr "Detected Microsoft Edge: "
+
+msgid "检测到 Google Chrome: "
+msgstr "Detected Google Chrome: "
+
+msgid "正在启动系统浏览器(Playwright)..."
+msgstr "Starting system browser (Playwright)..."
+
+msgid "使用系统浏览器: "
+msgstr "Using system browser: "
+
+msgid "启动系统浏览器失败，尝试使用 Playwright 内置浏览器: "
+msgstr "Failed to launch system browser, trying Playwright bundled browser: "
+
+msgid "未检测到系统浏览器，且 Playwright 内置浏览器未安装！"
+msgstr "No system browser detected, and Playwright bundled browser not installed!"
+
+msgid "请安装以下任一浏览器:"
+msgstr "Please install one of the following browsers:"
+
+msgid "  1. Microsoft Edge (推荐)"
+msgstr "  1. Microsoft Edge (recommended)"
+
+msgid "  2. Google Chrome"
+msgstr "  2. Google Chrome"
+
+msgid "或安装 Playwright 内置浏览器:"
+msgstr "Or install Playwright bundled browser:"

@@ -82,6 +82,36 @@ class JSRendererThread:
         if self._thread.is_alive():
             logger.warning(_t("JS渲染线程停止超时"))
     
+    def _find_system_browser(self, p):
+        """查找系统中已安装的浏览器
+        
+        Returns:
+            tuple: (browser_type, channel, executable_path) 或 None
+        """
+        # 尝试使用 Microsoft Edge
+        edge_paths = [
+            r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+            r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+            os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+        ]
+        for edge_path in edge_paths:
+            if os.path.exists(edge_path):
+                logger.info(_t("检测到 Microsoft Edge: ") + edge_path)
+                return ('chromium', 'msedge', edge_path)
+        
+        # 尝试使用 Google Chrome
+        chrome_paths = [
+            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+            os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+        ]
+        for chrome_path in chrome_paths:
+            if os.path.exists(chrome_path):
+                logger.info(_t("检测到 Google Chrome: ") + chrome_path)
+                return ('chromium', 'chrome', chrome_path)
+        
+        return None
+    
     def _run(self):
         """渲染线程主循环"""
         try:
@@ -89,23 +119,65 @@ class JSRendererThread:
             with sync_playwright() as p:
                 self.playwright = p
                 
-                # 启动浏览器 - 使用 chromium，限制资源使用
-                logger.info(_t("正在启动Chromium(Playwright)..."))
-                self.browser = p.chromium.launch(
-                    headless=True,
-                    args=[
-                        '--disable-gpu',
-                        '--disable-dev-shm-usage',
-                        '--disable-setuid-sandbox',
-                        '--no-sandbox',
-                        '--single-process',  # 单进程模式
-                        '--disable-extensions',
-                        '--disable-plugins',
-                        '--disable-background-timer-throttling',
-                        '--disable-backgrounding-occluded-windows',
-                        '--disable-renderer-backgrounding',
-                    ]
-                )
+                # 首先尝试使用系统中已安装的浏览器
+                browser_info = self._find_system_browser(p)
+                
+                if browser_info:
+                    browser_type, channel, executable_path = browser_info
+                    logger.info(_t("正在启动系统浏览器(Playwright)..."))
+                    try:
+                        self.browser = p.chromium.launch(
+                            headless=True,
+                            channel=channel,  # 使用系统浏览器
+                            args=[
+                                '--disable-gpu',
+                                '--disable-dev-shm-usage',
+                                '--disable-setuid-sandbox',
+                                '--no-sandbox',
+                                '--single-process',
+                                '--disable-extensions',
+                                '--disable-plugins',
+                            ]
+                        )
+                        logger.info(_t("使用系统浏览器: ") + channel)
+                    except Exception as e:
+                        logger.warning(_t("启动系统浏览器失败，尝试使用 Playwright 内置浏览器: ") + str(e))
+                        browser_info = None
+                
+                # 如果没有系统浏览器或启动失败，尝试使用 Playwright 内置浏览器
+                if not browser_info:
+                    # 检查 Playwright 内置浏览器是否已安装
+                    try:
+                        browser_path = p.chromium.executable_path
+                        if not browser_path or not os.path.exists(browser_path):
+                            logger.error(_t("=" * 60))
+                            logger.error(_t("未检测到系统浏览器，且 Playwright 内置浏览器未安装！"))
+                            logger.error(_t("请安装以下任一浏览器:"))
+                            logger.error(_t("  1. Microsoft Edge (推荐)") )
+                            logger.error(_t("  2. Google Chrome"))
+                            logger.error(_t("或安装 Playwright 内置浏览器:"))
+                            logger.error(_t("    playwright install chromium"))
+                            logger.error(_t("=" * 60))
+                            return
+                    except Exception as check_error:
+                        logger.warning(_t("检查浏览器安装状态时出错: ") + str(check_error))
+                    
+                    logger.info(_t("正在启动Chromium(Playwright)..."))
+                    self.browser = p.chromium.launch(
+                        headless=True,
+                        args=[
+                            '--disable-gpu',
+                            '--disable-dev-shm-usage',
+                            '--disable-setuid-sandbox',
+                            '--no-sandbox',
+                            '--single-process',
+                            '--disable-extensions',
+                            '--disable-plugins',
+                            '--disable-background-timer-throttling',
+                            '--disable-backgrounding-occluded-windows',
+                            '--disable-renderer-backgrounding',
+                        ]
+                    )
                 
                 # 创建单一页面实例并复用
                 logger.info(_t("创建页面实例..."))
