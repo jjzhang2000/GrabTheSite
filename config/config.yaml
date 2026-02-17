@@ -1,6 +1,6 @@
 crawl:
   max_depth: 2
-  max_files: 10
+  max_files: 8
   delay: 0.5
   random_delay: true
   threads: 5
@@ -18,7 +18,6 @@ logging:
   backup_count: 5
 target_url: https://www.mir.com.my/rb/photography/
 js_rendering:
-  enable: true
   timeout: 30
 i18n:
   lang: zh_CN

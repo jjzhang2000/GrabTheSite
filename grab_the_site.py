@@ -113,19 +113,6 @@ def parse_args():
         help="不生成 HTML 格式的站点地图"
     )
     
-    # JavaScript渲染相关参数
-    parser.add_argument(
-        "--js-rendering",
-        action="store_true",
-        help="启用JavaScript渲染"
-    )
-    
-    parser.add_argument(
-        "--no-js-rendering",
-        action="store_true",
-        help="禁用JavaScript渲染"
-    )
-    
     parser.add_argument(
         "--js-timeout",
         type=int,
@@ -240,12 +227,9 @@ def update_config(args):
         config["output"]["sitemap"]["enable_html"] = False
     
     # JavaScript渲染配置
+    # JavaScript渲染超时配置
     if "js_rendering" not in config:
         config["js_rendering"] = {}
-    if args.js_rendering:
-        config["js_rendering"]["enable"] = True
-    elif args.no_js_rendering:
-        config["js_rendering"]["enable"] = False
     if args.js_timeout is not None:
         config["js_rendering"]["timeout"] = args.js_timeout
     
@@ -357,11 +341,8 @@ def main(args_list=None, stop_event=None):
     
     # 显示JavaScript渲染配置
     js_rendering_config = config.get("js_rendering", JS_RENDERING_CONFIG)
-    js_rendering_enable = js_rendering_config.get("enable", False)
     js_rendering_timeout = js_rendering_config.get("timeout", 30)
-    logger.info(f"{_('JavaScript渲染')}: {_('Enabled') if js_rendering_enable else _('Disabled')}")
-    if js_rendering_enable:
-        logger.info(f"{_("渲染超时")}: {js_rendering_timeout}{_("秒")}")
+    logger.info(f"{_('JavaScript渲染')}: {_('Enabled')}")
     
     # 显示语言配置
     logger.info(f"{_("当前语言")}: {current_lang}")

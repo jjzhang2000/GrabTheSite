@@ -40,7 +40,6 @@ DEFAULT_CONFIG = {
         "fail_strategy": "log"
     },
     "js_rendering": {
-        "enable": False,
         "timeout": 30
     },
     "output": {

@@ -128,8 +128,8 @@ class CrawlSite:
         if not self.force_download:
             self.visited_urls.update(self.state_manager.state.get('visited_urls', set()))
         
-        # 初始化JavaScript渲染器（使用专用渲染线程）
-        self.js_rendering_enabled = JS_RENDERING_CONFIG.get('enable', False)
+        # 初始化JavaScript渲染器（始终启用，使用专用渲染线程）
+        self.js_rendering_enabled = True
         self.js_rendering_timeout = JS_RENDERING_CONFIG.get('timeout', 30)
         # 使用全局渲染器实例（延迟初始化）
         
@@ -154,13 +154,8 @@ class CrawlSite:
         logger.info(_t("最大文件数") + f": {self.max_files}")
         logger.info(_t("线程数") + f": {self.threads}")
         
-        # 检查JavaScript渲染状态
-        if self.js_rendering_enabled:
-            logger.info(_t("JavaScript渲染已启用，超时设置") + f": {self.js_rendering_timeout}" + _t("秒"))
-        else:
-            logger.info(_t("JavaScript渲染已禁用"))
-        
-
+        # 显示JavaScript渲染配置
+        logger.info(_t("JavaScript渲染已启用，超时设置") + f": {self.js_rendering_timeout}" + _t("秒"))
         
         # 检查是否启用断点续传
         if self.resume_enabled and self.state_manager:
