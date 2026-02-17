@@ -29,7 +29,8 @@ class GUIHandler(logging.Handler):
         """处理日志记录"""
         try:
             msg = self.format(record)
-            self.log_panel.add_log(msg)
+            # 使用after方法确保在主线程中更新GUI（线程安全）
+            self.log_panel.after(0, lambda m=msg: self.log_panel.add_log(m))
         except Exception:
             self.handleError(record)
 
@@ -100,10 +101,14 @@ class LogPanel(ttk.Frame):
         # 获取logger
         logger = logging.getLogger(logger_name)
         
-        # 检查是否已添加GUIHandler
-        for handler in logger.handlers:
+        # 移除所有已存在的GUIHandler（确保重新设置）
+        for handler in logger.handlers[:]:
             if isinstance(handler, GUIHandler):
-                return  # 已存在，不再添加
+                logger.removeHandler(handler)
+                try:
+                    handler.close()
+                except:
+                    pass
         
         # 创建GUI处理器
         gui_handler = GUIHandler(self)

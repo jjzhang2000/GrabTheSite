@@ -76,8 +76,10 @@ class MainWindow(tk.Tk):
         # 设置日志处理器，将日志输出到GUI
         import logging
         self.log_panel.setup_logger_handler()  # 设置根logger
-        # 也为 grab_the_site 模块设置
+        # 也为各个模块设置
         self.log_panel.setup_logger_handler('grab_the_site')
+        self.log_panel.setup_logger_handler('crawler.crawl_site')
+        self.log_panel.setup_logger_handler('crawler.downloader')
         
         # 创建底部框架（用于按钮）
         self.bottom_frame = ttk.Frame(self.main_frame)
@@ -167,6 +169,12 @@ class MainWindow(tk.Tk):
         
         # 记录开始日志
         self.log_panel.add_log(_("开始抓取网站: {}").format(config["url"]))
+        
+        # 重新设置日志处理器（确保在多次抓取后能正常工作）
+        self.log_panel.setup_logger_handler()  # 根 logger
+        self.log_panel.setup_logger_handler('grab_the_site')
+        self.log_panel.setup_logger_handler('crawler.crawl_site')
+        self.log_panel.setup_logger_handler('crawler.downloader')
         
         # 导入抓取模块
         from grab_the_site import main as grab_main

@@ -1,41 +1,25 @@
-# 用户自定义配置文件
-# 如需修改配置，请直接编辑此文件
-
-# 目标网站 URL - 抓取的起点
 target_url: https://www.mir.com.my/rb/photography/
-
-# 抓取参数配置
 crawl:
-  max_depth: 2          # 最大抓取深度（0=只抓取当前页）
-  max_files: 8          # 最大文件数量（防止抓取过多）
-  delay: 0.5            # 请求间隔（秒），避免对服务器造成压力
-  random_delay: true    # 启用随机延迟，模拟真人访问
-  threads: 5            # 并发线程数（建议 2-8）
-  incremental: true     # 启用增量抓取（只下载更新的文件）
+  max_depth: 2
+  max_files: 5
+  delay: 0.5
+  random_delay: true
+  threads: 5
+  incremental: true
   user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
-
-# JavaScript渲染配置（用于抓取动态加载内容）
 js_rendering:
-  timeout: 30           # 页面渲染超时时间（秒）
-
-# 输出配置
+  timeout: 30
 output:
   base_dir: C:\Users\jjzha\Downloads
   sitemap:
-    enable: false       # 生成XML站点地图（sitemap.xml）
-    enable_html: true   # 生成HTML站点地图（sitemap.html）
-
-# 日志配置
+    enable: false
+    enable_html: true
 logging:
-  level: INFO                   # 日志级别：DEBUG/INFO/WARNING/ERROR
-  file: logs/grabthesite.log    # 日志文件路径
-  max_bytes: 10485760           # 单个日志文件最大大小（10MB）
-  backup_count: 5               # 保留的日志备份数量
-
-# 国际化配置
+  level: INFO
+  file: logs/grabthesite.log
+  max_bytes: 10485760
+  backup_count: 5
 i18n:
-  lang: zh_CN             # 界面语言：en=英文, zh_CN=中文
-
-# 插件配置
+  lang: zh_CN
 plugins:
-  save_plugin: true       # 保存插件（核心插件，建议保持启用）
+  save_plugin: true
