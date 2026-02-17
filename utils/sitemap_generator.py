@@ -1,13 +1,12 @@
 """站点地图生成模块
 
-生成XML和HTML格式的站点地图：
+生成HTML格式的站点地图：
 - 从页面内容提取标题
 - 构建页面树结构
 - 支持多语言标题
 """
 
 import os
-import xml.etree.ElementTree as ET
 from datetime import datetime
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
@@ -23,7 +22,7 @@ logger = setup_logger(__name__)
 
 
 class SitemapGenerator:
-    """站点地图生成器，用于生成 XML 格式的站点地图"""
+    """站点地图生成器，用于生成 HTML 格式的站点地图"""
     
     def __init__(self, target_url, output_dir):
         """初始化站点地图生成器
@@ -307,78 +306,7 @@ class SitemapGenerator:
         
         return html
     
-    def generate_sitemap(self, pages):
-        """生成站点地图
-        
-        Args:
-            pages: 抓取的页面，可以是字典（键为 URL，值为页面内容）或集合（包含 URL）
-        
-        Returns:
-            str: 生成的站点地图文件路径
-        """
-        # 创建站点地图根元素
-        urlset = ET.Element('urlset')
-        urlset.set('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9')
-        
-        # 为每个页面创建 URL 元素
-        if isinstance(pages, dict):
-            # 当 pages 是字典时，使用本地文件路径
-            for url, html_content in pages.items():
-                url_elem = ET.SubElement(urlset, 'url')
-                loc_elem = ET.SubElement(url_elem, 'loc')
-                
-                # 获取本地文件路径
-                local_path = self._get_local_file_path(url)
-                # 获取相对于站点地图文件的路径
-                relative_path = self._get_relative_path(local_path)
-                loc_elem.text = relative_path
-                
-                # 添加最后修改时间
-                lastmod_elem = ET.SubElement(url_elem, 'lastmod')
-                lastmod_elem.text = datetime.now().strftime('%Y-%m-%d')
-                
-                # 添加更改频率
-                changefreq_elem = ET.SubElement(url_elem, 'changefreq')
-                changefreq_elem.text = 'weekly'
-                
-                # 添加优先级
-                priority_elem = ET.SubElement(url_elem, 'priority')
-                priority_elem.text = '0.5'
-        elif isinstance(pages, set):
-            # 当 pages 是集合时，为每个 URL 计算本地文件路径
-            for url in pages:
-                url_elem = ET.SubElement(urlset, 'url')
-                loc_elem = ET.SubElement(url_elem, 'loc')
-                
-                # 获取本地文件路径
-                local_path = self._get_local_file_path(url)
-                # 获取相对于站点地图文件的路径
-                relative_path = self._get_relative_path(local_path)
-                loc_elem.text = relative_path
-                
-                # 添加最后修改时间
-                lastmod_elem = ET.SubElement(url_elem, 'lastmod')
-                lastmod_elem.text = datetime.now().strftime('%Y-%m-%d')
-                
-                # 添加更改频率
-                changefreq_elem = ET.SubElement(url_elem, 'changefreq')
-                changefreq_elem.text = 'weekly'
-                
-                # 添加优先级
-                priority_elem = ET.SubElement(url_elem, 'priority')
-                priority_elem.text = '0.5'
-        
-        # 创建 ElementTree 对象
-        tree = ET.ElementTree(urlset)
-        
-        # 生成站点地图文件路径
-        sitemap_path = os.path.join(self.output_dir, 'sitemap.xml')
-        
-        # 写入文件
-        tree.write(sitemap_path, encoding='utf-8', xml_declaration=True)
-        logger.info(_("生成站点地图") + f": {sitemap_path}")
-        
-        return sitemap_path
+
     
     def generate_html_sitemap(self, pages, page_depths=None):
         """生成 HTML 格式的站点地图

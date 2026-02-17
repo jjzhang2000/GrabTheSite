@@ -22,4 +22,4 @@ logging:
 i18n:
   lang: zh_CN
 plugins:
-  save_plugin: true
+  save_plugin: false

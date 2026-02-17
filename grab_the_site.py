@@ -89,29 +89,7 @@ def parse_args():
         help="线程数"
     )
     
-    parser.add_argument(
-        "--sitemap",
-        action="store_true",
-        help="生成站点地图"
-    )
-    
-    parser.add_argument(
-        "--no-sitemap",
-        action="store_true",
-        help="不生成站点地图"
-    )
-    
-    parser.add_argument(
-        "--html-sitemap",
-        action="store_true",
-        help="生成 HTML 格式的站点地图"
-    )
-    
-    parser.add_argument(
-        "--no-html-sitemap",
-        action="store_true",
-        help="不生成 HTML 格式的站点地图"
-    )
+
     
     parser.add_argument(
         "--js-timeout",
@@ -214,17 +192,11 @@ def update_config(args):
             config["crawl"] = {}
         config["crawl"]["threads"] = args.threads
     
-    # 站点地图配置
+    # 站点地图配置 - HTML站点地图始终启用
     if "sitemap" not in config["output"]:
         config["output"]["sitemap"] = {}
-    if args.sitemap:
-        config["output"]["sitemap"]["enable"] = True
-    elif args.no_sitemap:
-        config["output"]["sitemap"]["enable"] = False
-    if args.html_sitemap:
-        config["output"]["sitemap"]["enable_html"] = True
-    elif args.no_html_sitemap:
-        config["output"]["sitemap"]["enable_html"] = False
+    # 始终启用HTML站点地图
+    config["output"]["sitemap"]["enable_html"] = True
     
     # JavaScript渲染配置
     # JavaScript渲染超时配置
@@ -404,31 +376,21 @@ def main(args_list=None, stop_event=None):
         logger.warning(_("Plugin system disabled, cannot save pages. Please enable plugin system to save crawled content"))
     
     # 生成站点地图（只有在页面被保存时才生成，因为站点地图链接指向本地文件）
-    sitemap_config = config["output"].get("sitemap", CONFIG["output"]["sitemap"])
-    sitemap_enable = sitemap_config.get("enable", False)
-    sitemap_html_enable = sitemap_config.get("enable_html", False)
+    # HTML站点地图始终启用
     
     # 检查是否有页面被保存（save_site 是否被执行且有文件保存）
     has_saved_files = len(saved_files) > 0
     
     if has_saved_files:
-        if sitemap_enable:
-            sitemap_generator = SitemapGenerator(target_url, output_dir)
-            # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
-            sitemap_data = pages if pages else crawler.visited_urls
-            sitemap_generator.generate_sitemap(sitemap_data)
-        
-        # 生成 HTML 格式的站点地图
-        if sitemap_html_enable:
-            sitemap_generator = SitemapGenerator(target_url, output_dir)
-            # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
-            sitemap_data = pages if pages else crawler.visited_urls
-            # 传递页面深度信息
-            page_depths = crawler.page_depths if hasattr(crawler, 'page_depths') else None
-            sitemap_generator.generate_html_sitemap(sitemap_data, page_depths)
+        # 始终生成 HTML 格式的站点地图
+        sitemap_generator = SitemapGenerator(target_url, output_dir)
+        # 如果 pages 字典不为空，使用 pages（包含本地文件路径和页面内容），否则使用 visited_urls
+        sitemap_data = pages if pages else crawler.visited_urls
+        # 传递页面深度信息
+        page_depths = crawler.page_depths if hasattr(crawler, 'page_depths') else None
+        sitemap_generator.generate_html_sitemap(sitemap_data, page_depths)
     else:
-        if sitemap_enable or sitemap_html_enable:
-            logger.info(_("跳过生成站点地图") + f": {_('页面未保存')}")
+        logger.info(_("跳过生成站点地图") + f": {_('页面未保存')}")
     
     # 清理插件
     if has_enabled_plugins:

@@ -58,14 +58,6 @@ def save_config_to_yaml(config):
             new_config['output'] = {}
         if 'output' in config:
             new_config['output']['base_dir'] = config['output']
-        if 'sitemap' in config:
-            if 'sitemap' not in new_config['output']:
-                new_config['output']['sitemap'] = {}
-            new_config['output']['sitemap']['enable'] = config['sitemap']
-        if 'html_sitemap' in config:
-            if 'sitemap' not in new_config['output']:
-                new_config['output']['sitemap'] = {}
-            new_config['output']['sitemap']['enable_html'] = config['html_sitemap']
         
         # 更新 js_rendering 配置
         if 'js_rendering' not in new_config:
@@ -144,7 +136,6 @@ class AdvancedConfigPanel(ttk.Frame):
         
         crawl_config = config.get('crawl', {})
         output_config = config.get('output', {})
-        sitemap_config = output_config.get('sitemap', {})
         i18n_config = config.get('i18n', {})
         
         # 创建网格布局 - 第0列是标签，第1列是输入框，第2列是额外选项
@@ -203,16 +194,6 @@ class AdvancedConfigPanel(ttk.Frame):
         self.threads_spinbox = ttk.Spinbox(self, from_=1, to=32, textvariable=self.threads_var, width=6)
         self.threads_spinbox.grid(row=4, column=1, sticky=tk.W, padx=3, pady=5)
         
-        # 生成站点地图配置（XML和HTML并列显示）
-        self.sitemap_var = tk.BooleanVar(value=sitemap_config.get('enable', False))
-        self.sitemap_checkbutton = ttk.Checkbutton(self, text=_('生成XML站点地图'), variable=self.sitemap_var)
-        self.sitemap_checkbutton.grid(row=5, column=0, columnspan=2, sticky=tk.W, padx=(15, 3), pady=5)
-        
-        # 生成HTML站点地图配置（与XML并列）
-        self.html_sitemap_var = tk.BooleanVar(value=sitemap_config.get('enable_html', False))
-        self.html_sitemap_checkbutton = ttk.Checkbutton(self, text=_('生成HTML站点地图'), variable=self.html_sitemap_var)
-        self.html_sitemap_checkbutton.grid(row=5, column=2, sticky=tk.W, padx=3, pady=5)
-        
         # 语言配置
         self.lang_label = ttk.Label(self, text=_('语言:'))
         self.lang_label.grid(row=6, column=0, sticky=tk.W, padx=(15, 3), pady=5)
@@ -224,7 +205,7 @@ class AdvancedConfigPanel(ttk.Frame):
         # 用户代理配置
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         self.user_agent_label = ttk.Label(self, text=_('用户代理:'))
-        self.user_agent_label.grid(row=7, column=0, sticky=tk.W, padx=(20, 3), pady=5)
+        self.user_agent_label.grid(row=7, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.user_agent_var = tk.StringVar(value=crawl_config.get('user_agent', default_ua))
         self.user_agent_entry = ttk.Entry(self, textvariable=self.user_agent_var, width=35)
@@ -267,8 +248,6 @@ class AdvancedConfigPanel(ttk.Frame):
         self.delay_label.config(text=_('请求延迟(秒):'))
         self.no_random_delay_checkbutton.config(text=_('无随机延迟'))
         self.threads_label.config(text=_('线程数:'))
-        self.sitemap_checkbutton.config(text=_('生成XML站点地图'))
-        self.html_sitemap_checkbutton.config(text=_('生成HTML站点地图'))
         self.lang_label.config(text=_('语言:'))
         self.user_agent_label.config(text=_('用户代理:'))
         self.force_download_checkbutton.config(text=_('强制下载所有文件'))
@@ -291,8 +270,6 @@ class AdvancedConfigPanel(ttk.Frame):
             "delay": self.delay_var.get(),
             "no_random_delay": self.no_random_delay_var.get(),
             "threads": self.threads_var.get(),
-            "sitemap": self.sitemap_var.get(),
-            "html_sitemap": self.html_sitemap_var.get(),
             "lang": self.lang_var.get(),
             "user_agent": self.user_agent_var.get(),
             "force_download": self.force_download_var.get(),
