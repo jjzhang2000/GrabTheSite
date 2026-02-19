@@ -8,7 +8,7 @@
 
 import os
 import tkinter as tk
-from tkinter import ttk
+import customtkinter as ctk
 import yaml
 from utils.i18n import gettext as _, init_i18n, register_language_change_callback, get_current_lang
 from config import MAX_DEPTH, MAX_FILES, DELAY, BASE_OUTPUT_DIR, USER_CONFIG_FILE, load_config
@@ -87,7 +87,7 @@ def save_config_to_yaml(config):
         return False
 
 
-class URLPanel(ttk.Frame):
+class URLPanel(ctk.CTkFrame):
     """URL配置面板"""
     
     def __init__(self, parent, config=None):
@@ -97,20 +97,20 @@ class URLPanel(ttk.Frame):
             parent: 父窗口
             config: 配置字典，如果为None则从配置文件加载
         """
-        super().__init__(parent)
+        super().__init__(parent, corner_radius=0)
         
         # 获取配置
         if config is None:
             config = load_config()
         
         # 创建URL标签
-        self.url_label = ttk.Label(self, text=_("目标URL:"))
+        self.url_label = ctk.CTkLabel(self, text=_('目标URL:'))
         self.url_label.pack(side=tk.LEFT, padx=(5, 5))
         
         # 创建URL输入框，默认值为配置文件中的target_url
         initial_url = config.get('target_url', '')
         self.url_var = tk.StringVar(value=initial_url)
-        self.url_entry = ttk.Entry(self, textvariable=self.url_var, width=55)
+        self.url_entry = ctk.CTkEntry(self, textvariable=self.url_var, width=550)
         self.url_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
     
     def get_url(self):
@@ -118,7 +118,7 @@ class URLPanel(ttk.Frame):
         return self.url_var.get()
 
 
-class AdvancedConfigPanel(ttk.Frame):
+class AdvancedConfigPanel(ctk.CTkFrame):
     """高级配置面板"""
     
     def __init__(self, parent, config=None):
@@ -128,7 +128,7 @@ class AdvancedConfigPanel(ttk.Frame):
             parent: 父窗口
             config: 配置字典，如果为None则从配置文件加载
         """
-        super().__init__(parent)
+        super().__init__(parent, corner_radius=0)
         
         # 获取配置
         if config is None:
@@ -139,81 +139,81 @@ class AdvancedConfigPanel(ttk.Frame):
         i18n_config = config.get('i18n', {})
         
         # 创建网格布局 - 第0列是标签，第1列是输入框，第2列是额外选项
-        self.grid_columnconfigure(0, weight=0, minsize=100)  # 标签列固定宽度
+        self.grid_columnconfigure(0, weight=0, minsize=120)  # 标签列固定宽度
         self.grid_columnconfigure(1, weight=0)  # 输入框列
         self.grid_columnconfigure(2, weight=1)  # 剩余空间
         
         # 深度配置
-        self.depth_label = ttk.Label(self, text=_('抓取深度:'))
+        self.depth_label = ctk.CTkLabel(self, text=_('抓取深度:'))
         self.depth_label.grid(row=0, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.depth_var = tk.IntVar(value=crawl_config.get('max_depth', MAX_DEPTH))
-        self.depth_spinbox = ttk.Spinbox(self, from_=0, to=10, textvariable=self.depth_var, width=8)
-        self.depth_spinbox.grid(row=0, column=1, sticky=tk.W, padx=3, pady=5)
+        self.depth_entry = ctk.CTkEntry(self, textvariable=self.depth_var, width=80)
+        self.depth_entry.grid(row=0, column=1, sticky=tk.W, padx=3, pady=5)
         
         # 最大文件数配置
-        self.max_files_label = ttk.Label(self, text=_('最大文件数:'))
+        self.max_files_label = ctk.CTkLabel(self, text=_('最大文件数:'))
         self.max_files_label.grid(row=1, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.max_files_var = tk.IntVar(value=crawl_config.get('max_files', MAX_FILES))
-        self.max_files_spinbox = ttk.Spinbox(self, from_=1, to=10000, textvariable=self.max_files_var, width=8)
-        self.max_files_spinbox.grid(row=1, column=1, sticky=tk.W, padx=3, pady=5)
+        self.max_files_entry = ctk.CTkEntry(self, textvariable=self.max_files_var, width=80)
+        self.max_files_entry.grid(row=1, column=1, sticky=tk.W, padx=3, pady=5)
         
         # 输出目录配置（输入框 + 浏览按钮）
-        self.output_label = ttk.Label(self, text=_('输出目录:'))
+        self.output_label = ctk.CTkLabel(self, text=_('输出目录:'))
         self.output_label.grid(row=2, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.output_var = tk.StringVar(value=output_config.get('base_dir', BASE_OUTPUT_DIR))
-        self.output_entry = ttk.Entry(self, textvariable=self.output_var, width=25)
+        self.output_entry = ctk.CTkEntry(self, textvariable=self.output_var, width=250)
         self.output_entry.grid(row=2, column=1, sticky=tk.W+tk.E, padx=3, pady=5)
         
         # 浏览按钮
-        self.browse_button = ttk.Button(self, text=_('浏览...'), command=self._browse_output_dir, width=8)
+        self.browse_button = ctk.CTkButton(self, text=_('浏览...'), command=self._browse_output_dir, width=80)
         self.browse_button.grid(row=2, column=2, sticky=tk.W, padx=3, pady=5)
         
         # 延迟配置 + 无随机延迟（同一行显示）
-        self.delay_label = ttk.Label(self, text=_('请求延迟(秒):'))
+        self.delay_label = ctk.CTkLabel(self, text=_('请求延迟(秒):'))
         self.delay_label.grid(row=3, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         # 延迟输入框（宽度缩小，放在左侧）
         self.delay_var = tk.DoubleVar(value=crawl_config.get('delay', DELAY))
-        self.delay_spinbox = ttk.Spinbox(self, from_=0.0, to=10.0, increment=0.1, textvariable=self.delay_var, width=6)
-        self.delay_spinbox.grid(row=3, column=1, sticky=tk.W, padx=3, pady=5)
+        self.delay_entry = ctk.CTkEntry(self, textvariable=self.delay_var, width=80)
+        self.delay_entry.grid(row=3, column=1, sticky=tk.W, padx=3, pady=5)
         
         # 无随机延迟复选框（放在同一行右侧）
         random_delay = crawl_config.get('random_delay', True)
         self.no_random_delay_var = tk.BooleanVar(value=not random_delay)
-        self.no_random_delay_checkbutton = ttk.Checkbutton(self, text=_('无随机延迟'), variable=self.no_random_delay_var)
+        self.no_random_delay_checkbutton = ctk.CTkCheckBox(self, text=_('无随机延迟'), variable=self.no_random_delay_var)
         self.no_random_delay_checkbutton.grid(row=3, column=2, sticky=tk.W, padx=3, pady=5)
         
         # 线程数配置
-        self.threads_label = ttk.Label(self, text=_('线程数:'))
+        self.threads_label = ctk.CTkLabel(self, text=_('线程数:'))
         self.threads_label.grid(row=4, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.threads_var = tk.IntVar(value=crawl_config.get('threads', 4))
-        self.threads_spinbox = ttk.Spinbox(self, from_=1, to=32, textvariable=self.threads_var, width=6)
-        self.threads_spinbox.grid(row=4, column=1, sticky=tk.W, padx=3, pady=5)
+        self.threads_entry = ctk.CTkEntry(self, textvariable=self.threads_var, width=80)
+        self.threads_entry.grid(row=4, column=1, sticky=tk.W, padx=3, pady=5)
         
         # 语言配置
-        self.lang_label = ttk.Label(self, text=_('语言:'))
+        self.lang_label = ctk.CTkLabel(self, text=_('语言:'))
         self.lang_label.grid(row=6, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.lang_var = tk.StringVar(value=i18n_config.get('lang', 'zh_CN'))
-        self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh_CN', 'en'], width=8)
+        self.lang_combobox = ctk.CTkComboBox(self, variable=self.lang_var, values=['zh_CN', 'en'], width=80)
         self.lang_combobox.grid(row=6, column=1, sticky=tk.W, padx=3, pady=5)
         
         # 用户代理配置
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        self.user_agent_label = ttk.Label(self, text=_('用户代理:'))
+        self.user_agent_label = ctk.CTkLabel(self, text=_('用户代理:'))
         self.user_agent_label.grid(row=7, column=0, sticky=tk.W, padx=(15, 3), pady=5)
         
         self.user_agent_var = tk.StringVar(value=crawl_config.get('user_agent', default_ua))
-        self.user_agent_entry = ttk.Entry(self, textvariable=self.user_agent_var, width=35)
+        self.user_agent_entry = ctk.CTkEntry(self, textvariable=self.user_agent_var, width=400)
         self.user_agent_entry.grid(row=7, column=1, columnspan=2, sticky=tk.W+tk.E, padx=3, pady=5)
         
         # 强制下载配置（不从配置文件读取，默认为False）
         self.force_download_var = tk.BooleanVar(value=False)
-        self.force_download_checkbutton = ttk.Checkbutton(self, text=_('强制下载所有文件'), variable=self.force_download_var)
+        self.force_download_checkbutton = ctk.CTkCheckBox(self, text=_('强制下载所有文件'), variable=self.force_download_var)
         self.force_download_checkbutton.grid(row=8, column=0, columnspan=3, sticky=tk.W, padx=(15, 3), pady=5)
         
         # 绑定语言选择变化事件
@@ -289,12 +289,12 @@ class AdvancedConfigPanel(ttk.Frame):
         return self.output_var.get()
 
 
-class PluginConfigPanel(ttk.Frame):
+class PluginConfigPanel(ctk.CTkFrame):
     """插件配置面板"""
     
     def __init__(self, parent):
         """初始化插件配置面板"""
-        super().__init__(parent)
+        super().__init__(parent, corner_radius=0)
         
         # 存储插件复选框变量
         self.plugin_vars = {}
@@ -326,12 +326,12 @@ class PluginConfigPanel(ttk.Frame):
             default_value = (plugin == 'save_plugin')
             var = tk.BooleanVar(value=plugin_config.get(plugin, default_value))
             self.plugin_vars[plugin] = var
-            cb = ttk.Checkbutton(
+            cb = ctk.CTkCheckBox(
                 self, 
                 text=plugin, 
                 variable=var
             )
-            cb.pack(side=tk.LEFT, padx=5, pady=2)
+            cb.pack(side=tk.LEFT, padx=10, pady=5)
     
     def get_plugin_config(self):
         """获取插件配置
