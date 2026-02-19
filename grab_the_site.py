@@ -283,8 +283,9 @@ def main(args_list=None, stop_event=None):
     plugin_manager.discover_plugins()
     # 加载插件
     plugin_manager.load_plugins()
-    # 启用插件（根据配置）
-    plugin_manager.enable_plugins(plugin_config)
+    # 启用插件（如果没有插件配置，启用所有插件）
+    # 这样可以确保即使从GUI启动（没有插件配置），也能启用所有插件
+    plugin_manager.enable_plugins(None if not plugin_config else plugin_config)
     
     enabled_count = len(plugin_manager.enabled_plugins)
     logger.info(_("Plugin system") + f": {_('loaded')} {enabled_count} {_('plugins')}")

@@ -66,11 +66,6 @@ class MainWindow(ctk.CTk):
         self.advanced_config_panel = AdvancedConfigPanel(self.advanced_tab)
         self.advanced_config_panel.pack(fill=tk.X, expand=False, padx=10, pady=10)
         
-        # 创建插件配置选项卡
-        self.plugin_tab = self.tab_view.add(_('插件配置'))
-        # 创建插件配置面板
-        self.plugin_config_panel = PluginConfigPanel(self.plugin_tab)
-        self.plugin_config_panel.pack(fill=tk.X, padx=10, pady=10)
         
         # 创建日志选项卡
         self.log_tab = self.tab_view.add(_('日志'))
@@ -125,8 +120,7 @@ class MainWindow(ctk.CTk):
         self.tab_view._tab_names = {
             0: _('基本配置'),
             1: _('高级配置'),
-            2: _('插件配置'),
-            3: _('日志')
+            2: _('日志')
         }
         self.tab_view._update_tabs()
         
@@ -159,8 +153,7 @@ class MainWindow(ctk.CTk):
         # 获取配置
         config = {
             "url": self.url_panel.get_url(),
-            **self.advanced_config_panel.get_config(),
-            "plugins": self.plugin_config_panel.get_plugin_config()
+            **self.advanced_config_panel.get_config()
         }
         
         # 保存配置到config.yaml
