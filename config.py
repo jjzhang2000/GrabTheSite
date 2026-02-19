@@ -43,15 +43,8 @@ DEFAULT_CONFIG = {
         "timeout": 30
     },
     "output": {
-        "base_dir": os.path.join(os.path.expanduser("~"), "Downloads"),
-        "sitemap": {
-            "enable": False,
-            "enable_html": False
-        }
+        "base_dir": os.path.join(os.path.expanduser("~"), "Downloads")
     },
-    "exclude_urls": [
-        "https://www.mir.com.my/rb/photography/ftz/"
-    ],
     "logging": {
         "level": "INFO",
         "file": "logs/grabthesite.log",
@@ -61,9 +54,6 @@ DEFAULT_CONFIG = {
     "i18n": {
         "lang": "en",
         "available_langs": ["en", "zh_CN"]
-    },
-    "plugins": {
-        "save_plugin": True
     }
 }
 
@@ -198,5 +188,3 @@ LOGGING_CONFIG = config.get("logging", {})
 ERROR_HANDLING_CONFIG = config.get("error_handling", {})
 JS_RENDERING_CONFIG = config.get("js_rendering", {})
 I18N_CONFIG = config.get("i18n", {})
-# 插件配置格式: {plugin_name: True/False}
-PLUGIN_CONFIG = config.get("plugins", {})

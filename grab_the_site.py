@@ -15,7 +15,7 @@ import os
 import sys
 import argparse
 from urllib.parse import urlparse
-from config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG, PLUGIN_CONFIG, JS_RENDERING_CONFIG
+from config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG, JS_RENDERING_CONFIG
 from crawler.crawl_site import CrawlSite
 from logger import setup_logger
 from utils.i18n import init_i18n, get_current_lang
@@ -114,17 +114,6 @@ def parse_args():
         help="自定义用户代理字符串"
     )
     
-    # 插件相关参数
-    # 格式: --plugins plugin_name:+ 或 --plugins plugin_name:-
-    # +: 启用, -: 禁用
-    parser.add_argument(
-        "--plugins",
-        type=str,
-        nargs="*",
-        default=None,
-        help="插件配置，格式: plugin_name:+ 或 plugin_name:- (+启用, -禁用)"
-    )
-    
     # 抓取相关参数
     parser.add_argument(
         "--force-download",
@@ -201,12 +190,6 @@ def update_config(args):
             config["crawl"] = {}
         config["crawl"]["threads"] = args.threads
     
-    # 站点地图配置 - HTML站点地图始终启用
-    if "sitemap" not in config["output"]:
-        config["output"]["sitemap"] = {}
-    # 始终启用HTML站点地图
-    config["output"]["sitemap"]["enable_html"] = True
-    
     # JavaScript渲染配置
     # JavaScript渲染超时配置
     if "js_rendering" not in config:
@@ -225,19 +208,6 @@ def update_config(args):
         if "crawl" not in config:
             config["crawl"] = {}
         config["crawl"]["user_agent"] = args.user_agent
-    
-    # 插件配置
-    # 格式: --plugins plugin_name:+ 或 plugin_name:-
-    if args.plugins is not None:
-        if "plugins" not in config:
-            config["plugins"] = {}
-        for plugin_setting in args.plugins:
-            if ":" in plugin_setting:
-                plugin_name, action = plugin_setting.rsplit(":", 1)
-                config["plugins"][plugin_name] = (action == "+")
-            else:
-                # 默认启用
-                config["plugins"][plugin_setting] = True
     
     # 排除URL配置
     if args.exclude_urls is not None:

@@ -11,9 +11,6 @@ js_rendering:
   timeout: 30
 output:
   base_dir: C:\Users\jjzha\Downloads
-  sitemap:
-    enable: false
-    enable_html: true
 logging:
   level: INFO
   file: logs/grabthesite.log
@@ -21,8 +18,6 @@ logging:
   backup_count: 5
 i18n:
   lang: en
-plugins:
-  save_plugin: false
 exclude_urls:
 - '*/ftz/'
 - '*.php*'
