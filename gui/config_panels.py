@@ -147,6 +147,21 @@ class BasicConfigPanel(ttk.Frame):
         # 浏览按钮
         self.browse_button = ttk.Button(self, text=_("浏览..."), command=self._browse_output_dir, width=8)
         self.browse_button.grid(row=3, column=2, sticky=tk.W, padx=3, pady=5)
+        
+        # 注册语言切换回调，用于更新界面文本（必须在所有UI元素初始化完成后）
+        register_language_change_callback(self._update_ui_texts)
+    
+    def _update_ui_texts(self):
+        """更新界面文本（语言切换后调用）"""
+        # 重新导入gettext以确保使用最新的翻译
+        from utils.i18n import gettext as _
+        
+        # 更新标签文本
+        self.url_label.config(text=_("目标URL:"))
+        self.depth_label.config(text=_("抓取深度:"))
+        self.max_files_label.config(text=_("最大文件数:"))
+        self.output_label.config(text=_("输出目录:"))
+        self.browse_button.config(text=_("浏览..."))
     
     def _browse_output_dir(self):
         """浏览选择输出目录"""

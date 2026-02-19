@@ -20,7 +20,7 @@ logging:
   max_bytes: 10485760
   backup_count: 5
 i18n:
-  lang: zh_CN
+  lang: en
 plugins:
   save_plugin: false
 exclude_urls:

@@ -105,7 +105,11 @@ class MainWindow(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.on_exit)
     
     def _update_ui_texts(self):
-        """更新界面文本（语言切换后调用）"""
+        """更新界面文本（语言切换后调用）
+        
+        注意：BasicConfigPanel和AdvancedConfigPanel已经注册了自己的语言切换回调，
+        所以这里不需要手动更新它们的标签文本。
+        """
         # 重新导入gettext以确保使用最新的翻译
         from utils.i18n import gettext as _
         
@@ -125,13 +129,6 @@ class MainWindow(tk.Tk):
         self.start_button.config(text=_("开始抓取"))
         self.stop_button.config(text=_("停止"))
         self.exit_button.config(text=_("退出"))
-        
-        # 更新基本配置面板文本
-        self.basic_config_panel.url_label.config(text=_("目标URL:"))
-        self.basic_config_panel.depth_label.config(text=_("抓取深度:"))
-        self.basic_config_panel.max_files_label.config(text=_("最大文件数:"))
-        self.basic_config_panel.output_label.config(text=_("输出目录:"))
-        self.basic_config_panel.browse_button.config(text=_("浏览..."))
     
     def on_start(self):
         """开始抓取按钮点击事件"""

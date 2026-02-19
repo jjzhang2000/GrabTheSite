@@ -130,6 +130,12 @@ msgstr "User Agent:"
 msgid "强制下载所有文件"
 msgstr "Force Download All Files"
 
+msgid "不要下载URL:"
+msgstr "Exclude URLs:"
+
+msgid "每行一个URL或URL片段，支持通配符(*)"
+msgstr "One URL or URL pattern per line, wildcards (*) supported"
+
 msgid "插件配置"
 msgstr "Plugin Configuration"
 

@@ -70,64 +70,66 @@ def init_i18n(lang='en'):
     _current_lang = lang
     
     if lang not in _translators:
-        try:
-            translator = gettext_module.translation(
-                DOMAIN,
-                localedir=LOCALE_DIR,
-                languages=[lang],
-                fallback=True
-            )
-            _translators[lang] = translator
-            logger.info(_t("加载语言") + f": {lang}")
-        except Exception as e:
-                logger.warning(_t("使用gettext.translation加载语言失败") + f" {lang}: {e}")
-                # 降级：使用基于字典的翻译器
-                translations = {}
-                # 尝试从.po文件加载
-                po_file = os.path.join(LOCALE_DIR, lang, 'LC_MESSAGES', f'{DOMAIN}.po')
-                if os.path.exists(po_file):
-                    try:
-                        with open(po_file, 'r', encoding='utf-8') as f:
-                            content = f.read()
-                        # 解析.po文件格式
-                        lines = content.split('\n')
-                        msgid = None
-                        msgstr = None
-                        for line in lines:
-                            line = line.strip()
-                            if line.startswith('msgid "'):
-                                msgid = line[7:-1]
-                                msgstr = None
-                            elif line.startswith('msgstr "'):
-                                msgstr = line[8:-1]
-                                if msgid and msgstr:
-                                    translations[msgid] = msgstr
-                                    msgid = None
-                                    msgstr = None
-                        logger.info(_t("从.po文件加载翻译") + f": {po_file}")
-                    except Exception as e:
-                        logger.warning(_t("读取.po文件失败") + f": {e}")
-                
-                # 基于字典的翻译器实现
-                class DictTranslator:
-                    def __init__(self, translations):
-                        self.translations = translations
-                    
-                    def gettext(self, message):
-                        return self.translations.get(message, message)
-                    
-                    def ngettext(self, singular, plural, n):
-                        return self.translations.get(plural if n != 1 else singular, plural if n != 1 else singular)
-                    
-                    def install(self):
-                        global _
-                        _ = self.gettext
-                
-                translator = DictTranslator(translations)
+        # 首先检查是否存在.mo文件
+        mo_file = os.path.join(LOCALE_DIR, lang, 'LC_MESSAGES', f'{DOMAIN}.mo')
+        po_file = os.path.join(LOCALE_DIR, lang, 'LC_MESSAGES', f'{DOMAIN}.po')
+        
+        if os.path.exists(mo_file):
+            # 使用gettext加载.mo文件
+            try:
+                translator = gettext_module.translation(
+                    DOMAIN,
+                    localedir=LOCALE_DIR,
+                    languages=[lang],
+                    fallback=False
+                )
                 _translators[lang] = translator
-                logger.info(_t("使用基于字典的翻译器") + f": {lang}")
-        except Exception as e:
-            logger.warning(_t("加载语言失败") + f" {lang}: {e}")
+                logger.info(_t("加载语言") + f": {lang} (from .mo)")
+            except Exception as e:
+                logger.warning(_t("使用gettext.translation加载语言失败") + f" {lang}: {e}")
+        elif os.path.exists(po_file):
+            # 从.po文件加载翻译
+            translations = {}
+            try:
+                with open(po_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                # 解析.po文件格式
+                lines = content.split('\n')
+                msgid = None
+                msgstr = None
+                for line in lines:
+                    line = line.strip()
+                    if line.startswith('msgid "'):
+                        msgid = line[7:-1]
+                        msgstr = None
+                    elif line.startswith('msgstr "'):
+                        msgstr = line[8:-1]
+                        if msgid and msgstr:
+                            translations[msgid] = msgstr
+                            msgid = None
+                            msgstr = None
+                logger.info(_t("从.po文件加载翻译") + f": {po_file}")
+            except Exception as e:
+                logger.warning(_t("读取.po文件失败") + f": {e}")
+            
+            # 基于字典的翻译器实现
+            class DictTranslator:
+                def __init__(self, translations):
+                    self.translations = translations
+                
+                def gettext(self, message):
+                    return self.translations.get(message, message)
+                
+                def ngettext(self, singular, plural, n):
+                    return self.translations.get(plural if n != 1 else singular, plural if n != 1 else singular)
+                
+                def install(self):
+                    global _
+                    _ = self.gettext
+            
+            translator = DictTranslator(translations)
+            _translators[lang] = translator
+            logger.info(_t("使用基于字典的翻译器") + f": {lang}")
             # 使用默认翻译器
             if 'en' not in _translators:
                 try:
@@ -221,8 +223,10 @@ def get_available_languages():
         for lang in os.listdir(LOCALE_DIR):
             lang_dir = os.path.join(LOCALE_DIR, lang, 'LC_MESSAGES')
             if os.path.isdir(lang_dir):
+                # 检查.mo文件或.po文件是否存在
                 mo_file = os.path.join(lang_dir, f'{DOMAIN}.mo')
-                if os.path.exists(mo_file):
+                po_file = os.path.join(lang_dir, f'{DOMAIN}.po')
+                if os.path.exists(mo_file) or os.path.exists(po_file):
                     available_langs.append(lang)
     
     # 确保英语始终可用
