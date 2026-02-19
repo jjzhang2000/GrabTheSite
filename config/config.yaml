@@ -23,5 +23,6 @@ i18n:
   lang: zh_CN
 plugins:
   save_plugin: false
-exclude:
-- https://www.mir.com.my/rb/photography/ftz/
+exclude_urls:
+- '*/ftz/'
+- '*.php*'

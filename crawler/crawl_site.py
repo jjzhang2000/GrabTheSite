@@ -72,7 +72,7 @@ class CrawlSite:
         # 这样站点地图可以体现上下级层级关系
         self.queue = queue.LifoQueue()
         
-        self.exclude_list = EXCLUDE_LIST or []
+        self.exclude_urls_list = EXCLUDE_LIST or []
         
         # 页面暂存机制：URL -> 页面内容
         self.pages = {}
@@ -88,14 +88,14 @@ class CrawlSite:
             self.target_directory += '/'
         
         # 标准化排除列表URL
-        self.processed_exclude_list = []
-        for url in self.exclude_list:
+        self.processed_exclude_urls_list = []
+        for url in self.exclude_urls_list:
             parsed_url = urlparse(url)
             path = parsed_url.path
             if not path.endswith('/'):
                 path += '/'
             full_url = f"{parsed_url.scheme}://{parsed_url.netloc}{path}"
-            self.processed_exclude_list.append(full_url)
+            self.processed_exclude_urls_list.append(full_url)
         
         # 初始化错误处理器
         self.error_handler = ErrorHandler(
@@ -134,8 +134,8 @@ class CrawlSite:
         # 使用全局渲染器实例（延迟初始化）
         
         # 打印排除列表信息
-        if self.processed_exclude_list:
-            logger.info(_t("排除列表") + f": {self.processed_exclude_list}")
+        if self.processed_exclude_urls_list:
+            logger.info(_t("排除列表") + f": {self.processed_exclude_urls_list}")
         else:
             logger.info(_t("排除列表为空"))
         
@@ -518,7 +518,7 @@ class CrawlSite:
         Returns:
             布尔值，表示该 URL 是否在排除列表中或其子目录中
         """
-        for exclude_url in self.processed_exclude_list:
+        for exclude_url in self.processed_exclude_urls_list:
             if url.startswith(exclude_url):
                 return True
         return False

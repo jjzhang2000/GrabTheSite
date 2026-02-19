@@ -49,7 +49,7 @@ DEFAULT_CONFIG = {
             "enable_html": False
         }
     },
-    "exclude": [
+    "exclude_urls": [
         "https://www.mir.com.my/rb/photography/ftz/"
     ],
     "logging": {
@@ -191,7 +191,7 @@ THREADS = config["crawl"].get("threads", 4)
 BASE_OUTPUT_DIR = config["output"]["base_dir"]
 SITE_NAME = config["output"]["site_name"]
 OUTPUT_DIR = config["output"]["full_path"]
-EXCLUDE_LIST = config.get("exclude", [])
+EXCLUDE_LIST = config.get("exclude_urls", [])
 
 # 子配置字典
 LOGGING_CONFIG = config.get("logging", {})

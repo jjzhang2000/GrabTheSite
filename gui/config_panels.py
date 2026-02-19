@@ -73,6 +73,10 @@ def save_config_to_yaml(config):
         if 'lang' in config:
             new_config['i18n']['lang'] = config['lang']
         
+        # 更新排除URL配置
+        if 'exclude_urls' in config:
+            new_config['exclude_urls'] = config['exclude_urls']
+        
         # 保存到文件
         with open(USER_CONFIG_FILE, 'w', encoding='utf-8') as f:
             yaml.dump(new_config, f, allow_unicode=True, sort_keys=False)
@@ -183,6 +187,7 @@ class AdvancedConfigPanel(ttk.Frame):
         
         crawl_config = config.get('crawl', {})
         i18n_config = config.get('i18n', {})
+        exclude_urls = config.get('exclude_urls', [])
         
         # 创建网格布局 - 第0列是标签，第1列是输入框，第2列是额外选项
         self.grid_columnconfigure(0, weight=0, minsize=100)  # 标签列固定宽度
@@ -234,6 +239,22 @@ class AdvancedConfigPanel(ttk.Frame):
         self.force_download_checkbutton = ttk.Checkbutton(self, text=_('强制下载所有文件'), variable=self.force_download_var)
         self.force_download_checkbutton.grid(row=4, column=0, columnspan=4, sticky=tk.W, padx=(5, 3), pady=5)
         
+        # 不要下载URL配置（多行文本框）
+        self.exclude_urls_label = ttk.Label(self, text=_('不要下载URL:'))
+        self.exclude_urls_label.grid(row=5, column=0, sticky=tk.NW, padx=(5, 3), pady=5)
+        
+        # 创建多行文本框，每行一个URL或URL片段，支持通配符
+        self.exclude_urls_text = tk.Text(self, width=40, height=5, wrap=tk.WORD)
+        self.exclude_urls_text.grid(row=5, column=1, columnspan=3, sticky=tk.W+tk.E, padx=3, pady=5)
+        
+        # 加载已保存的排除URL列表到文本框
+        if exclude_urls:
+            self.exclude_urls_text.insert("1.0", '\n'.join(exclude_urls))
+        
+        # 添加提示标签
+        self.exclude_urls_hint = ttk.Label(self, text=_('每行一个URL或URL片段，支持通配符(*)'), foreground='gray')
+        self.exclude_urls_hint.grid(row=6, column=1, columnspan=3, sticky=tk.W, padx=3, pady=(0, 5))
+        
         # 绑定语言选择变化事件
         self.lang_combobox.bind('<<ComboboxSelected>>', self._on_language_changed)
         
@@ -265,6 +286,8 @@ class AdvancedConfigPanel(ttk.Frame):
         self.lang_label.config(text=_('语言:'))
         self.user_agent_label.config(text=_('用户代理:'))
         self.force_download_checkbutton.config(text=_('强制下载所有文件'))
+        self.exclude_urls_label.config(text=_('不要下载URL:'))
+        self.exclude_urls_hint.config(text=_('每行一个URL或URL片段，支持通配符(*)'))
     
 
     
@@ -277,6 +300,10 @@ class AdvancedConfigPanel(ttk.Frame):
     
     def get_config(self):
         """获取所有配置参数（JS渲染相关配置从config.yaml读取，不在GUI中设置）"""
+        # 获取排除URL列表（多行文本框内容）
+        exclude_urls_text = self.exclude_urls_text.get("1.0", tk.END).strip()
+        exclude_urls = [url.strip() for url in exclude_urls_text.split('\n') if url.strip()]
+        
         return {
             "delay": self.delay_var.get(),
             "no_random_delay": self.no_random_delay_var.get(),
@@ -284,6 +311,7 @@ class AdvancedConfigPanel(ttk.Frame):
             "lang": self.lang_var.get(),
             "user_agent": self.user_agent_var.get(),
             "force_download": self.force_download_var.get(),
+            "exclude_urls": exclude_urls,
         }
 
 
