@@ -153,6 +153,7 @@ class MainWindow(ctk.CTk):
         # 获取配置
         config = {
             "url": self.url_panel.get_url(),
+            **self.url_panel.get_config(),
             **self.advanced_config_panel.get_config()
         }
         
