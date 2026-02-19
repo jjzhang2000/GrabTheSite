@@ -132,6 +132,15 @@ def parse_args():
         help="强制重新下载页面"
     )
     
+    # 排除URL参数
+    parser.add_argument(
+        "--exclude-urls",
+        type=str,
+        nargs="*",
+        default=None,
+        help="不要下载的URL列表，支持通配符"
+    )
+    
     return parser.parse_args()
 
 
@@ -229,6 +238,10 @@ def update_config(args):
             else:
                 # 默认启用
                 config["plugins"][plugin_setting] = True
+    
+    # 排除URL配置
+    if args.exclude_urls is not None:
+        config["exclude_urls"] = args.exclude_urls
     
     # 计算完整输出路径
     if "output" in config and "base_dir" in config["output"] and "site_name" in config["output"]:
