@@ -73,10 +73,6 @@ def save_config_to_yaml(config):
         if 'lang' in config:
             new_config['i18n']['lang'] = config['lang']
         
-        # 更新 plugins 配置
-        if 'plugins' in config:
-            new_config['plugins'] = config['plugins']
-        
         # 保存到文件
         with open(USER_CONFIG_FILE, 'w', encoding='utf-8') as f:
             yaml.dump(new_config, f, allow_unicode=True, sort_keys=False)
@@ -289,54 +285,3 @@ class AdvancedConfigPanel(ttk.Frame):
         return self.output_var.get()
 
 
-class PluginConfigPanel(ttk.Frame):
-    """插件配置面板"""
-    
-    def __init__(self, parent):
-        """初始化插件配置面板"""
-        super().__init__(parent)
-        
-        # 存储插件复选框变量
-        self.plugin_vars = {}
-        
-        # 填充插件列表
-        self._populate_plugin_list()
-    
-    def _populate_plugin_list(self):
-        """填充插件列表"""
-        # 从插件管理器获取实际的插件列表
-        try:
-            from utils.plugin_manager import PluginManager
-            plugin_manager = PluginManager()
-            plugins = plugin_manager.get_available_plugins()
-        except Exception:
-            # 如果获取插件列表失败，使用默认插件
-            plugins = ['save_plugin', 'example_plugin']
-        
-        # 加载配置以获取插件启用状态
-        try:
-            config = load_config()
-            plugin_config = config.get('plugins', {})
-        except Exception:
-            plugin_config = {}
-        
-        # 为每个插件创建复选框（水平排列）
-        # 如果配置中有该插件的设置，使用配置值；否则默认启用 save_plugin
-        for plugin in plugins:
-            default_value = (plugin == 'save_plugin')
-            var = tk.BooleanVar(value=plugin_config.get(plugin, default_value))
-            self.plugin_vars[plugin] = var
-            cb = ttk.Checkbutton(
-                self, 
-                text=plugin, 
-                variable=var
-            )
-            cb.pack(side=tk.LEFT, padx=5, pady=2)
-    
-    def get_plugin_config(self):
-        """获取插件配置
-        
-        Returns:
-            dict: 插件配置字典，格式为 {plugin_name: True/False}
-        """
-        return {name: var.get() for name, var in self.plugin_vars.items()}

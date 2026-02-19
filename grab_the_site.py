@@ -272,10 +272,6 @@ def main(args_list=None, stop_event=None):
         init_i18n(config_lang)
     
     # 初始化插件系统
-    # 插件配置格式: {plugin_name: True/False}
-    # 例如: {'save_plugin': True, 'example_plugin': False}
-    plugin_config = config.get("plugins", {})
-    
     # 创建插件管理器实例
     plugin_manager = PluginManager(config)
     
@@ -283,8 +279,8 @@ def main(args_list=None, stop_event=None):
     plugin_manager.discover_plugins()
     # 加载插件
     plugin_manager.load_plugins()
-    # 启用插件（根据配置）
-    plugin_manager.enable_plugins(plugin_config)
+    # 启用所有插件（自动启用所有已加载的插件）
+    plugin_manager.enable_all_plugins()
     
     enabled_count = len(plugin_manager.enabled_plugins)
     logger.info(_("Plugin system") + f": {_('loaded')} {enabled_count} {_('plugins')}")

@@ -227,6 +227,18 @@ class PluginManager:
         
         logger.info(_t("启用了") + f" {len(self.enabled_plugins)} " + _t("个插件"))
     
+    def enable_all_plugins(self):
+        """启用所有已加载的插件"""
+        self.enabled_plugins = []
+        
+        for plugin in self.plugins:
+            plugin.enabled = True
+            self.enabled_plugins.append(plugin)
+            plugin.on_init()
+            logger.info(_t("启用插件") + f": {plugin.name}")
+        
+        logger.info(_t("启用了") + f" {len(self.enabled_plugins)} " + _t("个插件"))
+    
     def disable_plugins(self):
         """禁用所有插件"""
         for plugin in self.plugins:
