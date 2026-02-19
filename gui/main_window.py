@@ -16,7 +16,7 @@ from tkinter import ttk
 from logger import disable_console_output
 disable_console_output()
 
-from gui.config_panels import URLPanel, AdvancedConfigPanel, save_config_to_yaml
+from gui.config_panels import BasicConfigPanel, AdvancedConfigPanel, save_config_to_yaml
 from gui.log_panel import LogPanel
 from utils.i18n import gettext as _, register_language_change_callback, init_i18n
 from config import load_config
@@ -50,9 +50,9 @@ class MainWindow(tk.Tk):
         self.top_frame = ttk.LabelFrame(self.main_frame, text=_("基本配置"), padding="8")
         self.top_frame.pack(fill=tk.X, pady=(0, 10))
         
-        # 创建URL面板
-        self.url_panel = URLPanel(self.top_frame)
-        self.url_panel.pack(fill=tk.X)
+        # 创建基本配置面板
+        self.basic_config_panel = BasicConfigPanel(self.top_frame)
+        self.basic_config_panel.pack(fill=tk.X)
         
         # 创建中间框架（用于选项卡）
         self.tab_frame = ttk.Notebook(self.main_frame)
@@ -130,8 +130,12 @@ class MainWindow(tk.Tk):
         self.stop_button.config(text=_("停止"))
         self.exit_button.config(text=_("退出"))
         
-        # 更新URL面板文本
-        self.url_panel.url_label.config(text=_("目标URL:"))
+        # 更新基本配置面板文本
+        self.basic_config_panel.url_label.config(text=_("目标URL:"))
+        self.basic_config_panel.depth_label.config(text=_("抓取深度:"))
+        self.basic_config_panel.max_files_label.config(text=_("最大文件数:"))
+        self.basic_config_panel.output_label.config(text=_("输出目录:"))
+        self.basic_config_panel.browse_button.config(text=_("浏览..."))
     
     def on_start(self):
         """开始抓取按钮点击事件"""
@@ -153,7 +157,7 @@ class MainWindow(tk.Tk):
         
         # 获取配置
         config = {
-            "url": self.url_panel.get_url(),
+            **self.basic_config_panel.get_config(),
             **self.advanced_config_panel.get_config()
         }
         
