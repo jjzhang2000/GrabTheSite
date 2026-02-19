@@ -1,7 +1,7 @@
 """主窗口模块
 
 GUI应用程序的主窗口，包含：
-- URL输入面板
+- URL配置面板
 - 高级配置选项卡
 - 插件配置选项卡
 - 日志显示面板
@@ -10,11 +10,7 @@ GUI应用程序的主窗口，包含：
 
 import tkinter as tk
 import threading
-import customtkinter as ctk
-
-# 设置CustomTkinter主题
-ctk.set_appearance_mode("system")  # 跟随系统主题
-ctk.set_default_color_theme("blue")  # 设置默认颜色主题
+from tkinter import ttk
 
 # 禁用控制台日志输出（必须在导入其他模块之前）
 from logger import disable_console_output
@@ -26,7 +22,7 @@ from utils.i18n import gettext as _, register_language_change_callback, init_i18
 from config import load_config
 
 
-class MainWindow(ctk.CTk):
+class MainWindow(tk.Tk):
     """主窗口类"""
     
     def __init__(self):
@@ -47,31 +43,43 @@ class MainWindow(ctk.CTk):
         self.minsize(650, 700)
         
         # 创建主框架
-        self.main_frame = ctk.CTkFrame(self, corner_radius=10)
-        self.main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.main_frame = ttk.Frame(self, padding="10")
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
         
-        # 创建选项卡视图
-        self.tab_view = ctk.CTkTabview(self.main_frame, corner_radius=8)
-        self.tab_view.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # 创建顶部框架（用于URL和基本配置）
+        self.top_frame = ttk.LabelFrame(self.main_frame, text=_("基本配置"), padding="8")
+        self.top_frame.pack(fill=tk.X, pady=(0, 10))
         
-        # 创建基本配置选项卡
-        self.basic_tab = self.tab_view.add(_('基本配置'))
         # 创建URL面板
-        self.url_panel = URLPanel(self.basic_tab)
-        self.url_panel.pack(fill=tk.X, padx=10, pady=10)
+        self.url_panel = URLPanel(self.top_frame)
+        self.url_panel.pack(fill=tk.X)
+        
+        # 创建中间框架（用于选项卡）
+        self.tab_frame = ttk.Notebook(self.main_frame)
+        self.tab_frame.pack(fill=tk.X, pady=(0, 10))
         
         # 创建高级配置选项卡
-        self.advanced_tab = self.tab_view.add(_('高级配置'))
+        self.advanced_tab = ttk.Frame(self.tab_frame)
+        self.tab_frame.add(self.advanced_tab, text=_("高级配置"))
+        
         # 创建高级配置面板
         self.advanced_config_panel = AdvancedConfigPanel(self.advanced_tab)
-        self.advanced_config_panel.pack(fill=tk.X, expand=False, padx=10, pady=10)
+        self.advanced_config_panel.pack(fill=tk.X, expand=False)
         
+        # 创建插件配置组（放在高级配置下方，日志上方）
+        self.plugin_frame = ttk.LabelFrame(self.main_frame, text=_("插件配置"), padding="8")
+        self.plugin_frame.pack(fill=tk.X, pady=(0, 10))
         
-        # 创建日志选项卡
-        self.log_tab = self.tab_view.add(_('日志'))
-        # 创建日志面板
-        self.log_panel = LogPanel(self.log_tab)
-        self.log_panel.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # 创建插件配置面板
+        self.plugin_config_panel = PluginConfigPanel(self.plugin_frame)
+        self.plugin_config_panel.pack(fill=tk.X)
+        
+        # 创建日志面板（放在选项卡下方，按钮上方）
+        self.log_frame = ttk.LabelFrame(self.main_frame, text=_("日志"), padding="5")
+        self.log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        
+        self.log_panel = LogPanel(self.log_frame)
+        self.log_panel.pack(fill=tk.BOTH, expand=True)
         
         # 设置日志处理器，将日志输出到GUI
         import logging
@@ -82,20 +90,20 @@ class MainWindow(ctk.CTk):
         self.log_panel.setup_logger_handler('crawler.downloader')
         
         # 创建底部框架（用于按钮）
-        self.bottom_frame = ctk.CTkFrame(self.main_frame, corner_radius=8)
-        self.bottom_frame.pack(fill=tk.X, pady=(10, 0), padx=5)
+        self.bottom_frame = ttk.Frame(self.main_frame)
+        self.bottom_frame.pack(fill=tk.X, pady=(10, 0))
         
         # 创建开始抓取按钮
-        self.start_button = ctk.CTkButton(self.bottom_frame, text=_('开始抓取'), command=self.on_start, font=ctk.CTkFont(size=12))
-        self.start_button.pack(side=tk.LEFT, padx=(10, 15), pady=10)
+        self.start_button = ttk.Button(self.bottom_frame, text=_("开始抓取"), command=self.on_start)
+        self.start_button.pack(side=tk.LEFT, padx=(0, 15))
         
         # 创建停止按钮
-        self.stop_button = ctk.CTkButton(self.bottom_frame, text=_('停止'), command=self.on_stop, state=tk.DISABLED, font=ctk.CTkFont(size=12))
-        self.stop_button.pack(side=tk.LEFT, padx=(0, 15), pady=10)
+        self.stop_button = ttk.Button(self.bottom_frame, text=_("停止"), command=self.on_stop, state=tk.DISABLED)
+        self.stop_button.pack(side=tk.LEFT, padx=(0, 15))
         
         # 创建退出按钮
-        self.exit_button = ctk.CTkButton(self.bottom_frame, text=_('退出'), command=self.on_exit, font=ctk.CTkFont(size=12))
-        self.exit_button.pack(side=tk.RIGHT, padx=10, pady=10)
+        self.exit_button = ttk.Button(self.bottom_frame, text=_("退出"), command=self.on_exit)
+        self.exit_button.pack(side=tk.RIGHT)
         
         # 抓取状态
         self.is_crawling = False
@@ -116,13 +124,17 @@ class MainWindow(ctk.CTk):
         # 更新窗口标题
         self.title(_("GrabTheSite - 网站抓取工具"))
         
+        # 更新标签框架文本
+        self.top_frame.config(text=_("基本配置"))
+        
         # 更新选项卡文本
-        self.tab_view._tab_names = {
-            0: _('基本配置'),
-            1: _('高级配置'),
-            2: _('日志')
-        }
-        self.tab_view._update_tabs()
+        self.tab_frame.tab(self.advanced_tab, text=_("高级配置"))
+        
+        # 更新日志框架文本
+        self.log_frame.config(text=_("日志"))
+        
+        # 更新插件配置框架文本
+        self.plugin_frame.config(text=_("插件配置"))
         
         # 更新按钮文本
         self.start_button.config(text=_("开始抓取"))
@@ -153,8 +165,8 @@ class MainWindow(ctk.CTk):
         # 获取配置
         config = {
             "url": self.url_panel.get_url(),
-            **self.url_panel.get_config(),
-            **self.advanced_config_panel.get_config()
+            **self.advanced_config_panel.get_config(),
+            "plugins": self.plugin_config_panel.get_plugin_config()
         }
         
         # 保存配置到config.yaml
