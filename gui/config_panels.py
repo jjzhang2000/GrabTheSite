@@ -191,7 +191,7 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 延迟配置 + 无随机延迟（同一行显示）
         self.delay_label = ttk.Label(self, text=_('请求延迟(秒):'))
-        self.delay_label.grid(row=0, column=0, sticky=tk.W, padx=(15, 3), pady=5)
+        self.delay_label.grid(row=0, column=0, sticky=tk.W, padx=(5, 3), pady=5)
         
         # 延迟输入框（宽度缩小，放在左侧）
         self.delay_var = tk.DoubleVar(value=crawl_config.get('delay', DELAY))
@@ -206,7 +206,7 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 线程数配置
         self.threads_label = ttk.Label(self, text=_('线程数:'))
-        self.threads_label.grid(row=1, column=0, sticky=tk.W, padx=(15, 3), pady=5)
+        self.threads_label.grid(row=1, column=0, sticky=tk.W, padx=(5, 3), pady=5)
         
         self.threads_var = tk.IntVar(value=crawl_config.get('threads', 4))
         self.threads_spinbox = ttk.Spinbox(self, from_=1, to=32, textvariable=self.threads_var, width=6)
@@ -215,7 +215,7 @@ class AdvancedConfigPanel(ttk.Frame):
         # 用户代理配置
         default_ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         self.user_agent_label = ttk.Label(self, text=_('用户代理:'))
-        self.user_agent_label.grid(row=2, column=0, sticky=tk.W, padx=(15, 3), pady=5)
+        self.user_agent_label.grid(row=2, column=0, sticky=tk.W, padx=(5, 3), pady=5)
         
         self.user_agent_var = tk.StringVar(value=crawl_config.get('user_agent', default_ua))
         self.user_agent_entry = ttk.Entry(self, textvariable=self.user_agent_var, width=35)
@@ -223,7 +223,7 @@ class AdvancedConfigPanel(ttk.Frame):
         
         # 语言配置
         self.lang_label = ttk.Label(self, text=_('语言:'))
-        self.lang_label.grid(row=3, column=0, sticky=tk.W, padx=(15, 3), pady=5)
+        self.lang_label.grid(row=3, column=0, sticky=tk.W, padx=(5, 3), pady=5)
         
         self.lang_var = tk.StringVar(value=i18n_config.get('lang', 'zh_CN'))
         self.lang_combobox = ttk.Combobox(self, textvariable=self.lang_var, values=['zh_CN', 'en'], width=8)
@@ -232,7 +232,7 @@ class AdvancedConfigPanel(ttk.Frame):
         # 强制下载配置（不从配置文件读取，默认为False）
         self.force_download_var = tk.BooleanVar(value=False)
         self.force_download_checkbutton = ttk.Checkbutton(self, text=_('强制下载所有文件'), variable=self.force_download_var)
-        self.force_download_checkbutton.grid(row=4, column=0, columnspan=4, sticky=tk.W, padx=(15, 3), pady=5)
+        self.force_download_checkbutton.grid(row=4, column=0, columnspan=4, sticky=tk.W, padx=(5, 3), pady=5)
         
         # 绑定语言选择变化事件
         self.lang_combobox.bind('<<ComboboxSelected>>', self._on_language_changed)
@@ -259,10 +259,6 @@ class AdvancedConfigPanel(ttk.Frame):
         from utils.i18n import gettext as _
         
         # 更新标签文本
-        self.depth_label.config(text=_('抓取深度:'))
-        self.max_files_label.config(text=_('最大文件数:'))
-        self.output_label.config(text=_('输出目录:'))
-        self.browse_button.config(text=_('浏览...'))
         self.delay_label.config(text=_('请求延迟(秒):'))
         self.no_random_delay_checkbutton.config(text=_('无随机延迟'))
         self.threads_label.config(text=_('线程数:'))

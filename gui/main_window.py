@@ -54,19 +54,15 @@ class MainWindow(tk.Tk):
         self.basic_config_panel = BasicConfigPanel(self.top_frame)
         self.basic_config_panel.pack(fill=tk.X)
         
-        # 创建中间框架（用于选项卡）
-        self.tab_frame = ttk.Notebook(self.main_frame)
-        self.tab_frame.pack(fill=tk.X, pady=(0, 10))
-        
-        # 创建高级配置选项卡
-        self.advanced_tab = ttk.Frame(self.tab_frame)
-        self.tab_frame.add(self.advanced_tab, text=_("高级配置"))
+        # 创建高级配置框架（与基本配置相同的框架形式）
+        self.advanced_frame = ttk.LabelFrame(self.main_frame, text=_("高级配置"), padding="8")
+        self.advanced_frame.pack(fill=tk.X, pady=(0, 10))
         
         # 创建高级配置面板
-        self.advanced_config_panel = AdvancedConfigPanel(self.advanced_tab)
+        self.advanced_config_panel = AdvancedConfigPanel(self.advanced_frame)
         self.advanced_config_panel.pack(fill=tk.X, expand=False)
         
-        # 创建日志面板（放在选项卡下方，按钮上方）
+        # 创建日志面板
         self.log_frame = ttk.LabelFrame(self.main_frame, text=_("日志"), padding="5")
         self.log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
@@ -119,8 +115,8 @@ class MainWindow(tk.Tk):
         # 更新标签框架文本
         self.top_frame.config(text=_("基本配置"))
         
-        # 更新选项卡文本
-        self.tab_frame.tab(self.advanced_tab, text=_("高级配置"))
+        # 更新高级配置框架文本
+        self.advanced_frame.config(text=_("高级配置"))
         
         # 更新日志框架文本
         self.log_frame.config(text=_("日志"))
