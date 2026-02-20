@@ -257,10 +257,11 @@ class CrawlSite:
                         task_completed = True
                         should_break = True
                     
-                    # 检查是否已访问过该URL
+                    # 检查是否已访问过该URL（使用规范化后的URL）
                     if not should_break:
+                        normalized_url = self._normalize_url(url)
                         with self.lock:
-                            if url in self.visited_urls:
+                            if normalized_url in self.visited_urls:
                                 task_completed = True
                     
                     # 检查是否在排除列表中
@@ -360,15 +361,18 @@ class CrawlSite:
             path += 'index.html'
         file_path = os.path.join(self.output_dir, path.lstrip('/'))
         
+        # 规范化URL用于去重检查
+        normalized_url = self._normalize_url(url)
+        
         # 检查是否已访问过该URL
         with self.lock:
-            if url in self.visited_urls:
+            if normalized_url in self.visited_urls:
                 return
-            # 标记为已访问
-            self.visited_urls.add(url)
+            # 标记为已访问（使用规范化后的URL）
+            self.visited_urls.add(normalized_url)
             # 更新状态管理器
             if self.resume_enabled and self.state_manager:
-                self.state_manager.add_visited_url(url)
+                self.state_manager.add_visited_url(normalized_url)
         
         # 检查是否需要更新
         local_timestamp = get_file_timestamp(file_path)
@@ -446,11 +450,13 @@ class CrawlSite:
                 href = link.get('href')
                 if href:
                     full_url = urljoin(url, href)
+                    # 规范化URL用于去重检查
+                    normalized_full_url = self._normalize_url(full_url)
                     # 只抓取同域名、在起始目录及其子目录中、并且深度小于最大深度的链接
                     if self._is_same_domain(full_url) and self._is_in_target_directory(full_url) and depth < self.max_depth:
-                        # 检查是否已访问过该URL
+                        # 检查是否已访问过该URL（使用规范化后的URL）
                         with self.lock:
-                            if full_url not in self.visited_urls:
+                            if normalized_full_url not in self.visited_urls:
                                 child_urls.append(full_url)
         
         # 倒序后加入队列（配合 LifoQueue 实现深度优先且保持原始顺序）
