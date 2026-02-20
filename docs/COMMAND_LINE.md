@@ -11,14 +11,9 @@
 | `--delay` | `-t` | 浮点数 | 请求间隔（秒） |
 | `--no-random-delay` | | 布尔值 | 禁用随机延迟 |
 | `--threads` | `-p` | 整数 | 线程数 |
-| `--sitemap` | | 布尔值 | 生成站点地图 |
-| `--no-sitemap` | | 布尔值 | 不生成站点地图 |
-| `--html-sitemap` | | 布尔值 | 生成 HTML 格式的站点地图 |
-| `--no-html-sitemap` | | 布尔值 | 不生成 HTML 格式的站点地图 |
+| `--exclude-urls` | | 字符串列表 | 排除的URL列表，支持通配符 |
 | `--incremental` | `-i` | 布尔值 | 启用增量抓取 |
 | `--no-incremental` | | 布尔值 | 禁用增量抓取 |
-| `--js-rendering` | | 布尔值 | 启用JavaScript渲染 |
-| `--no-js-rendering` | | 布尔值 | 禁用JavaScript渲染 |
 | `--js-timeout` | | 整数 | JavaScript渲染超时时间（秒） |
 | `--lang` | | 字符串 | 语言代码，如 'en', 'zh_CN' 等 |
 | `--user-agent` | | 字符串 | 自定义用户代理字符串 |
@@ -74,7 +69,15 @@ python grab_the_site.py --url https://example.com --threads 8
 
 这将使用 8 个线程进行并行抓取，提高抓取速度。
 
-### 8. 启用增量抓取
+### 8. 排除特定URL
+
+```bash
+python grab_the_site.py --url https://example.com --exclude-urls "/admin/*" "/api/*" "*.pdf"
+```
+
+这将排除匹配通配符模式的URL，不进行下载。
+
+### 9. 启用增量抓取
 
 ```bash
 python grab_the_site.py --url https://example.com --incremental
@@ -82,7 +85,7 @@ python grab_the_site.py --url https://example.com --incremental
 
 这将启用增量抓取功能，只下载比本地文件更新的内容。
 
-### 9. 禁用增量抓取
+### 10. 禁用增量抓取
 
 ```bash
 python grab_the_site.py --url https://example.com --no-incremental
@@ -90,41 +93,7 @@ python grab_the_site.py --url https://example.com --no-incremental
 
 这将禁用增量抓取功能，强制重新下载所有内容。
 
-### 10. 启用站点地图生成
-
-```bash
-python grab_the_site.py --url https://example.com --sitemap
-```
-
-这将启用站点地图生成功能，生成 XML 格式的站点地图。
-
-### 11. 禁用站点地图生成
-
-```bash
-python grab_the_site.py --url https://example.com --no-sitemap
-```
-
-这将禁用站点地图生成功能。
-
-### 12. 启用 HTML 格式的站点地图
-
-```bash
-python grab_the_site.py --url https://example.com --html-sitemap
-```
-
-这将启用 HTML 格式的站点地图生成功能。
-
-### 13. 禁用 HTML 格式的站点地图
-
-```bash
-python grab_the_site.py --url https://example.com --no-html-sitemap
-```
-
-这将禁用 HTML 格式的站点地图生成功能。
-
-> **注意**：断点续传功能默认已启用，无需额外配置。状态文件将自动保存在 `logs/grabthesite.json`。
-
-### 14. 设置JavaScript渲染超时时间
+### 11. 设置JavaScript渲染超时时间
 
 ```bash
 python grab_the_site.py --url https://example.com --js-timeout 45
@@ -132,7 +101,7 @@ python grab_the_site.py --url https://example.com --js-timeout 45
 
 这将设置JavaScript渲染超时时间为45秒。（JavaScript渲染默认已启用）
 
-### 15. 设置语言为英文
+### 12. 设置语言为英文
 
 ```bash
 python grab_the_site.py --url https://example.com --lang en
@@ -140,7 +109,7 @@ python grab_the_site.py --url https://example.com --lang en
 
 这将使用英文作为界面语言。
 
-### 16. 设置语言为中文
+### 13. 设置语言为中文
 
 ```bash
 python grab_the_site.py --url https://example.com --lang zh_CN
@@ -148,7 +117,7 @@ python grab_the_site.py --url https://example.com --lang zh_CN
 
 这将使用中文作为界面语言。
 
-### 17. 设置自定义用户代理
+### 14. 设置自定义用户代理
 
 ```bash
 python grab_the_site.py --url https://example.com --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.127 Safari/537.36"
@@ -156,15 +125,15 @@ python grab_the_site.py --url https://example.com --user-agent "Mozilla/5.0 (Win
 
 这将使用指定的自定义用户代理字符串。
 
-### 18. 启用插件系统并指定启用的插件
+### 15. 启用插件系统并指定启用的插件
 
 ```bash
-python grab_the_site.py --url https://example.com --plugins example_plugin
+python grab_the_site.py --url https://example.com --plugins save_plugin
 ```
 
-这将启用插件系统，并只启用 example_plugin 插件。
+这将启用插件系统，并只启用 save_plugin 插件。
 
-### 19. 禁用插件系统
+### 16. 禁用插件系统
 
 ```bash
 python grab_the_site.py --url https://example.com --no-plugins
@@ -172,7 +141,7 @@ python grab_the_site.py --url https://example.com --no-plugins
 
 这将禁用插件系统，不加载任何插件。
 
-### 20. 强制重新下载页面
+### 17. 强制重新下载页面
 
 ```bash
 python grab_the_site.py --url https://example.com --force-download
@@ -180,7 +149,7 @@ python grab_the_site.py --url https://example.com --force-download
 
 这将强制重新下载页面，忽略页面的更新时间戳，以便测试保存插件的功能。
 
-### 21. 使用保存插件并强制重新下载页面
+### 18. 使用保存插件并强制重新下载页面
 
 ```bash
 python grab_the_site.py --url https://example.com --plugins save_plugin --force-download
