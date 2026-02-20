@@ -208,14 +208,14 @@ class SitemapGenerator:
             url: 页面 URL
         
         Returns:
-            list: 路径层级列表
+            list: 路径层级列表，空列表表示根目录下的页面
         """
         parsed_url = urlparse(url)
         path = parsed_url.path
         
         # 处理路径
         if not path or path == '/':
-            return ['']
+            return []
         
         # 分割路径
         path_parts = path.strip('/').split('/')
@@ -228,7 +228,7 @@ class SitemapGenerator:
             last_part = path_parts[-1]
             if last_part in ['index.html', 'index.htm']:
                 path_parts = path_parts[:-1]
-            # 对于其他带有扩展名的文件，移除文件名
+            # 对于其他带有扩展名的文件，移除文件名，保留目录结构
             elif '.' in last_part:
                 path_parts = path_parts[:-1]
         
@@ -283,26 +283,25 @@ class SitemapGenerator:
         html = ''
         
         # 生成缩进字符串
-        indent = '        ' * level
+        indent = '    ' * level
         
-        # 对节点进行排序
+        # 首先处理页面列表节点（_pages），确保页面在目录前面显示
+        if '_pages' in tree:
+            pages = tree['_pages']
+            for page_info in sorted(pages, key=lambda x: x['title']):
+                html += f'{indent}<li><a href="{page_info["path"]}">{page_info["title"]}</a></li>\n'
+        
+        # 然后处理目录节点
         for node, children in sorted(tree.items()):
             if node == '_pages':
-                # 如果是页面列表节点，生成每个页面的链接
-                for page_info in sorted(children, key=lambda x: x['title']):
-                    html += f'{indent}<li><a href="{page_info["path"]}">{page_info["title"]}</a></li>\n'
+                continue  # 已处理过页面列表
             else:
-                # 特殊处理根路径
-                if node == '':
-                    # 如果是根路径节点，直接生成其子节点的内容
-                    html += self._generate_tree_html(children, level)
-                else:
-                    # 如果是目录节点，生成子列表
-                    html += f'{indent}<li>{node}\n'
-                    html += f'{indent}    <ul>\n'
-                    html += self._generate_tree_html(children, level + 1)
-                    html += f'{indent}    </ul>\n'
-                    html += f'{indent}</li>\n'
+                # 如果是目录节点，生成子列表
+                html += f'{indent}<li><span class="folder">{node}/</span>\n'
+                html += f'{indent}    <ul>\n'
+                html += self._generate_tree_html(children, level + 1)
+                html += f'{indent}    </ul>\n'
+                html += f'{indent}</li>\n'
         
         return html
     
@@ -318,6 +317,9 @@ class SitemapGenerator:
         Returns:
             str: 生成的 HTML 站点地图文件路径
         """
+        # 使用页面树结构构建站点地图
+        page_tree = self._build_page_tree(pages)
+        
         # 创建 HTML 内容
         html_content = '''
 <!DOCTYPE html>
@@ -335,7 +337,10 @@ class SitemapGenerator:
         }
         ul {
             list-style-type: none;
-            padding: 0;
+            padding-left: 20px;
+        }
+        ul:first-child {
+            padding-left: 0;
         }
         li {
             margin: 5px 0;
@@ -347,6 +352,10 @@ class SitemapGenerator:
         a:hover {
             text-decoration: underline;
         }
+        .folder {
+            font-weight: bold;
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -354,70 +363,8 @@ class SitemapGenerator:
     <ul>
 '''
         
-        # 收集页面信息列表
-        page_list = []
-        seen_paths = set()  # 用于去重，记录已处理的本地文件路径
-        
-        if isinstance(pages, dict):
-            # 当 pages 是字典时
-            for url, html_content_page in pages.items():
-                # 获取本地文件路径
-                local_path = self._get_local_file_path(url)
-                # 获取相对于站点地图文件的路径
-                relative_path = self._get_relative_path(local_path)
-                
-                # 检查是否已存在相同的本地文件路径（去重）
-                if relative_path in seen_paths:
-                    continue
-                seen_paths.add(relative_path)
-                
-                # 提取页面标题
-                page_title = self._extract_title(html_content_page, url)
-                
-                # 获取页面深度（默认为0）
-                depth = page_depths.get(url, 0) if page_depths else 0
-                
-                page_list.append({
-                    'url': url,
-                    'title': page_title,
-                    'path': relative_path,
-                    'depth': depth
-                })
-        elif isinstance(pages, set):
-            # 当 pages 是集合时
-            for url in pages:
-                # 获取本地文件路径
-                local_path = self._get_local_file_path(url)
-                # 获取相对于站点地图文件的路径
-                relative_path = self._get_relative_path(local_path)
-                
-                # 检查是否已存在相同的本地文件路径（去重）
-                if relative_path in seen_paths:
-                    continue
-                seen_paths.add(relative_path)
-                
-                # 尝试从本地文件中读取页面内容来提取标题
-                page_title = self._extract_title_from_local_file(url)
-                
-                # 获取页面深度（默认为0）
-                depth = page_depths.get(url, 0) if page_depths else 0
-                
-                page_list.append({
-                    'url': url,
-                    'title': page_title,
-                    'path': relative_path,
-                    'depth': depth
-                })
-        
-        # 按深度排序，然后按URL排序（确保同一深度的页面有稳定顺序）
-        page_list.sort(key=lambda x: (x['depth'], x['url']))
-        
-        # 生成页面列表，按深度缩进
-        for page_info in page_list:
-            depth = page_info['depth']
-            # 每级深度缩进40像素
-            indent_style = f' style="padding-left: {depth * 40}px;"' if depth > 0 else ''
-            html_content += f'        <li{indent_style}><a href="{page_info["path"]}">{page_info["title"]}</a></li>\n'
+        # 使用树结构生成 HTML
+        html_content += self._generate_tree_html(page_tree, level=0)
         
         # 闭合 HTML 标签
         html_content += """

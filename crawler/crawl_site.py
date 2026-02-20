@@ -401,6 +401,10 @@ class CrawlSite:
         if self.plugin_manager:
             self.plugin_manager.call_hook("on_page_crawled", url, page_content)
         
+        # 记录页面深度（无论是否需要下载，都记录深度信息用于生成站点地图）
+        with self.lock:
+            self.page_depths[url] = depth
+        
         # 如果需要下载，暂存页面内容到内存
         if need_download:
             with self.lock:
@@ -409,7 +413,6 @@ class CrawlSite:
                     logger.info(_t("达到文件数量限制，跳过页面") + f": {url}")
                     return
                 self.pages[url] = page_content
-                self.page_depths[url] = depth
                 self.downloaded_files += 1
                 # 更新状态管理器
                 if self.resume_enabled and self.state_manager:
