@@ -9,7 +9,7 @@
 import os
 import json
 import time
-from logger import setup_logger
+from logger import setup_logger, _ as _t
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -62,12 +62,12 @@ class StateManager:
                 if "stats" in loaded_state:
                     self.state["stats"] = loaded_state["stats"]
                 
-                logger.info(f"成功加载状态文件: {self.state_file}")
-                logger.info(f"已访问 URL 数量: {len(self.state['visited_urls'])}")
-                logger.info(f"已下载文件数量: {len(self.state['downloaded_files'])}")
+                logger.info(_t("成功加载状态文件") + f": {self.state_file}")
+                logger.info(_t("已访问 URL 数量") + f": {len(self.state['visited_urls'])}")
+                logger.info(_t("已下载文件数量") + f": {len(self.state['downloaded_files'])}")
                 return True
             except (IOError, OSError, json.JSONDecodeError) as e:
-                logger.error(f"加载状态文件失败: {e}")
+                logger.error(_t("加载状态文件失败") + f": {e}")
                 return False
         return False
     
@@ -94,10 +94,10 @@ class StateManager:
                 json.dump(state_to_save, f, indent=2, ensure_ascii=False)
             
             self.state["last_save_time"] = state_to_save["last_save_time"]
-            logger.info(f"成功保存状态文件: {self.state_file}")
+            logger.info(_t("成功保存状态文件") + f": {self.state_file}")
             return True
         except (IOError, OSError, TypeError) as e:
-            logger.error(f"保存状态文件失败: {e}")
+            logger.error(_t("保存状态文件失败") + f": {e}")
             return False
     
     def add_visited_url(self, url):
@@ -140,13 +140,28 @@ class StateManager:
     def is_file_downloaded(self, file_path):
         """检查文件是否已下载
         
+        注意：此方法同时检查状态记录和文件实际存在性
+        如果文件被手动删除，即使状态记录存在也返回 False
+        
         Args:
             file_path: 要检查的文件路径
             
         Returns:
-            bool: 是否已下载
+            bool: 是否已下载（状态记录存在且文件实际存在且是文件）
         """
-        return file_path in self.state["downloaded_files"]
+        # 检查状态记录
+        in_state = file_path in self.state["downloaded_files"]
+        # 检查文件实际存在且是文件（不是目录）
+        file_exists = os.path.isfile(file_path)
+        
+        if in_state and not file_exists:
+            # 状态记录存在但文件不存在（被手动删除），从状态中移除
+            self.state["downloaded_files"].discard(file_path)
+            self.state["stats"]["downloaded_files"] = len(self.state["downloaded_files"])
+            logger.debug(_t("文件状态记录存在但文件已不存在，移除状态记录") + f": {file_path}")
+            return False
+        
+        return in_state and file_exists
     
     def get_stats(self):
         """获取抓取统计信息
@@ -178,10 +193,10 @@ class StateManager:
             if os.path.exists(self.state_file):
                 os.remove(self.state_file)
             
-            logger.info("成功清除状态")
+            logger.info(_t("成功清除状态"))
             return True
         except (IOError, OSError) as e:
-            logger.error(f"清除状态失败: {e}")
+            logger.error(_t("清除状态失败") + f": {e}")
             return False
     
     def should_save(self, interval=300):

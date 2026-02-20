@@ -4,11 +4,35 @@ GUI中的日志显示组件：
 - 实时显示日志
 - 支持滚动查看
 - 自动滚动到底部
+- 通过GUIHandler与logging系统集成
 """
 
+import logging
 import tkinter as tk
 from tkinter import ttk
-from utils.i18n import gettext as _
+
+
+
+class GUIHandler(logging.Handler):
+    """自定义日志处理器，将日志消息发送到GUI"""
+    
+    def __init__(self, log_panel):
+        """初始化处理器
+        
+        Args:
+            log_panel: LogPanel实例，用于显示日志
+        """
+        super().__init__()
+        self.log_panel = log_panel
+    
+    def emit(self, record):
+        """处理日志记录"""
+        try:
+            msg = self.format(record)
+            # 使用after方法确保在主线程中更新GUI（线程安全）
+            self.log_panel.after(0, lambda m=msg: self.log_panel.add_log(m))
+        except Exception:
+            self.handleError(record)
 
 
 class LogPanel(ttk.Frame):
@@ -24,7 +48,8 @@ class LogPanel(ttk.Frame):
         
         # 创建日志文本框，默认设置为禁用状态，防止用户编辑
         # wrap=tk.WORD 表示自动换行，以单词为单位
-        self.log_text = tk.Text(self, wrap=tk.WORD, state=tk.DISABLED)
+        # height=8 设置固定高度为8行
+        self.log_text = tk.Text(self, wrap=tk.WORD, state=tk.DISABLED, height=8)
         self.log_text.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
         
         # 添加垂直滚动条，以便在日志过多时可以滚动查看
@@ -66,3 +91,32 @@ class LogPanel(ttk.Frame):
         
         # 禁用文本框编辑
         self.log_text.config(state=tk.DISABLED)
+    
+    def setup_logger_handler(self, logger_name=None):
+        """设置日志处理器，将日志输出到GUI
+        
+        Args:
+            logger_name: logger名称，如果为None则使用根logger
+        """
+        # 获取logger
+        logger = logging.getLogger(logger_name)
+        
+        # 移除所有已存在的GUIHandler（确保重新设置）
+        for handler in logger.handlers[:]:
+            if isinstance(handler, GUIHandler):
+                logger.removeHandler(handler)
+                try:
+                    handler.close()
+                except:
+                    pass
+        
+        # 创建GUI处理器
+        gui_handler = GUIHandler(self)
+        gui_handler.setLevel(logging.INFO)
+        
+        # 设置格式（与文件日志一致）
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        gui_handler.setFormatter(formatter)
+        
+        # 添加到logger
+        logger.addHandler(gui_handler)

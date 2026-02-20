@@ -10,7 +10,7 @@ import time
 import random
 import logging
 from functools import wraps
-from logger import setup_logger
+from logger import setup_logger, _ as _t
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -57,16 +57,16 @@ class ErrorHandler:
                         retries += 1
                         if retries > self.retry_count:
                             # 达到最大重试次数
-                            logger.error(f"达到最大重试次数 {self.retry_count}，操作失败: {str(e)}")
+                            logger.error(_t("达到最大重试次数") + f" {self.retry_count}, " + _t("操作失败") + f": {str(e)}")
                             return self._handle_failure(e, *args, **kwargs)
                         
                         # 计算延迟时间
                         delay = self._calculate_delay(retries)
-                        logger.warning(f"操作失败，{delay:.2f}秒后重试 ({retries}/{self.retry_count}): {str(e)}")
+                        logger.warning(_t("操作失败") + f", {delay:.2f}" + _t("秒后重试") + f" ({retries}/{self.retry_count}): {str(e)}")
                         time.sleep(delay)
                     else:
                         # 不可重试的错误，直接处理
-                        logger.error(f"操作失败（不可重试）: {str(e)}")
+                        logger.error(_t("操作失败（不可重试）") + f": {str(e)}")
                         return self._handle_failure(e, *args, **kwargs)
         return wrapper
     
@@ -127,10 +127,10 @@ class ErrorHandler:
         if self.fail_strategy == 'raise':
             raise error
         elif self.fail_strategy == 'skip':
-            logger.info("跳过失败的操作")
+            logger.info(_t("跳过失败的操作"))
             return None
         else:  # 'log'
-            logger.error(f"操作失败: {str(error)}")
+            logger.error(_t("操作失败") + f": {str(error)}")
             return None
 
 

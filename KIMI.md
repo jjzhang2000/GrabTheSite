@@ -677,7 +677,7 @@ def _is_same_domain(self, url: str) -> bool:
 requests>=2.28.0,<3.0
 beautifulsoup4>=4.11.0,<5.0
 lxml>=4.9.0,<5.0
-pyppeteer>=1.0.0,<2.0
+playwright>=1.40.0
 pyyaml>=6.0,<7.0
 ```
 

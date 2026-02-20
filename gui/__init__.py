@@ -6,13 +6,12 @@
 __version__ = "0.1.0"
 
 from .main_window import MainWindow
-from .config_panels import URLPanel, AdvancedConfigPanel, PluginConfigPanel
+from .config_panels import BasicConfigPanel, AdvancedConfigPanel
 from .log_panel import LogPanel
 
 __all__ = [
     "MainWindow",
-    "URLPanel",
+    "BasicConfigPanel",
     "AdvancedConfigPanel",
-    "PluginConfigPanel",
     "LogPanel",
 ]

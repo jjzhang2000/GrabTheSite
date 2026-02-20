@@ -2,9 +2,6 @@
 # 此文件包含所有默认配置项，不建议直接修改
 # 如需自定义配置，请复制到 config.yaml 并修改
 
-# 目标网站 URL - 抓取的起点
-target_url: "https://www.mir.com.my/rb/photography/"
-
 # 抓取参数配置
 crawl:
   max_depth: 1          # 最大抓取深度（0=只抓取当前页）
@@ -28,22 +25,17 @@ error_handling:
     - 504                     # Gateway Timeout - 网关超时
   fail_strategy: "log"        # 失败处理策略：log=仅记录, skip=跳过, raise=抛出异常
 
-# 断点续传配置
-resume:
-  enable: true                    # 启用断点续传（中断后可恢复）
-  state_file: "state/grabthesite.json"  # 状态文件保存路径
-  save_interval: 300              # 自动保存状态间隔（秒）
-
 # JavaScript渲染配置（用于抓取动态加载内容）
+# 使用 Playwright 进行页面渲染，自动检测系统浏览器
 js_rendering:
-  enable: false         # 是否启用（需要安装Pyppeteer和Chrome）
   timeout: 30           # 页面渲染超时时间（秒）
 
 # 输出配置
 output:
-  base_dir: "output"     # 输出根目录
+  # base_dir 默认使用系统下载目录 (~/Downloads)
+  # 如需自定义，取消下面一行的注释并修改路径
+  # base_dir: "output"
   sitemap:
-    enable: true         # 生成XML站点地图（sitemap.xml）
     enable_html: true    # 生成HTML站点地图（sitemap.html）
 
 # 排除列表 - 以下URL及其子目录不会被抓取
@@ -65,9 +57,3 @@ i18n:
   available_langs:                # 支持的语言列表
     - "en"
     - "zh_CN"
-
-# 插件系统配置
-plugins:
-  enable: true                    # 启用插件系统
-  enabled_plugins: []             # 指定启用的插件（空列表=启用所有）
-                                  # 示例：["save_plugin", "example_plugin"]

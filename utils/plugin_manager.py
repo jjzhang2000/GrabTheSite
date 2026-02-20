@@ -9,7 +9,7 @@
 import os
 import importlib
 import inspect
-from logger import setup_logger
+from logger import setup_logger, _ as _t
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -43,7 +43,7 @@ class Plugin:
     
     def on_init(self):
         """插件初始化时调用"""
-        self.logger.info(f"插件初始化: {self.name}")
+        self.logger.info(_t("插件初始化") + f": {self.name}")
     
     def on_crawl_start(self, crawler):
         """抓取开始时调用
@@ -51,7 +51,7 @@ class Plugin:
         Args:
             crawler: 抓取器实例
         """
-        self.logger.info(f"抓取开始: {self.name}")
+        self.logger.info(_t("抓取开始") + f": {self.name}")
     
     def on_page_crawled(self, url, page_content):
         """页面抓取完成时调用
@@ -62,13 +62,28 @@ class Plugin:
         """
         pass
     
+    def on_download_resource(self, url, output_dir):
+        """下载资源文件时调用
+        
+        插件可以实现此方法来处理资源文件下载。
+        返回下载的文件路径表示下载成功，返回 None 表示下载失败或未处理。
+        
+        Args:
+            url: 资源文件URL
+            output_dir: 输出目录
+            
+        Returns:
+            str: 下载的文件路径，如果未处理或下载失败返回 None
+        """
+        return None
+    
     def on_crawl_end(self, pages):
         """抓取结束时调用
         
         Args:
             pages: 抓取的页面字典
         """
-        self.logger.info(f"抓取结束: {self.name}")
+        self.logger.info(_t("抓取结束") + f": {self.name}")
     
     def on_save_start(self, saver_data):
         """保存开始时调用
@@ -114,7 +129,7 @@ class Plugin:
     
     def on_cleanup(self):
         """插件清理时调用"""
-        self.logger.info(f"插件清理: {self.name}")
+        self.logger.info(_t("插件清理") + f": {self.name}")
 
 
 class PluginManager:
@@ -140,7 +155,7 @@ class PluginManager:
                 if os.path.isdir(plugin_path) and os.path.exists(os.path.join(plugin_path, '__init__.py')):
                     self.plugin_paths.append(plugin_path)
         
-        logger.info(f"发现 {len(self.plugin_paths)} 个插件目录")
+        logger.info(_t("发现") + f" {len(self.plugin_paths)} " + _t("个插件目录"))
     
     def load_plugins(self):
         """加载插件"""
@@ -161,11 +176,11 @@ class PluginManager:
                         # 保存插件的模块名（目录名）
                         plugin.module_name = plugin_name
                         self.plugins.append(plugin)
-                        logger.info(f"加载插件: {plugin.name} (模块名: {plugin_name})")
+                        logger.info(_t("加载插件") + f": {plugin.name} (" + _t("模块名") + f": {plugin_name})")
             except Exception as e:
-                logger.error(f"加载插件失败: {plugin_path}, 错误: {e}")
+                logger.error(_t("加载插件失败") + f": {plugin_path}, " + _t("错误") + f": {e}")
         
-        logger.info(f"加载了 {len(self.plugins)} 个插件")
+        logger.info(_t("加载了") + f" {len(self.plugins)} " + _t("个插件"))
     
     def register_plugin(self, plugin):
         """注册插件
@@ -175,34 +190,61 @@ class PluginManager:
         """
         if isinstance(plugin, Plugin) and plugin not in self.plugins:
             self.plugins.append(plugin)
-            logger.info(f"注册插件: {plugin.name}")
+            logger.info(_t("注册插件") + f": {plugin.name}")
     
-    def enable_plugins(self, plugin_names=None):
+    def enable_plugins(self, plugin_config=None):
         """启用插件
         
         Args:
-            plugin_names: 要启用的插件模块名（目录名）列表，如果为None则启用所有插件
+            plugin_config: 插件配置字典，格式为 {plugin_name: True/False}
+                          如果为None，则启用所有发现的插件（向后兼容）
+                          如果为非None（包括空字典），则只启用明确指定为True的插件
         """
         self.enabled_plugins = []
         
         for plugin in self.plugins:
-            if plugin_names is None or getattr(plugin, 'module_name', None) in plugin_names:
+            module_name = getattr(plugin, 'module_name', None)
+            
+            # 确定插件是否启用
+            if plugin_config is None:
+                # 配置为None，默认启用所有插件（向后兼容）
+                enabled = True
+            elif module_name in plugin_config:
+                # 插件在配置中明确指定，按配置值启用
+                enabled = plugin_config[module_name]
+            else:
+                # 插件不在配置中，默认禁用（安全配置）
+                enabled = False
+            
+            if enabled:
                 plugin.enabled = True
                 self.enabled_plugins.append(plugin)
                 plugin.on_init()
-                logger.info(f"启用插件: {plugin.name}")
+                logger.info(_t("启用插件") + f": {plugin.name}")
             else:
                 plugin.enabled = False
-                logger.info(f"禁用插件: {plugin.name}")
+                logger.debug(_t("禁用插件") + f": {plugin.name}")
         
-        logger.info(f"启用了 {len(self.enabled_plugins)} 个插件")
+        logger.info(_t("启用了") + f" {len(self.enabled_plugins)} " + _t("个插件"))
+    
+    def enable_all_plugins(self):
+        """启用所有已加载的插件"""
+        self.enabled_plugins = []
+        
+        for plugin in self.plugins:
+            plugin.enabled = True
+            self.enabled_plugins.append(plugin)
+            plugin.on_init()
+            logger.info(_t("启用插件") + f": {plugin.name}")
+        
+        logger.info(_t("启用了") + f" {len(self.enabled_plugins)} " + _t("个插件"))
     
     def disable_plugins(self):
         """禁用所有插件"""
         for plugin in self.plugins:
             plugin.enabled = False
         self.enabled_plugins = []
-        logger.info("禁用所有插件")
+        logger.info(_t("禁用所有插件"))
     
     def get_plugin(self, name):
         """获取插件
@@ -233,7 +275,30 @@ class PluginManager:
                     if method and callable(method):
                         method(*args, **kwargs)
                 except Exception as e:
-                    logger.error(f"调用插件钩子失败: {plugin.name}.{hook_name}, 错误: {e}")
+                    logger.error(_t("调用插件钩子失败") + f": {plugin.name}.{hook_name}, " + _t("错误") + f": {e}")
+    
+    def call_hook_with_result(self, hook_name, *args, **kwargs):
+        """调用插件钩子并返回结果
+        
+        Args:
+            hook_name: 钩子名称
+            *args: 位置参数
+            **kwargs: 关键字参数
+            
+        Returns:
+            dict: 插件名称到返回结果的映射
+        """
+        results = {}
+        for plugin in self.enabled_plugins:
+            if plugin.enabled:
+                try:
+                    method = getattr(plugin, hook_name, None)
+                    if method and callable(method):
+                        result = method(*args, **kwargs)
+                        results[plugin.name] = result
+                except Exception as e:
+                    logger.error(_t("调用插件钩子失败") + f": {plugin.name}.{hook_name}, " + _t("错误") + f": {e}")
+        return results
     
     def cleanup(self):
         """清理插件"""
@@ -242,11 +307,11 @@ class PluginManager:
                 try:
                     plugin.on_cleanup()
                 except Exception as e:
-                    logger.error(f"插件清理失败: {plugin.name}, 错误: {e}")
+                    logger.error(_t("插件清理失败") + f": {plugin.name}, " + _t("错误") + f": {e}")
         
         self.plugins = []
         self.enabled_plugins = []
-        logger.info("插件管理器清理完成")
+        logger.info(_t("插件管理器清理完成"))
     
     def get_available_plugins(self):
         """获取可用的插件列表

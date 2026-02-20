@@ -1,25 +1,22 @@
-"""站点地图生成模块
-
-生成XML和HTML格式的站点地图：
-- 从页面内容提取标题
-- 构建页面树结构
-- 支持多语言标题
-"""
+"""站点地图生成模块"""
 
 import os
-import xml.etree.ElementTree as ET
-from datetime import datetime
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from logger import setup_logger
-from utils.i18n import gettext as _
 
-# 获取 logger 实例
+
+def _(message):
+    """翻译函数"""
+    from utils.i18n import gettext
+    return gettext(message)
+
+
 logger = setup_logger(__name__)
 
 
 class SitemapGenerator:
-    """站点地图生成器，用于生成 XML 格式的站点地图"""
+    """站点地图生成器，用于生成 HTML 格式的站点地图"""
     
     def __init__(self, target_url, output_dir):
         """初始化站点地图生成器
@@ -49,7 +46,7 @@ class SitemapGenerator:
             if title_tag and title_tag.text.strip():
                 return title_tag.text.strip()
         except Exception as e:
-            logger.error(f"提取标题失败: {url}, 错误: {str(e)}")
+            logger.error(_("提取标题失败") + f": {url}, " + _("错误") + f": {str(e)}")
         
         # 如果没有找到标题，使用默认值
         parsed_url = urlparse(url)
@@ -132,7 +129,7 @@ class SitemapGenerator:
                 # 从 HTML 内容中提取标题
                 return self._extract_title(html_content, url)
         except Exception as e:
-            logger.error(f"从本地文件提取标题失败: {url}, 错误: {str(e)}")
+            logger.error(_("从本地文件提取标题失败") + f": {url}, " + _("错误") + f": {str(e)}")
         
         # 如果读取文件失败或提取标题失败，使用默认值
         parsed_url = urlparse(url)
@@ -205,14 +202,14 @@ class SitemapGenerator:
             url: 页面 URL
         
         Returns:
-            list: 路径层级列表
+            list: 路径层级列表，空列表表示根目录下的页面
         """
         parsed_url = urlparse(url)
         path = parsed_url.path
         
         # 处理路径
         if not path or path == '/':
-            return ['']
+            return []
         
         # 分割路径
         path_parts = path.strip('/').split('/')
@@ -225,7 +222,7 @@ class SitemapGenerator:
             last_part = path_parts[-1]
             if last_part in ['index.html', 'index.htm']:
                 path_parts = path_parts[:-1]
-            # 对于其他带有扩展名的文件，移除文件名
+            # 对于其他带有扩展名的文件，移除文件名，保留目录结构
             elif '.' in last_part:
                 path_parts = path_parts[:-1]
         
@@ -280,112 +277,40 @@ class SitemapGenerator:
         html = ''
         
         # 生成缩进字符串
-        indent = '        ' * level
+        indent = '    ' * level
         
-        # 对节点进行排序
+        # 首先处理页面列表节点（_pages），确保页面在目录前面显示
+        if '_pages' in tree:
+            pages = tree['_pages']
+            for page_info in sorted(pages, key=lambda x: x['title']):
+                html += f'{indent}<li><a href="{page_info["path"]}">{page_info["title"]}</a></li>\n'
+        
+        # 然后处理目录节点
         for node, children in sorted(tree.items()):
             if node == '_pages':
-                # 如果是页面列表节点，生成每个页面的链接
-                for page_info in sorted(children, key=lambda x: x['title']):
-                    html += f'{indent}<li><a href="{page_info["path"]}">{page_info["title"]}</a></li>\n'
+                continue  # 已处理过页面列表
             else:
-                # 特殊处理根路径
-                if node == '':
-                    # 如果是根路径节点，直接生成其子节点的内容
-                    html += self._generate_tree_html(children, level)
-                else:
-                    # 如果是目录节点，生成子列表
-                    html += f'{indent}<li>{node}\n'
-                    html += f'{indent}    <ul>\n'
-                    html += self._generate_tree_html(children, level + 1)
-                    html += f'{indent}    </ul>\n'
-                    html += f'{indent}</li>\n'
+                # 如果是目录节点，生成子列表
+                html += f'{indent}<li><span class="folder">{node}/</span>\n'
+                html += f'{indent}    <ul>\n'
+                html += self._generate_tree_html(children, level + 1)
+                html += f'{indent}    </ul>\n'
+                html += f'{indent}</li>\n'
         
         return html
-    
-    def generate_sitemap(self, pages):
-        """生成站点地图
-        
-        Args:
-            pages: 抓取的页面，可以是字典（键为 URL，值为页面内容）或集合（包含 URL）
-        
-        Returns:
-            str: 生成的站点地图文件路径
-        """
-        # 创建站点地图根元素
-        urlset = ET.Element('urlset')
-        urlset.set('xmlns', 'http://www.sitemaps.org/schemas/sitemap/0.9')
-        
-        # 为每个页面创建 URL 元素
-        if isinstance(pages, dict):
-            # 当 pages 是字典时，使用本地文件路径
-            for url, html_content in pages.items():
-                url_elem = ET.SubElement(urlset, 'url')
-                loc_elem = ET.SubElement(url_elem, 'loc')
-                
-                # 获取本地文件路径
-                local_path = self._get_local_file_path(url)
-                # 获取相对于站点地图文件的路径
-                relative_path = self._get_relative_path(local_path)
-                loc_elem.text = relative_path
-                
-                # 添加最后修改时间
-                lastmod_elem = ET.SubElement(url_elem, 'lastmod')
-                lastmod_elem.text = datetime.now().strftime('%Y-%m-%d')
-                
-                # 添加更改频率
-                changefreq_elem = ET.SubElement(url_elem, 'changefreq')
-                changefreq_elem.text = 'weekly'
-                
-                # 添加优先级
-                priority_elem = ET.SubElement(url_elem, 'priority')
-                priority_elem.text = '0.5'
-        elif isinstance(pages, set):
-            # 当 pages 是集合时，为每个 URL 计算本地文件路径
-            for url in pages:
-                url_elem = ET.SubElement(urlset, 'url')
-                loc_elem = ET.SubElement(url_elem, 'loc')
-                
-                # 获取本地文件路径
-                local_path = self._get_local_file_path(url)
-                # 获取相对于站点地图文件的路径
-                relative_path = self._get_relative_path(local_path)
-                loc_elem.text = relative_path
-                
-                # 添加最后修改时间
-                lastmod_elem = ET.SubElement(url_elem, 'lastmod')
-                lastmod_elem.text = datetime.now().strftime('%Y-%m-%d')
-                
-                # 添加更改频率
-                changefreq_elem = ET.SubElement(url_elem, 'changefreq')
-                changefreq_elem.text = 'weekly'
-                
-                # 添加优先级
-                priority_elem = ET.SubElement(url_elem, 'priority')
-                priority_elem.text = '0.5'
-        
-        # 创建 ElementTree 对象
-        tree = ET.ElementTree(urlset)
-        
-        # 生成站点地图文件路径
-        sitemap_path = os.path.join(self.output_dir, 'sitemap.xml')
-        
-        # 写入文件
-        tree.write(sitemap_path, encoding='utf-8', xml_declaration=True)
-        logger.info(f"生成站点地图: {sitemap_path}")
-        
-        return sitemap_path
-    
-    def generate_html_sitemap(self, pages):
+
+    def generate_html_sitemap(self, pages, page_depths=None):
         """生成 HTML 格式的站点地图
-        
+
         Args:
             pages: 抓取的页面，可以是字典（键为 URL，值为页面内容）或集合（包含 URL）
-        
+            page_depths: 已弃用，保留此参数仅用于向后兼容
+
         Returns:
             str: 生成的 HTML 站点地图文件路径
         """
-        # 创建 HTML 内容
+        page_tree = self._build_page_tree(pages)
+
         html_content = '''
 <!DOCTYPE html>
 <html>
@@ -402,7 +327,10 @@ class SitemapGenerator:
         }
         ul {
             list-style-type: none;
-            padding: 0;
+            padding-left: 20px;
+        }
+        ul:first-child {
+            padding-left: 0;
         }
         li {
             margin: 5px 0;
@@ -414,6 +342,10 @@ class SitemapGenerator:
         a:hover {
             text-decoration: underline;
         }
+        .folder {
+            font-weight: bold;
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -421,46 +353,16 @@ class SitemapGenerator:
     <ul>
 '''
         
-        # 按照下载顺序添加页面链接
-        if isinstance(pages, dict):
-            # 当 pages 是字典时，按照字典的顺序（下载顺序）遍历
-            for url, html_content_page in pages.items():
-                # 提取页面标题
-                page_title = self._extract_title(html_content_page, url)
-                
-                # 获取本地文件路径
-                local_path = self._get_local_file_path(url)
-                # 获取相对于站点地图文件的路径
-                relative_path = self._get_relative_path(local_path)
-                
-                html_content += f'        <li><a href="{relative_path}">{page_title}</a></li>\n'
-        elif isinstance(pages, set):
-            # 当 pages 是集合时，按照字母顺序排序（集合本身无序）
-            for url in sorted(pages):
-                # 尝试从本地文件中读取页面内容来提取标题
-                page_title = self._extract_title_from_local_file(url)
-                
-                # 获取本地文件路径
-                local_path = self._get_local_file_path(url)
-                # 获取相对于站点地图文件的路径
-                relative_path = self._get_relative_path(local_path)
-                
-                html_content += f'        <li><a href="{relative_path}">{page_title}</a></li>\n'
-
-        
-        # 闭合 HTML 标签
+        # 使用树结构生成 HTML
+        html_content += self._generate_tree_html(page_tree, level=0)
         html_content += """
     </ul>
 </body>
 </html>
 """
-        
-        # 生成 HTML 站点地图文件路径
         sitemap_html_path = os.path.join(self.output_dir, 'sitemap.html')
-        
-        # 写入文件
         with open(sitemap_html_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
-        logger.info(f"生成 HTML 站点地图: {sitemap_html_path}")
-        
+        logger.info(_("生成 HTML 站点地图") + f": {sitemap_html_path}")
+
         return sitemap_html_path
