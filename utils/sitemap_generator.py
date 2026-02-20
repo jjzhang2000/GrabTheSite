@@ -1,23 +1,17 @@
-"""站点地图生成模块
-
-生成HTML格式的站点地图：
-- 从页面内容提取标题
-- 构建页面树结构
-- 支持多语言标题
-"""
+"""站点地图生成模块"""
 
 import os
-from datetime import datetime
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from logger import setup_logger
-# 动态翻译函数，支持运行时语言切换
+
+
 def _(message):
     """翻译函数"""
     from utils.i18n import gettext
     return gettext(message)
 
-# 获取 logger 实例
+
 logger = setup_logger(__name__)
 
 
@@ -304,23 +298,19 @@ class SitemapGenerator:
                 html += f'{indent}</li>\n'
         
         return html
-    
 
-    
     def generate_html_sitemap(self, pages, page_depths=None):
         """生成 HTML 格式的站点地图
-        
+
         Args:
             pages: 抓取的页面，可以是字典（键为 URL，值为页面内容）或集合（包含 URL）
-            page_depths: 页面深度信息，字典（键为 URL，值为深度）
-        
+            page_depths: 已弃用，保留此参数仅用于向后兼容
+
         Returns:
             str: 生成的 HTML 站点地图文件路径
         """
-        # 使用页面树结构构建站点地图
         page_tree = self._build_page_tree(pages)
-        
-        # 创建 HTML 内容
+
         html_content = '''
 <!DOCTYPE html>
 <html>
@@ -365,20 +355,14 @@ class SitemapGenerator:
         
         # 使用树结构生成 HTML
         html_content += self._generate_tree_html(page_tree, level=0)
-        
-        # 闭合 HTML 标签
         html_content += """
     </ul>
 </body>
 </html>
 """
-        
-        # 生成 HTML 站点地图文件路径
         sitemap_html_path = os.path.join(self.output_dir, 'sitemap.html')
-        
-        # 写入文件
         with open(sitemap_html_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
         logger.info(_("生成 HTML 站点地图") + f": {sitemap_html_path}")
-        
+
         return sitemap_html_path
