@@ -297,6 +297,24 @@ class SavePlugin(Plugin):
                 # 创建目录结构
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
                 
+                # 修改HTML编码声明为UTF-8，确保浏览器正确显示
+                # 替换各种可能的编码声明格式
+                import re
+                # 替换 meta charset 声明
+                html_content = re.sub(
+                    r'<meta[^>]+charset\s*=\s*["\']?[^"\'>\s]+["\']?[^>]*>',
+                    '<meta charset="UTF-8">',
+                    html_content,
+                    flags=re.IGNORECASE
+                )
+                # 替换 http-equiv Content-Type 声明
+                html_content = re.sub(
+                    r'<meta[^>]+http-equiv\s*=\s*["\']?Content-Type["\']?[^>]+content\s*=\s*["\']?[^"\'>;]+;?\s*charset\s*=\s*[^"\'>\s]+["\']?[^>]*>',
+                    '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">',
+                    html_content,
+                    flags=re.IGNORECASE
+                )
+                
                 # 保存文件
                 with open(file_path, 'w', encoding='utf-8') as f:
                     f.write(html_content)
