@@ -182,11 +182,16 @@ class SavePlugin(Plugin):
             try:
                 soup = BeautifulSoup(html_content, 'html.parser')
                 
-                # 获取当前页面的路径
-                base_parsed = urlparse(url)
-                base_path = base_parsed.path
+                # 获取当前页面的本地文件路径（用于计算相对路径）
+                # 使用实际的本地保存路径，而不是URL路径
+                local_file_path = self._get_local_file_path(url)
+                # 获取相对于输出目录的相对路径
+                rel_local_path = os.path.relpath(local_file_path, self.output_dir)
+                # 转换为URL风格的路径（使用/分隔符）
+                rel_local_path = rel_local_path.replace('\\', '/')
                 # 如果路径以 index.html 或 index.htm 结尾，将其视为目录
                 # 这样可以正确计算相对路径
+                base_path = rel_local_path
                 if base_path.endswith('/'):
                     base_path = base_path[:-1]
                 elif base_path.endswith('/index.html') or base_path.endswith('/index.htm'):
@@ -235,32 +240,16 @@ class SavePlugin(Plugin):
                                             queued_resources.add(full_url)
                                 
                                 # 构建静态资源的本地路径
-                                parsed_url = urlparse(full_url)
-                                path = parsed_url.path
-                                # 如果路径以/结尾，移除
-                                if path.endswith('/'):
-                                    path = path[:-1]
-                                # 转换为相对于当前页面的本地路径
-                                # 从base_path中提取当前目录的层级
-                                base_parts = base_path.lstrip('/').split('/')
-                                base_parts = [part for part in base_parts if part]
-                                # 从path中提取路径部分
-                                static_parts = path.lstrip('/').split('/')
-                                static_parts = [part for part in static_parts if part]
-                                # 找到相同的前缀
-                                common_prefix = []
-                                for i, (base_part, static_part) in enumerate(zip(base_parts, static_parts)):
-                                    if base_part == static_part:
-                                        common_prefix.append(base_part)
-                                    else:
-                                        break
-                                # 计算相对路径
-                                up_count = len(base_parts) - len(common_prefix)
-                                down_parts = static_parts[len(common_prefix):]
-                                relative_parts = ['..'] * up_count + down_parts
-                                relative_path = '/'.join(relative_parts)
-                                if not relative_path:
-                                    relative_path = '.'
+                                # 使用实际的本地文件路径来计算相对路径
+                                static_local_path = self._get_local_file_path(full_url)
+                                # 获取当前页面的本地文件路径
+                                current_local_path = self._get_local_file_path(url)
+                                # 获取当前页面所在的目录
+                                current_dir = os.path.dirname(current_local_path)
+                                # 计算从当前页面目录到静态资源的相对路径
+                                relative_path = os.path.relpath(static_local_path, current_dir)
+                                # 转换为URL风格的路径（使用/分隔符）
+                                relative_path = relative_path.replace('\\', '/')
                                 # 更新链接
                                 if link.get('src'):
                                     link['src'] = relative_path
@@ -392,6 +381,37 @@ class SavePlugin(Plugin):
         
         # 检查 url_path 是否以 self.target_directory 开头
         return url_path.startswith(self.target_directory)
+    
+    def _get_local_file_path(self, url):
+        """根据URL获取本地文件保存路径
+        
+        Args:
+            url: 页面URL
+            
+        Returns:
+            str: 本地文件绝对路径
+        """
+        parsed_url = urlparse(url)
+        path = parsed_url.path
+        
+        # 如果路径为空，设置为/
+        if not path:
+            path = '/'
+        
+        # 如果路径以/结尾，添加index.html
+        if path.endswith('/'):
+            path += 'index.html'
+        # 如果路径没有文件名，添加index.html
+        elif not os.path.basename(path):
+            path += 'index.html'
+        # 如果路径没有扩展名，添加.html
+        elif '.' not in os.path.basename(path):
+            path += '.html'
+        
+        # 构建完整文件路径，保留目录结构
+        file_path = os.path.join(self.output_dir, path.lstrip('/'))
+        
+        return file_path
     
     def _url_to_local_path(self, url, base_path):
         """将URL转换为本地路径
