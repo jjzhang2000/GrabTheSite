@@ -87,15 +87,22 @@ class CrawlSite:
         if not self.target_directory.endswith('/'):
             self.target_directory += '/'
         
-        # 标准化排除列表URL
+        # 处理排除列表URL
+        # 保留原始模式（支持通配符），同时支持普通URL
         self.processed_exclude_urls_list = []
         for url in self.exclude_urls_list:
-            parsed_url = urlparse(url)
-            path = parsed_url.path
-            if not path.endswith('/'):
-                path += '/'
-            full_url = f"{parsed_url.scheme}://{parsed_url.netloc}{path}"
-            self.processed_exclude_urls_list.append(full_url)
+            # 检查是否包含通配符
+            if '*' in url or '?' in url:
+                # 保留通配符模式，不进行标准化
+                self.processed_exclude_urls_list.append(url)
+            else:
+                # 普通URL，进行标准化处理
+                parsed_url = urlparse(url)
+                path = parsed_url.path
+                if not path.endswith('/'):
+                    path += '/'
+                full_url = f"{parsed_url.scheme}://{parsed_url.netloc}{path}"
+                self.processed_exclude_urls_list.append(full_url)
         
         # 初始化错误处理器
         self.error_handler = ErrorHandler(
@@ -512,15 +519,36 @@ class CrawlSite:
     def _is_in_exclude_list(self, url):
         """检查 URL 是否在排除列表中或其子目录中
         
+        支持通配符(*)匹配，例如:
+        - *.php* 匹配所有包含.php的URL
+        - */admin/* 匹配所有包含/admin/的URL
+        
         Args:
             url: 要检查的 URL
             
         Returns:
             布尔值，表示该 URL 是否在排除列表中或其子目录中
         """
-        for exclude_url in self.processed_exclude_urls_list:
-            if url.startswith(exclude_url):
-                return True
+        import fnmatch
+        
+        for exclude_pattern in self.processed_exclude_urls_list:
+            # 检查是否包含通配符
+            if '*' in exclude_pattern or '?' in exclude_pattern:
+                # 使用fnmatch进行通配符匹配
+                if fnmatch.fnmatch(url, exclude_pattern):
+                    return True
+                # 也尝试匹配URL的路径部分
+                parsed_url = urlparse(url)
+                url_path = parsed_url.path
+                if fnmatch.fnmatch(url_path, exclude_pattern):
+                    return True
+                # 尝试匹配URL的各种变体
+                if fnmatch.fnmatch(url, f"*{exclude_pattern}*"):
+                    return True
+            else:
+                # 普通字符串匹配
+                if url.startswith(exclude_pattern):
+                    return True
         return False
     
 
