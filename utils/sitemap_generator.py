@@ -356,17 +356,23 @@ class SitemapGenerator:
         
         # 收集页面信息列表
         page_list = []
+        seen_paths = set()  # 用于去重，记录已处理的本地文件路径
         
         if isinstance(pages, dict):
             # 当 pages 是字典时
             for url, html_content_page in pages.items():
-                # 提取页面标题
-                page_title = self._extract_title(html_content_page, url)
-                
                 # 获取本地文件路径
                 local_path = self._get_local_file_path(url)
                 # 获取相对于站点地图文件的路径
                 relative_path = self._get_relative_path(local_path)
+                
+                # 检查是否已存在相同的本地文件路径（去重）
+                if relative_path in seen_paths:
+                    continue
+                seen_paths.add(relative_path)
+                
+                # 提取页面标题
+                page_title = self._extract_title(html_content_page, url)
                 
                 # 获取页面深度（默认为0）
                 depth = page_depths.get(url, 0) if page_depths else 0
@@ -380,13 +386,18 @@ class SitemapGenerator:
         elif isinstance(pages, set):
             # 当 pages 是集合时
             for url in pages:
-                # 尝试从本地文件中读取页面内容来提取标题
-                page_title = self._extract_title_from_local_file(url)
-                
                 # 获取本地文件路径
                 local_path = self._get_local_file_path(url)
                 # 获取相对于站点地图文件的路径
                 relative_path = self._get_relative_path(local_path)
+                
+                # 检查是否已存在相同的本地文件路径（去重）
+                if relative_path in seen_paths:
+                    continue
+                seen_paths.add(relative_path)
+                
+                # 尝试从本地文件中读取页面内容来提取标题
+                page_title = self._extract_title_from_local_file(url)
                 
                 # 获取页面深度（默认为0）
                 depth = page_depths.get(url, 0) if page_depths else 0
