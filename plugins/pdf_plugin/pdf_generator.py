@@ -129,6 +129,10 @@ class PdfGenerator:
                 # 加载 HTML 内容
                 page.set_content(html_content)
 
+                # 设置文档标题（用于页眉显示）
+                if source_url:
+                    page.evaluate(f'document.title = "{source_url}"')
+
                 # 等待页面加载完成
                 page.wait_for_load_state('networkidle')
 
@@ -178,10 +182,19 @@ class PdfGenerator:
             return ''
 
         template = self.header_config.get('template', '{title}')
-        # 替换模板变量
-        # 注意：Playwright 的页眉/页脚模板支持的变量有限
-        # 这里使用简单的 HTML 样式
-        return f'<div style="font-size: 9px; width: 100%; text-align: center; color: #666;">{template}</div>'
+
+        # Playwright 支持的页眉/页脚变量：
+        # <span class="title"></span> - 文档标题
+        # <span class="url"></span> - 文档 URL
+        # <span class="date"></span> - 当前日期
+        # 注意：{title} 等变量需要转换为对应的 span 类名
+
+        # 替换模板变量为 Playwright 支持的格式
+        template = template.replace('{title}', '<span class="title"></span>')
+        template = template.replace('{url}', '<span class="url"></span>')
+
+        # 使用 Playwright 要求的格式：带 margin 的 HTML 文档
+        return f'''<div style="font-size: 9px; width: 100%; text-align: center; color: #666; margin: 0 auto;">{template}</div>'''
 
     def _build_footer_template(self):
         """构建页脚模板
