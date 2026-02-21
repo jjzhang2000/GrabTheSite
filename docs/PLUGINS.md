@@ -25,13 +25,43 @@ grab_the_site/
 
 ## 插件配置
 
-插件系统的配置位于 `config/default.yaml` 文件中：
+插件系统**不需要在配置文件中配置**。插件通过以下方式管理：
 
-```yaml
-# 插件系统配置
-plugins:
-  enable: true             # 是否启用插件系统
-  enabled_plugins: []      # 启用的插件列表，为空时启用所有发现的插件
+1. **自动发现**：插件系统自动发现并加载 `plugins/` 目录下的所有插件
+2. **默认启用**：所有发现的插件默认都会被启用
+3. **模块名识别**：插件通过目录名（模块名）进行识别
+
+### 插件启用/禁用机制
+
+当前实现中：
+- **所有发现的插件默认启用** - 无需配置即可使用
+- 插件通过 `PluginManager.enable_plugins(plugin_config)` 方法控制启用状态
+- 如果传入 `plugin_config=None`，则启用所有插件（向后兼容模式）
+- 如果传入具体的配置字典 `{plugin_name: True/False}`，则只启用指定为 `True` 的插件
+
+### 程序化控制插件
+
+```python
+from utils.plugin_manager import PluginManager
+
+# 创建插件管理器
+plugin_manager = PluginManager(config)
+
+# 发现插件
+plugin_manager.discover_plugins()
+
+# 加载插件
+plugin_manager.load_plugins()
+
+# 启用所有插件（默认行为）
+plugin_manager.enable_all_plugins()
+
+# 或通过配置选择性启用
+plugin_config = {
+    'save_plugin': True,      # 启用保存插件
+    'my_plugin': False        # 禁用我的插件
+}
+plugin_manager.enable_plugins(plugin_config)
 ```
 
 ## 创建插件
@@ -176,22 +206,20 @@ plugin = SavePlugin()
 
 ## 启用和禁用插件
 
-可以通过以下方式启用或禁用插件：
+当前版本插件系统**自动启用所有发现的插件**，暂不支持通过命令行参数或配置文件控制。
 
-1. **配置文件**：在 `config/default.yaml` 文件中设置 `plugins.enabled_plugins` 列表
-2. **命令行参数**：使用 `--plugins` 参数指定启用的插件，使用 `--no-plugins` 参数禁用插件系统
+如需选择性启用/禁用插件，请参考上文「程序化控制插件」部分的代码示例。
 
 ## 保存插件的使用
 
 保存插件（Save Plugin）是一个核心插件，负责将抓取的页面保存到磁盘。使用方法如下：
 
-1. **默认使用**：保存插件会自动被插件系统发现和启用
-2. **明确指定**：使用 `--plugins save_plugin` 参数明确指定启用保存插件
-3. **强制下载**：使用 `--force-download` 参数强制重新下载页面，以便测试保存功能
+1. **默认使用**：保存插件会自动被插件系统发现和启用，无需额外配置
+2. **强制下载**：使用 `--force-download` 参数强制重新下载页面，以便测试保存功能
 
 例如：
 ```bash
-python grab_the_site.py --url https://example.com --plugins save_plugin --force-download
+python grab_the_site.py --url https://example.com --force-download
 ```
 
 ## 保存插件的工作原理
