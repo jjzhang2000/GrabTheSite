@@ -4,6 +4,7 @@
 """
 
 import os
+from urllib.parse import urljoin, urlparse
 from playwright.sync_api import sync_playwright
 
 
@@ -46,6 +47,50 @@ class PdfGenerator:
 
         return None
 
+    def _process_html_images(self, html_content, base_url):
+        """处理 HTML 中的图片链接，将相对路径转换为绝对路径
+
+        Args:
+            html_content: HTML 内容
+            base_url: 基础 URL
+
+        Returns:
+            str: 处理后的 HTML
+        """
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        # 处理图片标签
+        for img in soup.find_all('img'):
+            src = img.get('src')
+            if src:
+                # 将相对路径转换为绝对路径
+                absolute_url = urljoin(base_url, src)
+                img['src'] = absolute_url
+
+        # 处理 CSS 中的背景图片（内联样式）
+        for tag in soup.find_all(style=True):
+            style = tag['style']
+            # 简单的背景图片 URL 替换
+            if 'url(' in style:
+                import re
+                def replace_url(match):
+                    url = match.group(1).strip('"\'')
+                    if not url.startswith(('http://', 'https://', 'data:')):
+                        return f'url("{urljoin(base_url, url)}")'
+                    return match.group(0)
+                style = re.sub(r'url\(([^)]+)\)', replace_url, style)
+                tag['style'] = style
+
+        # 处理链接标签（CSS 文件）
+        for link in soup.find_all('link', rel='stylesheet'):
+            href = link.get('href')
+            if href:
+                link['href'] = urljoin(base_url, href)
+
+        return str(soup)
+
     def generate_pdf(self, html_content, output_path, source_url=None):
         """将 HTML 内容渲染为 PDF
 
@@ -77,11 +122,28 @@ class PdfGenerator:
             page = browser.new_page()
 
             try:
+                # 处理 HTML 中的图片链接
+                if source_url:
+                    html_content = self._process_html_images(html_content, source_url)
+
                 # 加载 HTML 内容
                 page.set_content(html_content)
 
-                # 等待资源加载完成
+                # 等待页面加载完成
                 page.wait_for_load_state('networkidle')
+
+                # 额外等待图片加载
+                # 等待所有图片加载完成
+                page.wait_for_function("""
+                    () => {
+                        const images = document.querySelectorAll('img');
+                        if (images.length === 0) return true;
+                        return Array.from(images).every(img => img.complete);
+                    }
+                """, timeout=10000)
+
+                # 再等待一小段时间确保渲染完成
+                page.wait_for_timeout(500)
 
                 # 获取页面配置
                 format_option = self.page_config.get('format', 'A4')
