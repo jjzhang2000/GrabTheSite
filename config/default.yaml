@@ -38,6 +38,45 @@ output:
   sitemap:
     enable_html: true    # 生成HTML站点地图（sitemap.html）
 
+# PDF 输出配置（用于 pdf_the_site.py 和 pdf_gui.py）
+pdf:
+  output_filename: "site.pdf"       # 输出文件名
+
+  # 页面设置
+  page:
+    format: "A4"                    # 页面格式: A4, Letter, Legal, Tabloid
+    width: null                     # 自定义宽度（单位：mm，设置后 format 失效）
+    height: null                    # 自定义高度（单位：mm）
+    margin:
+      top: 20                       # 上边距（mm）
+      bottom: 20                    # 下边距（mm）
+      left: 20                      # 左边距（mm）
+      right: 20                     # 右边距（mm）
+
+  # 页眉页脚
+  header:
+    enabled: true
+    template: "{title}"             # 页眉模板: {title}, {url}, {page}, {total}
+  footer:
+    enabled: true
+    template: "Page {page} of {total}"
+
+  # 书签设置
+  bookmarks:
+    enabled: true                   # 是否生成书签
+    max_depth: 3                    # 书签最大深度
+    expand_level: 2                 # 默认展开层级
+
+  # 链接处理
+  links:
+    internal: "jump"                # 内部链接处理: jump=跳转, none=不处理
+    external: "keep"                # 外部链接处理: keep=保留, remove=移除
+
+  # 优化选项
+  optimization:
+    compress: true                  # 压缩 PDF
+    image_quality: 80               # 图片质量 (0-100)
+
 # 排除列表 - 以下URL及其子目录不会被抓取
 # 示例：
 # exclude:
