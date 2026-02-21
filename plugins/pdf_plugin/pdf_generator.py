@@ -91,6 +91,22 @@ class PdfGenerator:
 
         return str(soup)
 
+    def _extract_title_from_html(self, html_content):
+        """从 HTML 中提取标题
+
+        Args:
+            html_content: HTML 内容
+
+        Returns:
+            str: 页面标题
+        """
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
+        title_tag = soup.find('title')
+        if title_tag and title_tag.text.strip():
+            return title_tag.text.strip()
+        return ""
+
     def generate_pdf(self, html_content, output_path, source_url=None):
         """将 HTML 内容渲染为 PDF
 
@@ -129,10 +145,6 @@ class PdfGenerator:
                 # 加载 HTML 内容
                 page.set_content(html_content)
 
-                # 设置文档标题（用于页眉显示）
-                if source_url:
-                    page.evaluate(f'document.title = "{source_url}"')
-
                 # 等待页面加载完成
                 page.wait_for_load_state('networkidle')
 
@@ -153,18 +165,28 @@ class PdfGenerator:
                 format_option = self.page_config.get('format', 'A4')
                 margin_config = self.page_config.get('margin', {})
 
-                # 生成 PDF
+                # 提取页面标题和 URL 用于页眉
+                page_title = self._extract_title_from_html(html_content)
+                if not page_title and source_url:
+                    page_title = source_url
+                page_url = source_url if source_url else ""
+
+                # 获取边距配置
+                margin_left = margin_config.get('left', 20)
+                margin_right = margin_config.get('right', 20)
+
+                # 生成 PDF，传入当前页的标题和 URL
                 page.pdf(
                     path=output_path,
                     format=format_option,
                     margin={
                         'top': f"{margin_config.get('top', 20)}mm",
                         'bottom': f"{margin_config.get('bottom', 20)}mm",
-                        'left': f"{margin_config.get('left', 20)}mm",
-                        'right': f"{margin_config.get('right', 20)}mm"
+                        'left': f"{margin_left}mm",
+                        'right': f"{margin_right}mm"
                     },
                     display_header_footer=self.header_config.get('enabled', True),
-                    header_template=self._build_header_template(),
+                    header_template=self._build_header_template(page_title, page_url, margin_left, margin_right),
                     footer_template=self._build_footer_template(),
                     print_background=True
                 )
@@ -172,8 +194,17 @@ class PdfGenerator:
             finally:
                 browser.close()
 
-    def _build_header_template(self):
+    def _build_header_template(self, page_title="", page_url="", margin_left=20, margin_right=20):
         """构建页眉模板
+
+        页眉布局：左侧显示页面标题，右侧显示页面网址
+        使用页面配置的左右边距
+
+        Args:
+            page_title: 页面标题
+            page_url: 页面 URL
+            margin_left: 左边距（mm）
+            margin_right: 右边距（mm）
 
         Returns:
             str: HTML 格式的页眉模板
@@ -181,20 +212,19 @@ class PdfGenerator:
         if not self.header_config.get('enabled', True):
             return ''
 
-        template = self.header_config.get('template', '{title}')
+        # 对标题和 URL 进行 HTML 转义，防止 XSS
+        import html
+        page_title = html.escape(page_title) if page_title else ""
+        page_url = html.escape(page_url) if page_url else ""
 
-        # Playwright 支持的页眉/页脚变量：
-        # <span class="title"></span> - 文档标题
-        # <span class="url"></span> - 文档 URL
-        # <span class="date"></span> - 当前日期
-        # 注意：{title} 等变量需要转换为对应的 span 类名
-
-        # 替换模板变量为 Playwright 支持的格式
-        template = template.replace('{title}', '<span class="title"></span>')
-        template = template.replace('{url}', '<span class="url"></span>')
-
-        # 使用 Playwright 要求的格式：带 margin 的 HTML 文档
-        return f'''<div style="font-size: 9px; width: 100%; text-align: center; color: #666; margin: 0 auto;">{template}</div>'''
+        # 构建左右对齐的页眉布局
+        # 左侧：页面标题，右侧：页面网址
+        # 使用页面配置的左右边距
+        return f'''<div style="font-size: 9px; width: 100%; color: #666; margin: 0; padding-left: {margin_left}mm; padding-right: {margin_right}mm; box-sizing: border-box;">
+            <div style="float: left; text-align: left;">{page_title}</div>
+            <div style="float: right; text-align: right;">{page_url}</div>
+            <div style="clear: both;"></div>
+        </div>'''
 
     def _build_footer_template(self):
         """构建页脚模板
