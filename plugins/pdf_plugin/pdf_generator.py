@@ -3,6 +3,7 @@
 使用 Playwright 将 HTML 渲染为 PDF 文件。
 """
 
+import os
 from playwright.sync_api import sync_playwright
 
 
@@ -20,6 +21,31 @@ class PdfGenerator:
         self.header_config = self.config.get('header', {})
         self.footer_config = self.config.get('footer', {})
 
+    def _find_system_browser(self):
+        """查找系统安装的浏览器
+
+        Returns:
+            str: 浏览器可执行文件路径，如果未找到返回 None
+        """
+        # 可能的浏览器路径
+        possible_paths = [
+            # Microsoft Edge
+            os.path.expandvars(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
+            os.path.expandvars(r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"),
+            # Google Chrome
+            os.path.expandvars(r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"),
+            os.path.expandvars(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
+            os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+            # Chromium
+            os.path.expandvars(r"C:\Program Files\Chromium\Application\chrome.exe"),
+        ]
+
+        for path in possible_paths:
+            if os.path.exists(path):
+                return path
+
+        return None
+
     def generate_pdf(self, html_content, output_path, source_url=None):
         """将 HTML 内容渲染为 PDF
 
@@ -32,7 +58,22 @@ class PdfGenerator:
             Exception: 当 PDF 生成失败时抛出
         """
         with sync_playwright() as p:
-            browser = p.chromium.launch()
+            # 尝试查找系统浏览器
+            browser_path = self._find_system_browser()
+
+            if browser_path:
+                # 使用系统浏览器
+                browser = p.chromium.launch(executable_path=browser_path)
+            else:
+                # 尝试使用 Playwright 内置浏览器
+                try:
+                    browser = p.chromium.launch()
+                except Exception as e:
+                    raise Exception(
+                        "无法启动浏览器。请安装 Playwright 浏览器: playwright install chromium，"
+                        "或确保系统已安装 Edge/Chrome 浏览器。"
+                    ) from e
+
             page = browser.new_page()
 
             try:

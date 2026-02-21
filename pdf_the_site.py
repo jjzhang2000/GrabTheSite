@@ -407,7 +407,12 @@ def main(args_list=None, stop_event=None):
     # 显示JavaScript渲染配置
     js_rendering_config = config.get("js_rendering", JS_RENDERING_CONFIG)
     js_rendering_timeout = js_rendering_config.get("timeout", 30)
-    logger.info(f"{_('JavaScript渲染')}: {_('Enabled')}")
+
+    # 禁用JavaScript渲染以避免Playwright多线程问题
+    # 在PDF生成模式下，我们使用直接HTTP请求获取页面内容
+    import config as config_module
+    config_module.JS_RENDERING_CONFIG['enabled'] = False
+    logger.info(f"{_('JavaScript渲染')}: {_('Disabled')} (PDF生成使用直接HTTP请求)")
 
     # 显示语言配置
     logger.info(f"{_('当前语言')}: {current_lang}")

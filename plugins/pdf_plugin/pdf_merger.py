@@ -3,7 +3,7 @@
 使用 pypdf 合并多个 PDF 文件并添加书签。
 """
 
-from pypdf import PdfMerger as PyPdfMerger, PdfReader
+from pypdf import PdfWriter, PdfReader
 
 
 class PdfMerger:
@@ -29,7 +29,7 @@ class PdfMerger:
         Raises:
             Exception: 当合并失败时抛出
         """
-        merger = PyPdfMerger()
+        writer = PdfWriter()
 
         # 第一步：合并所有 PDF，记录每个文件的起始页码
         self.page_offsets = {}
@@ -38,12 +38,13 @@ class PdfMerger:
         for url, file_path in pdf_files:
             self.page_offsets[url] = self.total_pages
 
-            # 读取 PDF 获取页数
+            # 读取 PDF 并追加到 writer
             reader = PdfReader(file_path)
             num_pages = len(reader.pages)
 
-            # 追加到合并器
-            merger.append(file_path)
+            # 追加所有页面到 writer
+            for page in reader.pages:
+                writer.add_page(page)
 
             self.total_pages += num_pages
 
@@ -51,11 +52,11 @@ class PdfMerger:
         self._update_bookmark_pages(bookmark_tree, url_to_page_map)
 
         # 第三步：添加层级书签到 PDF
-        self._add_bookmarks_to_merger(merger, bookmark_tree)
+        self._add_bookmarks_to_writer(writer, bookmark_tree)
 
         # 第四步：写入输出文件
-        merger.write(output_path)
-        merger.close()
+        with open(output_path, 'wb') as output_file:
+            writer.write(output_file)
 
         return output_path
 
@@ -74,27 +75,27 @@ class PdfMerger:
                 if bookmark.title in url or url in bookmark.title:
                     # 计算在合并后 PDF 中的实际页码
                     offset = self.page_offsets.get(url, 0)
-                    bookmark.page_number = offset + 1  # PDF 页码从 1 开始
+                    bookmark.page_number = offset  # PdfWriter 使用 0-based 页码
                     break
 
             # 递归处理子书签
             if bookmark.children:
                 self._update_bookmark_pages(bookmark.children, url_to_page_map)
 
-    def _add_bookmarks_to_merger(self, merger, bookmarks, parent_bookmark=None):
-        """递归添加书签到合并器
+    def _add_bookmarks_to_writer(self, writer, bookmarks, parent_bookmark=None):
+        """递归添加书签到 PDF Writer
 
         Args:
-            merger: PyPdfMerger 实例
+            writer: PdfWriter 实例
             bookmarks: BookmarkNode 列表
             parent_bookmark: 父书签对象（用于构建层级）
         """
         for bookmark in bookmarks:
-            # pypdf 4.0+ 使用 add_outline_item 添加书签
+            # 使用 add_outline_item 添加书签
             # page_number 是 0-based 索引
-            page_number = bookmark.page_number - 1 if bookmark.page_number > 0 else 0
+            page_number = bookmark.page_number if bookmark.page_number >= 0 else 0
 
-            current = merger.add_outline_item(
+            current = writer.add_outline_item(
                 title=bookmark.title,
                 page_number=page_number,
                 parent=parent_bookmark
@@ -102,4 +103,4 @@ class PdfMerger:
 
             # 递归添加子书签
             if bookmark.children:
-                self._add_bookmarks_to_merger(merger, bookmark.children, current)
+                self._add_bookmarks_to_writer(writer, bookmark.children, current)
