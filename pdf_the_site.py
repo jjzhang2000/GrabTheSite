@@ -291,28 +291,43 @@ def init_pdf_plugin_only(plugin_manager, config):
     # 只加载 pdf_plugin，跳过 save_plugin
     pdf_plugin_loaded = False
 
-    for plugin_name, plugin_class in plugin_manager.plugins.items():
-        if plugin_class.__name__ == "PdfPlugin":
-            try:
-                plugin = plugin_class(config)
-                plugin_manager.loaded_plugins[plugin.name] = plugin
-                plugin_manager.enabled_plugins.append(plugin)
-                logger.info(_("已启用PDF插件") + f": {plugin.name}")
-                pdf_plugin_loaded = True
-            except Exception as e:
-                logger.error(_("加载PDF插件失败") + f": {e}")
-        elif plugin_class.__name__ == "SavePlugin":
-            logger.debug(_("跳过HTML保存插件"))
-            continue
-        else:
-            # 其他插件正常加载
-            try:
-                plugin = plugin_class(config)
-                plugin_manager.loaded_plugins[plugin.name] = plugin
-                plugin_manager.enabled_plugins.append(plugin)
-                logger.debug(_("已加载插件") + f": {plugin.name}")
-            except Exception as e:
-                logger.warning(_("加载插件失败") + f": {plugin_name}, {e}")
+    for plugin_path in plugin_manager.plugin_paths:
+        try:
+            # 获取插件模块名
+            plugin_name = os.path.basename(plugin_path)
+            module_path = f'plugins.{plugin_name}'
+
+            # 导入插件模块
+            module = __import__(module_path, fromlist=['plugin'])
+
+            # 查找Plugin子类
+            import inspect
+            from utils.plugin_manager import Plugin
+            for name, cls in inspect.getmembers(module, inspect.isclass):
+                if issubclass(cls, Plugin) and cls != Plugin:
+                    if cls.__name__ == "PdfPlugin":
+                        try:
+                            plugin = cls(config)
+                            plugin_manager.plugins.append(plugin)
+                            plugin_manager.enabled_plugins.append(plugin)
+                            logger.info(_("已启用PDF插件") + f": {plugin.name}")
+                            pdf_plugin_loaded = True
+                        except Exception as e:
+                            logger.error(_("加载PDF插件失败") + f": {e}")
+                    elif cls.__name__ == "SavePlugin":
+                        logger.debug(_("跳过HTML保存插件"))
+                        continue
+                    else:
+                        # 其他插件正常加载
+                        try:
+                            plugin = cls(config)
+                            plugin_manager.plugins.append(plugin)
+                            plugin_manager.enabled_plugins.append(plugin)
+                            logger.debug(_("已加载插件") + f": {plugin.name}")
+                        except Exception as e:
+                            logger.warning(_("加载插件失败") + f": {plugin_name}, {e}")
+        except Exception as e:
+            logger.warning(_("加载插件失败") + f": {plugin_path}, {e}")
 
     if not pdf_plugin_loaded:
         logger.error(_("未能加载PDF插件，请确保 pdf_plugin 已正确安装"))
