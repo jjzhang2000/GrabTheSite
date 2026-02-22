@@ -12,17 +12,19 @@ from bs4 import BeautifulSoup
 class BookmarkNode:
     """书签节点"""
 
-    def __init__(self, title, page_number=0, level=0):
+    def __init__(self, title, page_number=0, level=0, url=None):
         """初始化书签节点
 
         Args:
             title: 书签标题
             page_number: 页码（从1开始）
             level: 层级深度（0为根层级）
+            url: 页面 URL（用于页码映射）
         """
         self.title = title
         self.page_number = page_number
         self.level = level
+        self.url = url  # 存储原始 URL 用于页码映射
         self.children = []
 
     def add_child(self, child):
@@ -164,6 +166,8 @@ class BookmarkBuilder:
     def _tree_to_bookmarks(self, tree, level=0):
         """将树结构转换为书签节点列表
 
+        目录结构显示为 "📁 目录名"，页面链接显示为 "📄 页面标题"。
+
         Args:
             tree: 页面树字典
             level: 当前层级
@@ -176,10 +180,12 @@ class BookmarkBuilder:
         # 先处理页面节点（_pages）
         if '_pages' in tree:
             for page in tree['_pages']:
+                # 页面链接：使用 📄 图标，同时保存 URL 用于页码映射
                 bookmark = BookmarkNode(
-                    title=page['title'],
+                    title=f"📄 {page['title']}",
                     page_number=0,  # 稍后填充实际页码
-                    level=level
+                    level=level,
+                    url=page['url']  # 保存原始 URL
                 )
                 bookmarks.append(bookmark)
 
@@ -188,11 +194,12 @@ class BookmarkBuilder:
             if name == '_pages':
                 continue
 
-            # 创建目录书签
+            # 创建目录书签：使用 📁 图标（目录不需要 URL）
             folder_bookmark = BookmarkNode(
-                title=name,
+                title=f"📁 {name}",
                 page_number=0,
-                level=level
+                level=level,
+                url=None  # 目录没有 URL
             )
 
             # 递归处理子节点

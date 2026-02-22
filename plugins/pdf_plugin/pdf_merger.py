@@ -1,6 +1,7 @@
 """PDF 合并器
 
 使用 pypdf 合并多个 PDF 文件并添加书签。
+内部链接已在生成时移除，外部链接由 Playwright 正确保留。
 """
 
 from pypdf import PdfWriter, PdfReader
@@ -14,7 +15,7 @@ class PdfMerger:
         self.page_offsets = {}  # URL -> 起始页码映射
         self.total_pages = 0    # 总页数
 
-    def merge_pdfs(self, pdf_files, output_path, bookmark_tree, url_to_page_map):
+    def merge_pdfs(self, pdf_files, output_path, bookmark_tree, url_to_page_map, page_links_info=None):
         """合并 PDF 文件并添加书签
 
         Args:
@@ -22,6 +23,7 @@ class PdfMerger:
             output_path: 输出文件路径
             bookmark_tree: 书签树（BookmarkNode 列表）
             url_to_page_map: URL 到页码的映射
+            page_links_info: 保留参数兼容性，不使用
 
         Returns:
             str: 输出文件路径
@@ -54,6 +56,9 @@ class PdfMerger:
         # 第三步：添加层级书签到 PDF
         self._add_bookmarks_to_writer(writer, bookmark_tree)
 
+        # 设置书签默认展开（尝试修改 Count 属性）
+        self._set_bookmark_expanded(writer)
+
         # 第四步：写入输出文件
         with open(output_path, 'wb') as output_file:
             writer.write(output_file)
@@ -68,16 +73,12 @@ class PdfMerger:
             url_to_page_map: URL -> PDF页码 映射
         """
         for bookmark in bookmarks:
-            # 根据 URL 查找对应的页码
-            # 这里需要根据实际逻辑来映射 URL 到页码
-            for url, page_num in url_to_page_map.items():
-                # 简化匹配：检查 URL 是否包含书签标题或反之
-                if bookmark.title in url or url in bookmark.title:
-                    # 计算在合并后 PDF 中的实际页码
-                    offset = self.page_offsets.get(url, 0)
-                    bookmark.page_number = offset  # PdfWriter 使用 0-based 页码
-                    break
-
+            # 如果书签有 URL，直接使用 URL 查找页码
+            if bookmark.url and bookmark.url in url_to_page_map:
+                page_num = url_to_page_map[bookmark.url]
+                # 计算在合并后 PDF 中的实际页码
+                offset = self.page_offsets.get(bookmark.url, 0)
+                bookmark.page_number = offset  # PdfWriter 使用 0-based 页码
             # 递归处理子书签
             if bookmark.children:
                 self._update_bookmark_pages(bookmark.children, url_to_page_map)
@@ -104,3 +105,42 @@ class PdfMerger:
             # 递归添加子书签
             if bookmark.children:
                 self._add_bookmarks_to_writer(writer, bookmark.children, current)
+
+    def _set_bookmark_expanded(self, writer):
+        """设置所有书签默认展开
+
+        通过修改 Outlines 字典中的 Count 属性。
+        注意：PDF 阅读器可能不遵守此设置。
+
+        Args:
+            writer: PdfWriter 实例
+        """
+        # 获取文档的 Catalog
+        if hasattr(writer, '_root_object') and '/Outlines' in writer._root_object:
+            outlines = writer._root_object['/Outlines']
+            if outlines:
+                outlines_obj = outlines.get_object()
+                self._update_outline_count(outlines_obj)
+
+    def _update_outline_count(self, outline_obj):
+        """递归更新书签的 Count 属性
+
+        Args:
+            outline_obj: 书签字典对象
+        """
+        from pypdf.generic import NameObject, NumberObject
+
+        if not outline_obj:
+            return
+
+        # 获取子书签数量
+        kids = outline_obj.get('/Kids', [])
+        if kids:
+            # 设置 Count 为正数，表示展开
+            count = len(kids)
+            outline_obj[NameObject('/Count')] = NumberObject(count)
+
+            # 递归处理子书签
+            for kid in kids:
+                kid_obj = kid.get_object()
+                self._update_outline_count(kid_obj)

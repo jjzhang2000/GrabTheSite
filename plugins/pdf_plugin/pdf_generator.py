@@ -91,6 +91,52 @@ class PdfGenerator:
 
         return str(soup)
 
+    def _process_html_links(self, html_content, base_url, downloaded_urls=None):
+        """处理 HTML 中的链接
+
+        将已下载的内部链接的 href 设为空串（通过书签导航）。
+        未下载的本站链接和外部链接保留，可在 PDF 中点击。
+
+        Args:
+            html_content: HTML 内容
+            base_url: 基础 URL
+            downloaded_urls: 已下载页面的 URL 集合
+
+        Returns:
+            str: 处理后的 HTML
+        """
+        from bs4 import BeautifulSoup
+
+        soup = BeautifulSoup(html_content, 'html.parser')
+        parsed_base = urlparse(base_url)
+        downloaded_urls = downloaded_urls or set()
+
+        for link in soup.find_all('a', href=True):
+            href = link.get('href', '')
+
+            # 跳过锚点链接和空链接
+            if not href or href.startswith('#') or href.startswith('javascript:'):
+                continue
+
+            # 转换为绝对 URL
+            full_url = urljoin(base_url, href)
+            parsed_link = urlparse(full_url)
+
+            # 检查是否为已下载的内部链接
+            # 只有已下载的页面才视为内部链接（通过书签导航）
+            # 未下载的本站链接视为外部链接（可点击跳转）
+            is_downloaded_internal = full_url in downloaded_urls
+
+            if is_downloaded_internal:
+                # 已下载的内部链接：将 href 设为空串，使其不可点击
+                # 通过书签导航到对应页面
+                link['href'] = ''
+            else:
+                # 其他链接（未下载的本站链接、外部链接）：转换为绝对 URL，确保可点击
+                link['href'] = full_url
+
+        return str(soup)
+
     def _extract_title_from_html(self, html_content):
         """从 HTML 中提取标题
 
@@ -107,13 +153,14 @@ class PdfGenerator:
             return title_tag.text.strip()
         return ""
 
-    def generate_pdf(self, html_content, output_path, source_url=None):
+    def generate_pdf(self, html_content, output_path, source_url=None, downloaded_urls=None):
         """将 HTML 内容渲染为 PDF
 
         Args:
             html_content: HTML 内容字符串
             output_path: 输出 PDF 文件路径
             source_url: 源 URL（用于日志记录）
+            downloaded_urls: 已下载页面的 URL 集合（用于区分内部和外部链接）
 
         Raises:
             Exception: 当 PDF 生成失败时抛出
@@ -138,9 +185,10 @@ class PdfGenerator:
             page = browser.new_page()
 
             try:
-                # 处理 HTML 中的图片链接
+                # 处理 HTML 中的图片链接和内部链接
                 if source_url:
                     html_content = self._process_html_images(html_content, source_url)
+                    html_content = self._process_html_links(html_content, source_url, downloaded_urls)
 
                 # 加载 HTML 内容
                 page.set_content(html_content)
@@ -149,7 +197,6 @@ class PdfGenerator:
                 page.wait_for_load_state('networkidle')
 
                 # 额外等待图片加载
-                # 等待所有图片加载完成
                 page.wait_for_function("""
                     () => {
                         const images = document.querySelectorAll('img');
@@ -175,7 +222,8 @@ class PdfGenerator:
                 margin_left = margin_config.get('left', 20)
                 margin_right = margin_config.get('right', 20)
 
-                # 生成 PDF，传入当前页的标题和 URL
+                # 生成 PDF
+                # Playwright 会自动保留外部链接，内部链接已被移除
                 page.pdf(
                     path=output_path,
                     format=format_option,

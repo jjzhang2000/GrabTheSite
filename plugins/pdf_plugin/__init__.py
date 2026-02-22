@@ -57,6 +57,9 @@ class PdfPlugin(Plugin):
         # URL 到页码的映射（用于内部链接跳转）
         self.url_to_page_map = {}
 
+        # 页面链接信息：url -> [(href, is_internal)]
+        self.page_links_info = {}
+
         # 临时文件目录
         self.temp_dir = None
 
@@ -109,7 +112,8 @@ class PdfPlugin(Plugin):
     def save_site(self, pages):
         """保存抓取的页面为 PDF
 
-        参考 save_plugin.save_site 的实现方式
+        内部链接在生成时已被移除，外部链接由 Playwright 正确保留。
+        通过书签进行页面导航。
 
         Args:
             pages: 暂存的页面内容，键为URL，值为页面内容
@@ -135,20 +139,19 @@ class PdfPlugin(Plugin):
             temp_pdf_files = []
             page_count = 0
 
+            # 获取已下载页面的 URL 集合
+            downloaded_urls = set(pages.keys())
+
             for url, html_content in pages.items():
                 try:
-                    # 处理页面内链接
-                    processed_html = self.link_processor.process_links(
-                        html_content, url, pages.keys()
-                    )
-
                     # 生成临时 PDF 文件
                     temp_pdf_path = os.path.join(
                         self.temp_dir,
                         f"page_{page_count:04d}.pdf"
                     )
 
-                    self.pdf_generator.generate_pdf(processed_html, temp_pdf_path, url)
+                    # 生成 PDF（已下载的内部链接通过书签导航，其他链接可点击）
+                    self.pdf_generator.generate_pdf(html_content, temp_pdf_path, url, downloaded_urls)
                     temp_pdf_files.append((url, temp_pdf_path))
 
                     # 记录 URL 到页码的映射
