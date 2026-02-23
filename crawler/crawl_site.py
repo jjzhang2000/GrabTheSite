@@ -135,8 +135,8 @@ class CrawlSite:
         if not self.force_download:
             self.visited_urls.update(self.state_manager.state.get('visited_urls', set()))
         
-        # 初始化JavaScript渲染器（始终启用，使用专用渲染线程）
-        self.js_rendering_enabled = True
+        # 初始化JavaScript渲染器（默认启用，可以通过配置禁用）
+        self.js_rendering_enabled = JS_RENDERING_CONFIG.get('enabled', True)
         self.js_rendering_timeout = JS_RENDERING_CONFIG.get('timeout', 30)
         # 使用全局渲染器实例（延迟初始化）
         

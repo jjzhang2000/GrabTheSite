@@ -781,3 +781,102 @@ msgstr "  2. Google Chrome"
 
 msgid "或安装 Playwright 内置浏览器:"
 msgstr "或安装 Playwright 内置浏览器:"
+
+# PDFtheSite 相关翻译
+msgid "PDFtheSite - 网站抓取工具（PDF输出）"
+msgstr "PDFtheSite - 网站抓取工具（PDF输出）"
+
+msgid "PDF配置"
+msgstr "PDF配置"
+
+msgid "开始抓取并生成PDF"
+msgstr "开始抓取并生成PDF"
+
+msgid "开始抓取网站并生成PDF"
+msgstr "开始抓取网站并生成PDF"
+
+msgid "开始抓取网站并生成PDF: {}"
+msgstr "开始抓取网站并生成PDF: {}"
+
+msgid "PDF文件名:"
+msgstr "PDF文件名:"
+
+msgid "页面格式:"
+msgstr "页面格式:"
+
+msgid "页边距(mm):"
+msgstr "页边距(mm):"
+
+msgid "生成PDF书签（目录）"
+msgstr "生成PDF书签（目录）"
+
+msgid "PDF生成完成!"
+msgstr "PDF生成完成!"
+
+msgid "PDF生成完成！"
+msgstr "PDF生成完成！"
+
+msgid "PDF文件名"
+msgstr "PDF文件名"
+
+# PDF Plugin 日志消息
+msgid "PDF插件初始化完成"
+msgstr "PDF插件初始化完成"
+
+msgid "准备生成PDF，共"
+msgstr "准备生成PDF，共"
+
+msgid "PDF插件准备就绪，输出路径"
+msgstr "PDF插件准备就绪，输出路径"
+
+msgid "PDF插件初始化失败：缺少必要参数"
+msgstr "PDF插件初始化失败：缺少必要参数"
+
+msgid "开始生成PDF，共"
+msgstr "开始生成PDF，共"
+
+msgid "书签树构建完成"
+msgstr "书签树构建完成"
+
+msgid "生成页面PDF"
+msgstr "生成页面PDF"
+
+msgid "生成页面PDF失败"
+msgstr "生成页面PDF失败"
+
+msgid "合并PDF失败"
+msgstr "合并PDF失败"
+
+msgid "PDF生成完成"
+msgstr "PDF生成完成"
+
+msgid "生成PDF过程中发生错误"
+msgstr "生成PDF过程中发生错误"
+
+msgid "清理临时文件完成"
+msgstr "清理临时文件完成"
+
+msgid "清理临时文件失败"
+msgstr "清理临时文件失败"
+
+msgid "PDF插件工作完成"
+msgstr "PDF插件工作完成"
+
+msgid "共生成"
+msgstr "共生成"
+
+# pdf_the_site.py 日志消息
+msgid "已启用PDF插件"
+msgstr "已启用PDF插件"
+
+msgid "跳过HTML保存插件"
+msgstr "跳过HTML保存插件"
+
+msgid "加载PDF插件失败"
+msgstr "加载PDF插件失败"
+
+msgid "未能加载PDF插件，请确保 pdf_plugin 已正确安装"
+msgstr "未能加载PDF插件，请确保 pdf_plugin 已正确安装"
+
+msgid "PDF插件未加载，程序退出"
+msgstr "PDF插件未加载，程序退出"
