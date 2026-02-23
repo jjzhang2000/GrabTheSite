@@ -41,6 +41,7 @@ python grab_the_site.py --url https://example.com
 - [插件系统](docs/PLUGINS.md) - 插件开发指南和API说明
 - [GUI界面](docs/GUI.md) - GUI界面使用说明
 - [PDF功能](docs/PDF.md) - PDF输出功能说明
+- [PDF GUI](docs/PDF_GUI.md) - PDF生成GUI使用说明
 - [功能规划](docs/ROADMAP.md) - 已实现功能和未来计划
 
 ## 配置文件

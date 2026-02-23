@@ -2,6 +2,8 @@
 
 ## 可用参数
 
+### 通用参数（grab_the_site.py 和 pdf_the_site.py 共用）
+
 | 参数 | 简写 | 类型 | 描述 |
 |------|------|------|------|
 | `--url` | `-u` | 字符串 | 目标网站 URL |
@@ -20,6 +22,15 @@
 | `--plugins` | | 字符串 | 启用的插件名称列表 |
 | `--no-plugins` | | 布尔值 | 禁用插件系统 |
 | `--force-download` | | 布尔值 | 强制重新下载页面 |
+
+### PDF 专用参数（仅 pdf_the_site.py）
+
+| 参数 | 简写 | 类型 | 描述 |
+|------|------|------|------|
+| `--pdf-filename` | | 字符串 | PDF 输出文件名 |
+| `--pdf-format` | | 字符串 | PDF 页面格式（A4, Letter, Legal, Tabloid） |
+| `--pdf-margin` | | 整数 | PDF 页边距（毫米） |
+| `--no-bookmarks` | | 布尔值 | 禁用 PDF 书签生成 |
 
 ## 使用示例
 
@@ -156,6 +167,47 @@ python grab_the_site.py --url https://example.com --plugins save_plugin --force-
 ```
 
 这将使用保存插件处理保存功能，并强制重新下载页面，以便测试保存插件的完整工作流程。
+
+## PDF 生成示例
+
+### 19. 基本 PDF 生成
+
+```bash
+python pdf_the_site.py --url https://example.com
+```
+
+这将抓取网站并生成 PDF 文件，默认文件名为 `site.pdf`。
+
+### 20. 指定 PDF 文件名
+
+```bash
+python pdf_the_site.py --url https://example.com --pdf-filename mysite.pdf
+```
+
+### 21. 指定 PDF 页面格式和边距
+
+```bash
+python pdf_the_site.py --url https://example.com --pdf-format A4 --pdf-margin 20
+```
+
+### 22. 禁用 PDF 书签
+
+```bash
+python pdf_the_site.py --url https://example.com --no-bookmarks
+```
+
+### 23. PDF 生成完整示例
+
+```bash
+python pdf_the_site.py --url https://example.com --max-files 50 --pdf-filename output.pdf --pdf-format Letter --pdf-margin 15 --output ./pdfs
+```
+
+这将：
+- 抓取最多 50 个页面
+- 生成名为 `output.pdf` 的 PDF 文件
+- 使用 Letter 页面格式
+- 设置 15mm 页边距
+- 输出到 `./pdfs` 目录
 
 ## 注意事项
 
