@@ -42,7 +42,7 @@ class PdfMainWindow(tk.Tk):
         except Exception:
             init_i18n('zh_CN')  # 默认中文
 
-        self.title(_("PDFtheSite - 网站抓取工具（PDF输出）"))
+        self.title(_("PDFtheSite - 网站抓取到PDF"))
         self.geometry("750x850")
         self.minsize(650, 750)
 
@@ -95,7 +95,7 @@ class PdfMainWindow(tk.Tk):
         self.bottom_frame.pack(fill=tk.X, pady=(10, 0))
 
         # 创建开始抓取按钮
-        self.start_button = ttk.Button(self.bottom_frame, text=_("开始抓取并生成PDF"), command=self.on_start)
+        self.start_button = ttk.Button(self.bottom_frame, text=_("抓取到PDF"), command=self.on_start)
         self.start_button.pack(side=tk.LEFT, padx=(0, 15))
 
         # 创建停止按钮
@@ -123,7 +123,7 @@ class PdfMainWindow(tk.Tk):
         from utils.i18n import gettext as _
 
         # 更新窗口标题
-        self.title(_("PDFtheSite - 网站抓取工具（PDF输出）"))
+        self.title(_("PDFtheSite - 网站抓取到PDF"))
 
         # 更新标签框架文本
         self.top_frame.config(text=_("基本配置"))
@@ -132,7 +132,7 @@ class PdfMainWindow(tk.Tk):
         self.log_frame.config(text=_("日志"))
 
         # 更新按钮文本
-        self.start_button.config(text=_("开始抓取并生成PDF"))
+        self.start_button.config(text=_("抓取到PDF"))
         self.stop_button.config(text=_("停止"))
         self.exit_button.config(text=_("退出"))
 
@@ -327,10 +327,13 @@ class PdfConfigPanel(ttk.Frame):
         self.pdf_filename_var = tk.StringVar(value="site.pdf")
         self.pdf_format_var = tk.StringVar(value="A4")
         self.pdf_margin_var = tk.IntVar(value=20)
-        self.pdf_bookmarks_var = tk.BooleanVar(value=True)
 
         # 创建界面
         self._create_widgets()
+
+        # 注册语言切换回调
+        from utils.i18n import register_language_change_callback
+        register_language_change_callback(self._update_ui_texts)
 
     def _create_widgets(self):
         """创建界面组件"""
@@ -339,12 +342,14 @@ class PdfConfigPanel(ttk.Frame):
         row1.pack(fill=tk.X, pady=(0, 5))
 
         # PDF文件名
-        ttk.Label(row1, text=_("PDF文件名:")).pack(side=tk.LEFT, padx=(0, 5))
+        self.filename_label = ttk.Label(row1, text=_("PDF文件名:"))
+        self.filename_label.pack(side=tk.LEFT, padx=(0, 8))
         self.filename_entry = ttk.Entry(row1, textvariable=self.pdf_filename_var, width=20)
-        self.filename_entry.pack(side=tk.LEFT, padx=(0, 15))
+        self.filename_entry.pack(side=tk.LEFT, padx=(0, 20))
 
         # 页面格式
-        ttk.Label(row1, text=_("页面格式:")).pack(side=tk.LEFT, padx=(0, 5))
+        self.format_label = ttk.Label(row1, text=_("页面格式:"))
+        self.format_label.pack(side=tk.LEFT, padx=(0, 8))
         self.format_combo = ttk.Combobox(
             row1,
             textvariable=self.pdf_format_var,
@@ -352,10 +357,11 @@ class PdfConfigPanel(ttk.Frame):
             width=10,
             state="readonly"
         )
-        self.format_combo.pack(side=tk.LEFT, padx=(0, 15))
+        self.format_combo.pack(side=tk.LEFT, padx=(0, 20))
 
         # 页边距
-        ttk.Label(row1, text=_("页边距(mm):")).pack(side=tk.LEFT, padx=(0, 5))
+        self.margin_label = ttk.Label(row1, text=_("页边距(mm):"))
+        self.margin_label.pack(side=tk.LEFT, padx=(0, 8))
         self.margin_spin = ttk.Spinbox(
             row1,
             from_=0,
@@ -365,17 +371,15 @@ class PdfConfigPanel(ttk.Frame):
         )
         self.margin_spin.pack(side=tk.LEFT)
 
-        # 第二行：书签选项
-        row2 = ttk.Frame(self)
-        row2.pack(fill=tk.X, pady=(5, 0))
+    def _update_ui_texts(self):
+        """更新界面文本（语言切换后调用）"""
+        # 重新导入gettext以确保使用最新的翻译
+        from utils.i18n import gettext as _
 
-        # 生成书签
-        self.bookmarks_check = ttk.Checkbutton(
-            row2,
-            text=_("生成PDF书签（目录）"),
-            variable=self.pdf_bookmarks_var
-        )
-        self.bookmarks_check.pack(side=tk.LEFT)
+        # 更新标签文本
+        self.filename_label.config(text=_("PDF文件名:"))
+        self.format_label.config(text=_("页面格式:"))
+        self.margin_label.config(text=_("页边距(mm):"))
 
     def get_config(self):
         """获取 PDF 配置
@@ -386,6 +390,5 @@ class PdfConfigPanel(ttk.Frame):
         return {
             "pdf_filename": self.pdf_filename_var.get(),
             "pdf_format": self.pdf_format_var.get(),
-            "pdf_margin": self.pdf_margin_var.get(),
-            "no_bookmarks": not self.pdf_bookmarks_var.get()
+            "pdf_margin": self.pdf_margin_var.get()
         }
