@@ -5,6 +5,34 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.0] - 2025-02-23
+
+### 新增
+
+- **PDF 输出插件**
+  - 将抓取的网站内容生成 PDF 文件
+  - 支持自定义 PDF 文件名、页面格式和页边距
+  - 自动生成 PDF 书签（目录），支持层级结构
+  - 书签优化：空目录合并显示（如 `a/.../d`）
+  - 已下载页面通过书签导航，外部链接可点击跳转
+
+- **PDF GUI 界面**
+  - 独立的 PDF 生成 GUI 界面
+  - 支持 PDF 配置（文件名、格式、页边距）
+  - 实时日志显示
+  - 支持中英文切换
+
+### 改进
+
+- **书签显示优化**
+  - 空目录自动合并，避免目录层级过深
+  - 多层空目录显示为 `首层/.../末层` 格式
+  - 目录使用 📁 图标，页面使用 📄 图标
+
+- **国际化完善**
+  - 补充 PDF 相关功能的翻译
+  - 修复语言切换时部分文本未更新的问题
+
 ## [0.1.0] - 2025-02-20
 
 ### 新增
@@ -71,5 +99,7 @@
 - 使用 Playwright 进行 JavaScript 渲染
 - 使用 tkinter 开发 GUI 界面
 - 使用 YAML 进行配置管理
+- 使用 PyPDF2 和 pypdf 处理 PDF 文件
 
+[0.2.0]: https://github.com/jjzhang2000/GrabTheSite/releases/tag/v0.2.0
 [0.1.0]: https://github.com/jjzhang2000/GrabTheSite/releases/tag/v0.1.0
