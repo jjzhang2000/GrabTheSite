@@ -14,7 +14,6 @@ import tempfile
 from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
 
-from bs4 import BeautifulSoup
 from utils.plugin_manager import Plugin
 from logger import _ as _t
 
