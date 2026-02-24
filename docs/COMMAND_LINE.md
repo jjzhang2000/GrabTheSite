@@ -22,6 +22,8 @@
 | `--plugins` | | 字符串 | 启用的插件名称列表 |
 | `--no-plugins` | | 布尔值 | 禁用插件系统 |
 | `--force-download` | | 布尔值 | 强制重新下载页面 |
+| `--verbose` | `-v` | 计数 | 增加日志详细程度（-v=INFO, -vv=DEBUG） |
+| `--quiet` | `-q` | 布尔值 | 只显示错误信息 |
 
 ### PDF 专用参数（仅 pdf_the_site.py）
 
@@ -208,6 +210,27 @@ python pdf_the_site.py --url https://example.com --max-files 50 --pdf-filename o
 - 使用 Letter 页面格式
 - 设置 15mm 页边距
 - 输出到 `./pdfs` 目录
+
+### 24. 控制日志输出级别
+
+```bash
+# 安静模式 - 只显示错误信息
+python grab_the_site.py --url https://example.com --quiet
+
+# 详细模式 - 显示 INFO 级别日志
+python grab_the_site.py --url https://example.com --verbose
+
+# 调试模式 - 显示 DEBUG 级别日志
+python grab_the_site.py --url https://example.com --verbose --verbose
+# 或简写为
+python grab_the_site.py --url https://example.com -vv
+```
+
+日志级别说明：
+- `--quiet` (`-q`): 只显示错误信息 (ERROR)
+- `--verbose` (`-v`): 显示信息 (INFO)
+- `--verbose --verbose` (`-vv`): 显示调试信息 (DEBUG)
+- 默认: 显示警告信息 (WARNING)
 
 ## 注意事项
 
