@@ -1346,7 +1346,7 @@ except:
 
 ---
 
-#### 问题 22：全局单例模式线程安全问题
+#### 问题 22：全局单例模式线程安全问题 ✅ 已修复
 
 **问题描述**：`js_renderer_playwright.py` 中的全局单例初始化存在潜在的竞态条件。
 
@@ -1372,25 +1372,16 @@ def get_js_renderer(enable=False, timeout=30):
 - 如果 `_js_renderer.start()` 失败，`_js_renderer` 仍为非 None 但未正确初始化
 - 后续调用可能返回一个无效的实例
 
-**改进方案**：
-```python
-def get_js_renderer(enable=False, timeout=30):
-    global _js_renderer
+**修复时间**：2026-02-24
 
-    with _js_renderer_lock:
-        if _js_renderer is None and enable:
-            renderer = JSRendererThread(enable=True, timeout=timeout)
-            renderer.start()
-            # 等待初始化完成
-            if renderer._initialized:
-                _js_renderer = renderer
-            else:
-                renderer.stop()
-                logger.error("JS渲染器初始化失败")
-                return None
-
-        return _js_renderer
-```
+**修复内容**：
+- 修改 `get_js_renderer` 函数，添加初始化验证
+- 使用局部变量 `renderer` 先创建实例，等待初始化完成后再赋值给全局变量
+- 添加 `init_timeout` 参数控制初始化超时时间（默认10秒）
+- 检查 `_initialized` 标志确认初始化成功
+- 检查线程状态，如果线程异常终止则返回 None
+- 初始化失败时调用 `renderer.stop()` 清理资源
+- 添加详细的日志记录
 
 ---
 

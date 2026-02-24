@@ -283,15 +283,42 @@ _js_renderer = None
 _js_renderer_lock = threading.Lock()
 
 
-def get_js_renderer(enable=False, timeout=30):
-    """获取全局JS渲染器实例"""
+def get_js_renderer(enable=False, timeout=30, init_timeout=10):
+    """获取全局JS渲染器实例
+
+    Args:
+        enable: 是否启用JS渲染
+        timeout: 渲染超时时间（秒）
+        init_timeout: 初始化超时时间（秒）
+
+    Returns:
+        JSRendererThread: 渲染器实例，如果初始化失败返回 None
+    """
     global _js_renderer
-    
+
     with _js_renderer_lock:
         if _js_renderer is None and enable:
-            _js_renderer = JSRendererThread(enable=True, timeout=timeout)
-            _js_renderer.start()
-        
+            renderer = JSRendererThread(enable=True, timeout=timeout)
+            renderer.start()
+
+            # 等待初始化完成
+            start_time = time.time()
+            while time.time() - start_time < init_timeout:
+                if renderer._initialized:
+                    _js_renderer = renderer
+                    logger.info(_t("JS渲染器初始化成功"))
+                    break
+                if not renderer._thread or not renderer._thread.is_alive():
+                    # 线程已终止，初始化失败
+                    logger.error(_t("JS渲染器线程异常终止"))
+                    break
+                time.sleep(0.1)
+            else:
+                # 初始化超时
+                logger.error(_t("JS渲染器初始化超时"))
+                renderer.stop(timeout=5)
+                return None
+
         return _js_renderer
 
 
