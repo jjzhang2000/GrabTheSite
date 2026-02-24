@@ -583,7 +583,8 @@ class SavePlugin(Plugin):
                 if static_url:
                     try:
                         self.resource_queue.task_done()
-                    except:
+                    except ValueError:
+                        # 队列任务已完成或队列为空，忽略
                         pass
 
         self.logger.info(_t("资源下载线程已停止") + f": {_t('总计成功')} {download_count} {_t('个')}, {_t('跳过')} {skip_count} {_t('个')}, {_t('失败')} {fail_count} {_t('个')}")

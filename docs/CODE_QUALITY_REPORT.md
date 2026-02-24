@@ -1241,7 +1241,7 @@ def _extract_title(self) -> Optional[str]:
 
 ### 🔴 高优先级问题
 
-#### 问题 19：空异常处理块
+#### 问题 19：空异常处理块 ✅ 已修复
 
 **问题描述**：多处使用空的 `except:` 或 `except: pass` 块，可能隐藏严重错误。
 
@@ -1266,13 +1266,13 @@ except:
 - 可能掩盖严重的程序错误
 - 难以调试
 
-**改进方案**：
-```python
-try:
-    handler.close()
-except (IOError, OSError) as e:
-    logger.debug(f"关闭处理器时出错: {e}")
-```
+**修复时间**：2026-02-24
+
+**修复内容**：
+- `logger.py` 第112-113行：改为 `except (IOError, OSError) as e`，并打印错误信息到 stderr
+- `logger.py` 第189-191行：改为 `except (IOError, OSError) as e`，并打印错误信息到 stderr
+- `logger.py` 第199-202行：改为 `except (IOError, OSError) as e`，并打印错误信息到 stderr
+- `plugins/save_plugin/__init__.py` 第586-587行：改为 `except ValueError`，捕获队列相关的特定异常
 
 ---
 

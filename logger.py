@@ -109,8 +109,9 @@ def _ensure_root_logger_configured():
         root_logger.removeHandler(handler)
         try:
             handler.close()
-        except:
-            pass
+        except (IOError, OSError) as e:
+            # 关闭处理器时出错，记录调试信息
+            print(f"关闭日志处理器时出错: {e}", file=sys.stderr)
     
     # 创建文件处理器
     try:
@@ -186,11 +187,12 @@ def close_all_loggers():
             try:
                 handler.flush()
                 handler.close()
-            except:
-                pass
+            except (IOError, OSError) as e:
+                # 关闭处理器时出错，继续清理其他处理器
+                print(f"关闭根日志处理器时出错: {e}", file=sys.stderr)
             finally:
                 root_logger.removeHandler(handler)
-        
+
         # 清理命名记录器的处理器
         for logger_name in list(logging.Logger.manager.loggerDict.keys()):
             logger = logging.getLogger(logger_name)
@@ -198,8 +200,9 @@ def close_all_loggers():
                 try:
                     handler.flush()
                     handler.close()
-                except:
-                    pass
+                except (IOError, OSError) as e:
+                    # 关闭处理器时出错，继续清理其他处理器
+                    print(f"关闭日志处理器 '{logger_name}' 时出错: {e}", file=sys.stderr)
                 finally:
                     logger.removeHandler(handler)
         
