@@ -5,8 +5,38 @@
 
 __version__ = "0.1.0"
 
-from .config_manager import ConfigManager, ConfigValidator, ValidationError, get_config, load_config
+from .config_manager import ConfigManager, ConfigValidator, get_config, load_config
 from .error_handler import ErrorHandler, retry
+from .exceptions import (
+    ConfigError,
+    ConnectionError,
+    CrawlError,
+    FileAccessError,
+    FileError,
+    FileNotFoundError,
+    GrabTheSiteError,
+    HTTPError,
+    InvalidURLError,
+    JSError,
+    NetworkError,
+    PluginError,
+    PluginHookError,
+    PluginLoadError,
+    RateLimitError,
+    RenderError,
+    RetryExhaustedError,
+    StateError,
+    StateLoadError,
+    StateSaveError,
+    TaskAlreadyExistsError,
+    TaskError,
+    TaskNotFoundError,
+    TaskStateError,
+    TimeoutError,
+    URLFilterError,
+    URLNotAllowedError,
+    ValidationError,
+)
 from .http_client import HTTPClient, HTTPClientManager, create_default_client, create_retry_client
 from .i18n import get_available_languages, get_current_lang
 from .i18n import gettext as _
@@ -44,4 +74,32 @@ __all__ = [
     "HTTPClientManager",
     "create_default_client",
     "create_retry_client",
+    # 异常类
+    "GrabTheSiteError",
+    "ConfigError",
+    "CrawlError",
+    "NetworkError",
+    "TimeoutError",
+    "RateLimitError",
+    "ConnectionError",
+    "HTTPError",
+    "RetryExhaustedError",
+    "PluginError",
+    "PluginLoadError",
+    "PluginHookError",
+    "RenderError",
+    "JSError",
+    "FileError",
+    "FileNotFoundError",
+    "FileAccessError",
+    "StateError",
+    "StateLoadError",
+    "StateSaveError",
+    "URLFilterError",
+    "InvalidURLError",
+    "URLNotAllowedError",
+    "TaskError",
+    "TaskNotFoundError",
+    "TaskAlreadyExistsError",
+    "TaskStateError",
 ]

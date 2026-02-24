@@ -14,21 +14,23 @@
 """
 
 import os
-import time
+import queue
 import random
 import threading
-import queue
-from typing import Optional, Set, Dict, Any, List
+import time
+from typing import Any, Dict, List, Optional, Set
 from urllib.parse import urlparse
-from logger import setup_logger, _ as _t
-from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS
-from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
-from utils.state_manager import StateManager
-from utils.url_utils import normalize_url
-from utils.plugin_manager import PluginManager
-from crawler.url_filter import URLFilter
-from crawler.link_extractor import LinkExtractor
+
+from config import DELAY, EXCLUDE_LIST, RANDOM_DELAY, THREADS
 from crawler.fetcher import Fetcher
+from crawler.link_extractor import LinkExtractor
+from crawler.url_filter import URLFilter
+from logger import _ as _t
+from logger import setup_logger
+from utils.plugin_manager import PluginManager
+from utils.state_manager import StateManager
+from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
+from utils.url_utils import normalize_url
 
 # 获取 logger 实例
 logger = setup_logger(__name__)

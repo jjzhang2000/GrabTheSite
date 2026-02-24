@@ -11,13 +11,9 @@ from typing import Dict, Any, Optional, List, Union, Callable
 from urllib.parse import urlparse
 import yaml
 from logger import setup_logger, _ as _t
+from utils.exceptions import ValidationError
 
 logger = setup_logger(__name__)
-
-
-class ValidationError(Exception):
-    """配置验证错误"""
-    pass
 
 
 class ConfigValidator:

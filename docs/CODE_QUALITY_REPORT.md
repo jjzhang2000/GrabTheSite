@@ -949,11 +949,11 @@ jobs:
 
 ### 阶段二：数据模型重构
 
-- [ ] 创建 `models/crawl_task.py` (未开始)
-- [ ] 创建 `models/page.py` (未开始)
-- [ ] 创建 `models/config.py` (未开始)
+- [x] 创建 `models/crawl_task.py` (2026-02-24: 创建了 TaskStatus 枚举、CrawlTask、CrawlStats、CrawlResult 数据类)
+- [x] 创建 `models/page.py` (2026-02-24: 创建了 Page 数据类，包含页面内容和元数据)
+- [x] 创建 `models/config.py` (2026-02-24: 创建了 CrawlConfig 数据类，支持配置验证)
 - [x] 重构配置管理模块 (2026-02-24: 创建了 utils/config_manager.py，包含 ConfigManager、ConfigValidator 类，支持点号路径访问配置、完整的配置验证功能)
-- [ ] 引入自定义异常层次结构 (未开始)
+- [x] 引入自定义异常层次结构 (2026-02-24: 创建了 utils/exceptions.py，包含 GrabTheSiteError 基础异常及各类子异常)
 
 ### 阶段三：核心类拆分
 
