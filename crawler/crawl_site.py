@@ -287,6 +287,8 @@ class CrawlSite:
                     logger.error(_t("文件操作失败") + f": {e}")
                 except requests.RequestException as e:
                     logger.error(_t("网络请求失败") + f": {e}")
+                except (queue.Empty, threading.ThreadError) as e:
+                    logger.error(_t("队列/线程错误") + f": {e}")
                 except Exception as e:
                     logger.error(_t("抓取页面失败") + f": {url}, " + _t("错误") + f": {e}")
                 finally:

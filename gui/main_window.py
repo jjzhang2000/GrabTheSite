@@ -283,8 +283,8 @@ class MainWindow(tk.Tk):
             from crawler.crawl_site import CrawlSite
             # 注意：这里无法直接访问队列，但守护线程会在主程序退出时自动终止
             pass
-        except:
-            pass
+        except ImportError as e:
+            self.log_panel.add_log(_("警告: 无法导入爬虫模块") + f": {e}")
         
         # 关闭所有日志处理器，释放文件锁
         self.log_panel.add_log(_("正在清理资源..."))

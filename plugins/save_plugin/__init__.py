@@ -559,8 +559,8 @@ class SavePlugin(Plugin):
                 if static_url:
                     try:
                         self.resource_queue.task_done()
-                    except:
-                        pass
+                    except (queue.Empty, ValueError) as e:
+                        self.logger.debug(f"task_done 调用失败: {e}")
         
         self.logger.info(_t("资源下载线程停止前清理") + f": {_('成功')} {download_count} {_('个')}, {_('跳过')} {skip_count} {_('个')}, {_('失败')} {fail_count} {_('个')}, {_('队列剩余')} {self.resource_queue.qsize()} {_('个')}")
         

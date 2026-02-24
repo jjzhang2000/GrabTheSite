@@ -945,7 +945,7 @@ jobs:
 - [ ] 提取公共模块 `utils/http.py`
 - [ ] 添加类型注解到 `crawler/` 模块
 - [ ] 添加类型注解到 `plugins/` 模块
-- [ ] 修复异常处理过于宽泛的问题
+- [x] 修复异常处理过于宽泛的问题 (2026-02-24: 修复了 gui/main_window.py、plugins/save_plugin/__init__.py 和 crawler/crawl_site.py 中的异常处理问题)
 - [ ] 添加 `pyproject.toml` 配置
 
 ### 阶段二：数据模型重构
