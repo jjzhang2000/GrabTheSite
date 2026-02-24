@@ -1012,7 +1012,7 @@ jobs:
 
 ### 🔴 高优先级问题
 
-#### 问题 13：GUI 使用 os._exit 强制终止进程
+#### 问题 13：GUI 使用 os._exit 强制终止进程 ✅ 已修复
 
 **问题描述**：`main_window.py` 和 `pdf_main_window.py` 在退出时使用 `os._exit(0)` 强制终止整个进程。
 
@@ -1034,23 +1034,41 @@ os._exit(0)
 - 可能导致日志缓冲区数据丢失
 - 可能导致临时文件未清理
 
-**改进方案**：
+**修复时间**：2026-02-24
+
+**修复内容**：
+- 将 `os._exit(0)` 替换为 `sys.exit(0)`
+- 使用 `thread.join(timeout=5)` 替代手动轮询等待线程
+- 移除不必要的 `time.sleep(0.5)` 和队列清理代码
+- 简化退出流程，让 Python 解释器正常执行清理操作
+
+**修复后的代码**：
 ```python
 def on_exit(self):
-    # 优雅关闭
+    import sys
+    import time
+
+    # 如果正在抓取，先发送停止信号
     if self.is_crawling:
+        self.log_panel.add_log(_("正在停止抓取并退出..."))
         self.stop_event.set()
-        if self.crawl_thread and self.crawl_thread.is_alive():
-            self.crawl_thread.join(timeout=5)
-    
-    # 关闭日志处理器
+
+    # 等待抓取线程结束，最多等待5秒
+    if self.crawl_thread and self.crawl_thread.is_alive():
+        self.log_panel.add_log(_("等待抓取线程结束..."))
+        self.crawl_thread.join(timeout=5)
+        if self.crawl_thread.is_alive():
+            self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
+
+    # 关闭所有日志处理器，释放文件锁
+    self.log_panel.add_log(_("正在清理资源..."))
     from logger import close_all_loggers
     close_all_loggers()
-    
+
     # 销毁窗口
     self.destroy()
-    
-    # 正常退出，让 Python 解释器执行清理
+
+    # 使用 sys.exit(0) 正常退出，让 Python 解释器执行清理
     sys.exit(0)
 ```
 

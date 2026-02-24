@@ -260,7 +260,8 @@ class PdfMainWindow(tk.Tk):
 
     def on_exit(self):
         """退出按钮点击事件"""
-        import logging
+        import sys
+        import time
 
         # 如果正在抓取，先发送停止信号
         if self.is_crawling:
@@ -271,28 +272,12 @@ class PdfMainWindow(tk.Tk):
         if self.crawl_thread and self.crawl_thread.is_alive():
             self.log_panel.add_log(_("等待抓取线程结束..."))
 
-            # 等待抓取线程结束，最多等待10秒
-            wait_time = 0
-            max_wait = 10
-            while self.crawl_thread and self.crawl_thread.is_alive() and wait_time < max_wait:
-                self.update()  # 保持UI响应
-                import time
-                time.sleep(0.2)
-                wait_time += 0.2
+            # 等待抓取线程结束，最多等待5秒
+            self.crawl_thread.join(timeout=5)
 
-            # 如果线程仍在运行，强制终止
-            if self.crawl_thread and self.crawl_thread.is_alive():
+            # 如果线程仍在运行，记录警告
+            if self.crawl_thread.is_alive():
                 self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
-
-        # 清空所有队列，释放阻塞的线程
-        self.log_panel.add_log(_("正在清空队列..."))
-        try:
-            # 导入并清空爬虫队列
-            from crawler.crawl_site import CrawlSite
-            # 注意：这里无法直接访问队列，但守护线程会在主程序退出时自动终止
-            pass
-        except:
-            pass
 
         # 关闭所有日志处理器，释放文件锁
         self.log_panel.add_log(_("正在清理资源..."))
@@ -302,14 +287,8 @@ class PdfMainWindow(tk.Tk):
         # 销毁窗口
         self.destroy()
 
-        # 给守护线程一点时间自行终止
-        import time
-        time.sleep(0.5)
-
-        # 强制终止整个进程（包括所有线程）
-        # 注意：os._exit 不会执行清理操作，但会立即终止所有线程
-        import os
-        os._exit(0)
+        # 使用 sys.exit(0) 正常退出，让 Python 解释器执行清理
+        sys.exit(0)
 
 
 class PdfConfigPanel(ttk.Frame):
