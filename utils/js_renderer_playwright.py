@@ -84,32 +84,65 @@ class JSRendererThread:
     
     def _find_system_browser(self, p):
         """查找系统中已安装的浏览器
-        
+
+        支持 Windows、macOS 和 Linux 系统。
+
         Returns:
             tuple: (browser_type, channel, executable_path) 或 None
         """
-        # 尝试使用 Microsoft Edge
-        edge_paths = [
-            r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-            r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-            os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
-        ]
-        for edge_path in edge_paths:
-            if os.path.exists(edge_path):
-                logger.info(_t("检测到 Microsoft Edge: ") + edge_path)
-                return ('chromium', 'msedge', edge_path)
-        
-        # 尝试使用 Google Chrome
-        chrome_paths = [
-            r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-            r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-            os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
-        ]
-        for chrome_path in chrome_paths:
-            if os.path.exists(chrome_path):
-                logger.info(_t("检测到 Google Chrome: ") + chrome_path)
-                return ('chromium', 'chrome', chrome_path)
-        
+        import platform
+        system = platform.system()
+
+        # 定义不同系统的浏览器路径
+        browsers = []
+
+        if system == "Windows":
+            browsers = [
+                ("chromium", "msedge", [
+                    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+                    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+                    os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+                ]),
+                ("chromium", "chrome", [
+                    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+                    os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+                ]),
+            ]
+        elif system == "Darwin":  # macOS
+            browsers = [
+                ("chromium", "msedge", [
+                    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+                    os.path.expanduser("~/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
+                ]),
+                ("chromium", "chrome", [
+                    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                    os.path.expanduser("~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+                ]),
+            ]
+        elif system == "Linux":
+            browsers = [
+                ("chromium", "chrome", [
+                    "/usr/bin/google-chrome",
+                    "/usr/bin/google-chrome-stable",
+                    "/usr/bin/chromium",
+                    "/usr/bin/chromium-browser",
+                    "/snap/bin/chromium",
+                ]),
+                ("chromium", "msedge", [
+                    "/usr/bin/microsoft-edge",
+                    "/usr/bin/microsoft-edge-stable",
+                ]),
+            ]
+
+        # 查找可用的浏览器
+        for browser_type, channel, paths in browsers:
+            for path in paths:
+                if os.path.exists(path):
+                    logger.info(_t(f"检测到 {channel}: ") + path)
+                    return (browser_type, channel, path)
+
+        logger.warning(_t(f"未在 {system} 系统检测到支持的浏览器"))
         return None
     
     def _run(self):

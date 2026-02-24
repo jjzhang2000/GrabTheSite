@@ -1385,7 +1385,7 @@ def get_js_renderer(enable=False, timeout=30):
 
 ---
 
-#### 问题 23：硬编码的浏览器路径
+#### 问题 23：硬编码的浏览器路径 ✅ 已修复
 
 **问题描述**：`js_renderer_playwright.py` 中硬编码了 Windows 系统的浏览器路径。
 
@@ -1404,39 +1404,15 @@ edge_paths = [
 - 不支持 macOS 和 Linux
 - 浏览器安装位置变化时需要修改代码
 
-**改进方案**：
-```python
-def _find_system_browser(self, p):
-    """查找系统中已安装的浏览器"""
-    import platform
-    system = platform.system()
+**修复时间**：2026-02-24
 
-    browsers = []
-
-    if system == "Windows":
-        browsers = [
-            ("chromium", "msedge", [
-                r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-                r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-                os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
-            ]),
-            ("chromium", "chrome", [
-                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-                # ...
-            ]),
-        ]
-    elif system == "Darwin":  # macOS
-        browsers = [
-            ("chromium", "chrome", ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]),
-            ("chromium", "msedge", ["/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"]),
-        ]
-    elif system == "Linux":
-        browsers = [
-            ("chromium", "chrome", ["/usr/bin/google-chrome", "/usr/bin/chromium-browser"]),
-        ]
-
-    # ... 查找逻辑
-```
+**修复内容**：
+- 修改 `_find_system_browser` 方法，使用 `platform.system()` 检测操作系统
+- 添加 Windows 系统的浏览器路径（Edge、Chrome）
+- 添加 macOS 系统的浏览器路径（Edge、Chrome）
+- 添加 Linux 系统的浏览器路径（Chrome、Chromium、Edge）
+- 支持用户目录下的应用（使用 `os.path.expanduser`）
+- 添加系统检测日志，未检测到浏览器时给出警告
 
 ---
 
