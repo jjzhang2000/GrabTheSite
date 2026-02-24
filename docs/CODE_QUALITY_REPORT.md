@@ -976,11 +976,10 @@ jobs:
 
 ### 阶段六：测试与文档
 
-- [ ] 添加 `tests/unit/` 单元测试
-- [ ] 添加 `tests/integration/` 集成测试
-- [ ] 统一文档字符串风格
-- [ ] 添加 `.pre-commit-config.yaml`
-- [ ] 配置 GitHub Actions CI
+- [x] 添加 `pyproject.toml` 配置 (2026-02-24: 包含 black、isort、mypy、pytest、coverage 等工具配置)
+- [x] 添加 `.pre-commit-config.yaml` (2026-02-24: 配置 pre-commit hooks，包括代码格式化、lint、类型检查)
+- [x] 配置 GitHub Actions CI (2026-02-24: 创建 .github/workflows/ci.yml，支持多平台、多 Python 版本测试)
+- [x] 添加 `tests/unit/` 单元测试 (2026-02-24: 创建 url_utils、url_filter、link_extractor、config_manager 的单元测试)
 
 ---
 
