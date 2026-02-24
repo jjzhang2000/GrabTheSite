@@ -9,6 +9,7 @@
 import os
 import json
 import time
+from typing import Set, Dict, Any, Optional
 from logger import setup_logger, _ as _t
 
 # 获取 logger 实例
@@ -17,15 +18,15 @@ logger = setup_logger(__name__)
 
 class StateManager:
     """状态管理器，用于保存和加载抓取状态"""
-    
-    def __init__(self, state_file):
+
+    def __init__(self, state_file: str) -> None:
         """初始化状态管理器
-        
+
         Args:
             state_file: 状态文件路径
         """
-        self.state_file = state_file
-        self.state = {
+        self.state_file: str = state_file
+        self.state: Dict[str, Any] = {
             "visited_urls": set(),
             "downloaded_files": set(),
             "start_time": time.time(),
@@ -36,12 +37,12 @@ class StateManager:
                 "failed_urls": 0
             }
         }
-        
+
         self.load_state()
     
-    def load_state(self):
+    def load_state(self) -> bool:
         """加载状态文件
-        
+
         Returns:
             bool: 是否成功加载状态文件
         """
@@ -71,9 +72,9 @@ class StateManager:
                 return False
         return False
     
-    def save_state(self):
+    def save_state(self) -> bool:
         """保存状态文件
-        
+
         Returns:
             bool: 是否成功保存状态文件
         """
@@ -100,52 +101,52 @@ class StateManager:
             logger.error(_t("保存状态文件失败") + f": {e}")
             return False
     
-    def add_visited_url(self, url):
+    def add_visited_url(self, url: str) -> None:
         """添加已访问的 URL
-        
+
         Args:
             url: 已访问的 URL
         """
         self.state["visited_urls"].add(url)
         self.state["stats"]["total_urls"] = len(self.state["visited_urls"])
     
-    def add_downloaded_file(self, file_path):
+    def add_downloaded_file(self, file_path: str) -> None:
         """添加已下载的文件
-        
+
         Args:
             file_path: 已下载的文件路径
         """
         self.state["downloaded_files"].add(file_path)
         self.state["stats"]["downloaded_files"] = len(self.state["downloaded_files"])
     
-    def add_failed_url(self, url):
+    def add_failed_url(self, url: str) -> None:
         """添加失败的 URL
-        
+
         Args:
             url: 失败的 URL
         """
         self.state["stats"]["failed_urls"] += 1
     
-    def is_url_visited(self, url):
+    def is_url_visited(self, url: str) -> bool:
         """检查 URL 是否已访问
-        
+
         Args:
             url: 要检查的 URL
-            
+
         Returns:
             bool: 是否已访问
         """
         return url in self.state["visited_urls"]
     
-    def is_file_downloaded(self, file_path):
+    def is_file_downloaded(self, file_path: str) -> bool:
         """检查文件是否已下载
-        
+
         注意：此方法同时检查状态记录和文件实际存在性
         如果文件被手动删除，即使状态记录存在也返回 False
-        
+
         Args:
             file_path: 要检查的文件路径
-            
+
         Returns:
             bool: 是否已下载（状态记录存在且文件实际存在且是文件）
         """
@@ -163,17 +164,17 @@ class StateManager:
         
         return in_state and file_exists
     
-    def get_stats(self):
+    def get_stats(self) -> Dict[str, Any]:
         """获取抓取统计信息
-        
+
         Returns:
             dict: 统计信息
         """
         return self.state["stats"]
     
-    def clear_state(self):
+    def clear_state(self) -> bool:
         """清除状态
-        
+
         Returns:
             bool: 是否成功清除状态
         """

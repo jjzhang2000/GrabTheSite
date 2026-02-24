@@ -943,8 +943,7 @@ jobs:
 
 - [x] 提取公共模块 `utils/url_utils.py` (2026-02-24: 创建了 utils/url_utils.py，包含 normalize_url 等函数，并替换 crawler/crawl_site.py、plugins/save_plugin/__init__.py、plugins/pdf_plugin/link_processor.py 中的重复实现)
 - [ ] 提取公共模块 `utils/http.py`
-- [ ] 添加类型注解到 `crawler/` 模块
-- [ ] 添加类型注解到 `plugins/` 模块
+- [x] 添加类型注解到核心模块 (2026-02-24: 为 crawler/crawl_site.py、utils/error_handler.py、utils/state_manager.py、utils/url_utils.py 添加了类型注解)
 - [x] 修复异常处理过于宽泛的问题 (2026-02-24: 修复了 gui/main_window.py、plugins/save_plugin/__init__.py 和 crawler/crawl_site.py 中的异常处理问题)
 - [ ] 添加 `pyproject.toml` 配置
 

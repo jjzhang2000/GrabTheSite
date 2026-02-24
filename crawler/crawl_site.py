@@ -13,6 +13,7 @@ import time
 import random
 import threading
 import queue
+from typing import Optional, Set, Dict, Any, List, Tuple
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -25,6 +26,7 @@ from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, shou
 from utils.error_handler import ErrorHandler
 from utils.state_manager import StateManager
 from utils.url_utils import normalize_url
+from utils.plugin_manager import PluginManager
 
 # 创建 session，禁用连接池线程
 _session = requests.Session()
@@ -44,10 +46,20 @@ from utils.js_renderer_playwright import get_js_renderer, close_js_renderer
 
 class CrawlSite:
     """网站抓取类，负责抓取网站内容并返回暂存的页面"""
-    
-    def __init__(self, target_url, max_depth, max_files, output_dir, threads=THREADS, plugin_manager=None, force_download=False, stop_event=None):
+
+    def __init__(
+        self,
+        target_url: str,
+        max_depth: int,
+        max_files: int,
+        output_dir: str,
+        threads: int = THREADS,
+        plugin_manager: Optional[PluginManager] = None,
+        force_download: bool = False,
+        stop_event: Optional[threading.Event] = None
+    ) -> None:
         """初始化抓取器
-        
+
         Args:
             target_url: 目标URL
             max_depth: 最大深度
@@ -58,29 +70,29 @@ class CrawlSite:
             force_download: 是否强制重新下载页面
             stop_event: 停止事件，用于通知抓取线程停止
         """
-        self.force_download = force_download
-        self.stop_event = stop_event  # 停止事件
-        self.target_url = target_url
-        self.max_depth = max_depth
-        self.max_files = max_files
-        self.output_dir = output_dir
-        self.threads = threads
-        self.plugin_manager = plugin_manager
-        self.downloaded_files = 0
-        self.visited_urls = set()
-        self.lock = threading.Lock()
+        self.force_download: bool = force_download
+        self.stop_event: Optional[threading.Event] = stop_event
+        self.target_url: str = target_url
+        self.max_depth: int = max_depth
+        self.max_files: int = max_files
+        self.output_dir: str = output_dir
+        self.threads: int = threads
+        self.plugin_manager: Optional[PluginManager] = plugin_manager
+        self.downloaded_files: int = 0
+        self.visited_urls: Set[str] = set()
+        self.lock: threading.Lock = threading.Lock()
         # 使用 LifoQueue 实现深度优先搜索（DFS）
         # 这样站点地图可以体现上下级层级关系
-        self.queue = queue.LifoQueue()
-        
-        self.exclude_urls_list = EXCLUDE_LIST or []
-        
+        self.queue: queue.LifoQueue = queue.LifoQueue()
+
+        self.exclude_urls_list: List[str] = EXCLUDE_LIST or []
+
         # 页面暂存机制：URL -> 页面内容
-        self.pages = {}
+        self.pages: Dict[str, str] = {}
         # 页面深度记录：URL -> 下载深度
-        self.page_depths = {}
+        self.page_depths: Dict[str, int] = {}
         # 静态资源记录：URL集合（供save插件使用）
-        self.static_resources = set()
+        self.static_resources: Set[str] = set()
         
         # 提取并标准化起始目录路径（确保以/结尾）
         parsed_target = urlparse(self.target_url)
@@ -150,9 +162,9 @@ class CrawlSite:
         # 创建输出目录
         os.makedirs(self.output_dir, exist_ok=True)
     
-    def crawl_site(self):
+    def crawl_site(self) -> Dict[str, str]:
         """开始抓取网站
-        
+
         Returns:
             dict: 暂存的页面内容，键为URL，值为页面内容
         """
@@ -220,7 +232,7 @@ class CrawlSite:
         logger.info(_t("暂存页面数量") + f": {len(self.pages)}")
         return self.pages
     
-    def _worker(self):
+    def _worker(self) -> None:
         """工作线程函数"""
         while True:
             # 检查是否收到停止信号
@@ -304,14 +316,14 @@ class CrawlSite:
                 # 队列空了，退出
                 break
     
-    def _fetch_page_content(self, url):
+    def _fetch_page_content(self, url: str) -> Optional[str]:
         """获取页面内容，使用错误处理器进行重试
-        
+
         使用专用JS渲染线程，避免多线程竞争导致的线程泄漏。
-        
+
         Args:
             url: 页面URL
-            
+
         Returns:
             str: 页面内容，如果获取失败返回None
         """
@@ -508,16 +520,16 @@ class CrawlSite:
         # 检查 url_path 是否以 self.target_directory 开头
         return url_path.startswith(self.target_directory)
     
-    def _is_in_exclude_list(self, url):
+    def _is_in_exclude_list(self, url: str) -> bool:
         """检查 URL 是否在排除列表中或其子目录中
-        
+
         支持通配符(*)匹配，例如:
         - *.php* 匹配所有包含.php的URL
         - */admin/* 匹配所有包含/admin/的URL
-        
+
         Args:
             url: 要检查的 URL
-            
+
         Returns:
             布尔值，表示该 URL 是否在排除列表中或其子目录中
         """
@@ -545,9 +557,9 @@ class CrawlSite:
     
 
     
-    def _add_delay(self):
+    def _add_delay(self) -> None:
         """添加延迟，避免对目标服务器造成过大压力
-        
+
         支持固定延迟和随机延迟两种模式
         """
         if DELAY > 0:

@@ -10,7 +10,10 @@ import time
 import random
 import logging
 from functools import wraps
+from typing import Optional, List, Union, Callable, Any, TypeVar
 from logger import setup_logger, _ as _t
+
+F = TypeVar('F', bound=Callable[..., Any])
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
@@ -18,11 +21,17 @@ logger = setup_logger(__name__)
 
 class ErrorHandler:
     """错误处理器，提供重试机制和错误处理策略"""
-    
-    def __init__(self, retry_count=3, retry_delay=2, exponential_backoff=True, 
-                 retryable_errors=None, fail_strategy='log'):
+
+    def __init__(
+        self,
+        retry_count: int = 3,
+        retry_delay: float = 2.0,
+        exponential_backoff: bool = True,
+        retryable_errors: Optional[List[Union[int, type]]] = None,
+        fail_strategy: str = 'log'
+    ) -> None:
         """初始化错误处理器
-        
+
         Args:
             retry_count: 重试次数
             retry_delay: 重试间隔（秒）
@@ -30,23 +39,23 @@ class ErrorHandler:
             retryable_errors: 可重试的错误类型或状态码列表
             fail_strategy: 失败策略，可选值：'log'（仅记录）, 'skip'（跳过）, 'raise'（抛出异常）
         """
-        self.retry_count = retry_count
-        self.retry_delay = retry_delay
-        self.exponential_backoff = exponential_backoff
-        self.retryable_errors = retryable_errors or [429, 500, 502, 503, 504]
-        self.fail_strategy = fail_strategy
+        self.retry_count: int = retry_count
+        self.retry_delay: float = retry_delay
+        self.exponential_backoff: bool = exponential_backoff
+        self.retryable_errors: List[Union[int, type]] = retryable_errors or [429, 500, 502, 503, 504]
+        self.fail_strategy: str = fail_strategy
     
-    def retry(self, func):
+    def retry(self, func: F) -> F:
         """重试装饰器
-        
+
         Args:
             func: 要装饰的函数
-            
+
         Returns:
             装饰后的函数
         """
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             retries = 0
             while retries <= self.retry_count:
                 try:
@@ -70,12 +79,12 @@ class ErrorHandler:
                         return self._handle_failure(e, *args, **kwargs)
         return wrapper
     
-    def _is_retryable_error(self, error):
+    def _is_retryable_error(self, error: Exception) -> bool:
         """检查错误是否可重试
-        
+
         Args:
             error: 异常对象
-            
+
         Returns:
             bool: 是否可重试
         """
@@ -94,12 +103,12 @@ class ErrorHandler:
         
         return False
     
-    def _calculate_delay(self, retry_count):
+    def _calculate_delay(self, retry_count: int) -> float:
         """计算重试延迟时间
-        
+
         Args:
             retry_count: 当前重试次数
-            
+
         Returns:
             float: 延迟时间（秒）
         """
@@ -113,14 +122,14 @@ class ErrorHandler:
         jitter = random.uniform(0.5, 1.5)
         return delay * jitter
     
-    def _handle_failure(self, error, *args, **kwargs):
+    def _handle_failure(self, error: Exception, *args: Any, **kwargs: Any) -> Any:
         """处理失败
-        
+
         Args:
             error: 异常对象
             *args: 函数参数
             **kwargs: 函数关键字参数
-            
+
         Returns:
             失败时的返回值
         """
@@ -139,21 +148,26 @@ default_error_handler = ErrorHandler()
 
 
 # 便捷的重试装饰器
-def retry(retry_count=3, retry_delay=2, exponential_backoff=True, 
-          retryable_errors=None, fail_strategy='log'):
+def retry(
+    retry_count: int = 3,
+    retry_delay: float = 2.0,
+    exponential_backoff: bool = True,
+    retryable_errors: Optional[List[Union[int, type]]] = None,
+    fail_strategy: str = 'log'
+) -> Callable[[F], F]:
     """便捷的重试装饰器
-    
+
     Args:
         retry_count: 重试次数
         retry_delay: 重试间隔（秒）
         exponential_backoff: 是否使用指数退避
         retryable_errors: 可重试的错误类型或状态码列表
         fail_strategy: 失败策略
-        
+
     Returns:
         装饰器函数
     """
-    def decorator(func):
+    def decorator(func: F) -> F:
         handler = ErrorHandler(
             retry_count=retry_count,
             retry_delay=retry_delay,
