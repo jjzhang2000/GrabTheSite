@@ -1302,7 +1302,7 @@ except:
 
 ### 🟡 中优先级问题
 
-#### 问题 21：主入口文件大量重复代码
+#### 问题 21：主入口文件大量重复代码 ✅ 已修复
 
 **问题描述**：`grab_the_site.py` 和 `pdf_the_site.py` 有约 70% 的代码重复。
 
@@ -1317,50 +1317,32 @@ except:
 - `update_config()` 函数
 - `main()` 函数主体结构
 
-**改进方案**：
-```python
-# cli/base.py
-class BaseCLI:
-    """CLI 基类"""
+**修复时间**：2026-02-24
 
-    def __init__(self, mode: str = 'crawl'):
-        self.mode = mode
-        self.parser = self._create_parser()
+**修复内容**：
+1. 创建 `cli/base_cli.py`：
+   - `BaseCLI` 抽象基类（378行）
+   - 包含公共参数解析、配置更新、验证
+   - 包含插件管理器设置
+   - 定义抽象方法供子类实现
 
-    def _create_parser(self) -> argparse.ArgumentParser:
-        """创建参数解析器"""
-        parser = argparse.ArgumentParser()
-        self._add_common_args(parser)
-        self._add_specific_args(parser)
-        return parser
+2. 重构 `grab_the_site.py`：
+   - 从 392 行简化为 62 行
+   - 创建 `CrawlCLI` 类继承 `BaseCLI`
+   - 只实现特定方法：`_configure_plugins`、`_post_process`
 
-    def _add_common_args(self, parser):
-        """添加通用参数"""
-        parser.add_argument("--url", "-u", ...)
-        parser.add_argument("--depth", "-d", ...)
-        # ...
+3. 重构 `pdf_the_site.py`：
+   - 从 507 行简化为 93 行
+   - 创建 `PDFCLI` 类继承 `BaseCLI`
+   - 实现特定方法：`_add_specific_args`、`_update_specific_config`、`_configure_plugins`、`_post_process`
 
-    def _add_specific_args(self, parser):
-        """添加特定参数（子类实现）"""
-        pass
+4. 创建 `cli/__init__.py`：
+   - 导出 `BaseCLI` 和 `main` 函数
 
-    def run(self, args_list=None, stop_event=None):
-        """运行主逻辑"""
-        # 公共逻辑
-        ...
-
-# cli/crawl_cli.py
-class CrawlCLI(BaseCLI):
-    def _add_specific_args(self, parser):
-        # 抓取特有参数
-        pass
-
-# cli/pdf_cli.py
-class PDFCLI(BaseCLI):
-    def _add_specific_args(self, parser):
-        parser.add_argument("--pdf-filename", ...)
-        parser.add_argument("--pdf-format", ...)
-```
+**效果**：
+- 消除约 744 行重复代码
+- 提高可维护性
+- 新增 CLI 模式只需继承基类
 
 ---
 
