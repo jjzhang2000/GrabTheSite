@@ -1164,7 +1164,7 @@ import os  # 导入 os 模块用于 download 方法
 
 ### 🟢 低优先级问题
 
-#### 问题 17：测试覆盖不完整
+#### 问题 17：测试覆盖不完整 ✅ 已修复
 
 **问题描述**：当前测试只覆盖了部分模块，缺少以下测试：
 
@@ -1177,14 +1177,22 @@ import os  # 导入 os 模块用于 download 方法
 | `plugins/save_plugin/` | ❌ 缺失 |
 | `plugins/pdf_plugin/` | ❌ 缺失 |
 | `gui/` | ❌ 缺失 |
-| `utils/http_client.py` | ❌ 缺失 |
+| `utils/http_client.py` | ✅ 已添加 |
 | `utils/rate_limiter.py` | ❌ 缺失 |
-| `utils/error_handler.py` | ❌ 缺失 |
-| `utils/state_manager.py` | ❌ 缺失 |
+| `utils/error_handler.py` | ✅ 已添加 |
+| `utils/state_manager.py` | ✅ 已添加 |
 | `utils/i18n.py` | ❌ 缺失 |
-| `utils/events.py` | ❌ 缺失 |
+| `utils/events.py` | ✅ 已添加 |
 
-**改进方案**：按优先级补充测试用例。
+**修复时间**：2026-02-24
+
+**修复内容**：
+- 创建 `tests/unit/test_events.py`: 22 个测试用例，覆盖 Event、EventBus、全局函数
+- 创建 `tests/unit/test_http_client.py`: 15 个测试用例，覆盖 HTTPClient、HTTPClientManager
+- 创建 `tests/unit/test_error_handler.py`: 13 个测试用例，覆盖 ErrorHandler、retry 装饰器
+- 创建 `tests/unit/test_state_manager.py`: 14 个测试用例，覆盖 StateManager
+
+**当前状态**：测试覆盖率提升至 140 个测试用例，全部通过
 
 ---
 
