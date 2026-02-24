@@ -19,6 +19,7 @@ import random
 import threading
 import queue
 from typing import Optional, Set, Dict, Any, List
+from urllib.parse import urlparse
 from logger import setup_logger, _ as _t
 from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update

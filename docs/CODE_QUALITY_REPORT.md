@@ -346,7 +346,7 @@ GrabTheSite/
 # core/crawler.py - 核心协调器
 class Crawler:
     """抓取协调器，负责组装各组件"""
-    
+
     def __init__(
         self,
         fetcher: Fetcher,
@@ -360,34 +360,34 @@ class Crawler:
         self.link_extractor = link_extractor
         self.state_manager = state_manager
         self.rate_limiter = rate_limiter
-    
+
     def crawl(self, seed_url: str) -> CrawlResult:
         ...
 
 # core/fetcher.py - 页面获取器
 class Fetcher:
     """负责获取页面内容"""
-    
+
     def __init__(self, session: requests.Session, js_renderer: Optional[JSRenderer]):
         ...
-    
+
     def fetch(self, url: str) -> FetchResult:
         ...
 
 # core/url_filter.py - URL过滤器
 class URLFilter:
     """负责URL过滤逻辑"""
-    
+
     def __init__(self, rules: List[FilterRule]):
         ...
-    
+
     def should_crawl(self, url: str) -> bool:
         ...
 
 # core/link_extractor.py - 链接提取器
 class LinkExtractor:
     """负责从页面中提取链接"""
-    
+
     def extract(self, html: str, base_url: str) -> List[ExtractedLink]:
         ...
 ```
@@ -452,7 +452,7 @@ class CrawlConfig:
     random_delay: bool = True
     threads: int = 4
     user_agent: str = "..."
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> 'CrawlConfig':
         ...
@@ -470,21 +470,21 @@ class CrawlConfig:
 # 使用工厂模式组装依赖
 class CrawlerFactory:
     """爬虫工厂，负责组装依赖"""
-    
+
     @staticmethod
     def create(config: CrawlConfig) -> Crawler:
         session = HTTPSessionManager.create(config)
         state_manager = StateManager(config.state_file)
-        
+
         js_renderer = None
         if config.js_rendering_enabled:
             js_renderer = JSRenderer(config.js_timeout)
-        
+
         fetcher = Fetcher(session, js_renderer)
         url_filter = URLFilter(config.exclude_patterns)
         link_extractor = LinkExtractor()
         rate_limiter = RateLimiter(config.delay, config.random_delay)
-        
+
         return Crawler(
             fetcher=fetcher,
             url_filter=url_filter,
@@ -512,20 +512,20 @@ class HookResult:
 
 class Plugin(ABC):
     """插件基类"""
-    
+
     name: str
     description: str
     version: str = "1.0.0"
-    
+
     def __init__(self, config: Optional[dict] = None):
         self.config = config or {}
         self.enabled = True
-    
+
     @abstractmethod
     def on_init(self) -> HookResult:
         """插件初始化"""
         ...
-    
+
     # 可选钩子 - 提供默认实现
     def on_crawl_start(self, crawler: 'Crawler') -> Optional[HookResult]:
         return None
@@ -553,10 +553,10 @@ class HookType(Enum):
 # config/loader.py
 class ConfigLoader:
     """配置加载器"""
-    
+
     def __init__(self, config_dir: str = "configs"):
         self.config_dir = config_dir
-    
+
     def load(self) -> dict:
         config = self._load_defaults()
         config = self._merge_user_config(config)
@@ -565,20 +565,20 @@ class ConfigLoader:
 # config/validator.py
 class ConfigValidator:
     """配置验证器"""
-    
+
     def validate(self, config: dict) -> ValidationResult:
         errors = []
         warnings = []
-        
+
         if not self._is_valid_url(config.get('target_url', '')):
             errors.append("Invalid target_url")
-        
+
         return ValidationResult(errors=errors, warnings=warnings)
 
 # config/manager.py
 class ConfigManager:
     """配置管理器 - 门面模式"""
-    
+
     def get(self, key: str, default: Any = None) -> Any:
         """获取配置值，支持点分隔路径"""
         keys = key.split('.')
@@ -639,18 +639,18 @@ class RenderError(GrabTheSiteError):
 # utils/http.py
 class HTTPClient:
     """HTTP客户端封装"""
-    
+
     def __init__(self, config: HTTPConfig):
         self.session = self._create_session(config)
         self.retry_policy = RetryPolicy(config.retry)
-    
+
     def _create_session(self, config: HTTPConfig) -> requests.Session:
         session = requests.Session()
         session.headers.update({
             'User-Agent': config.user_agent,
             'Connection': 'keep-alive' if config.keep_alive else 'close',
         })
-        
+
         adapter = HTTPAdapter(
             pool_connections=config.pool_size,
             pool_maxsize=config.pool_size,
@@ -658,9 +658,9 @@ class HTTPClient:
         )
         session.mount('http://', adapter)
         session.mount('https://', adapter)
-        
+
         return session
-    
+
     @contextmanager
     def request(self, method: str, url: str, **kwargs):
         """带重试的请求"""
@@ -672,7 +672,7 @@ class HTTPClient:
                 return
             except requests.RequestException as e:
                 self.retry_policy.handle_error(e, attempt)
-    
+
     def close(self):
         self.session.close()
 ```
@@ -704,17 +704,17 @@ class Event:
 
 class EventBus:
     """事件总线"""
-    
+
     def __init__(self):
         self._subscribers: Dict[EventType, List[Callable]] = defaultdict(list)
-    
+
     def subscribe(self, event_type: EventType, handler: Callable[[Event], None]):
         self._subscribers[event_type].append(handler)
-    
+
     def unsubscribe(self, event_type: EventType, handler: Callable):
         if handler in self._subscribers[event_type]:
             self._subscribers[event_type].remove(handler)
-    
+
     def publish(self, event: Event):
         for handler in self._subscribers[event.type]:
             try:
@@ -741,22 +741,22 @@ import argparse
 def main():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest='command')
-    
+
     # CLI 命令
     cli_parser = subparsers.add_parser('crawl', help='Crawl a website')
     cli_parser.add_argument('--url', required=True)
     cli_parser.add_argument('--output', '-o')
-    
+
     # GUI 命令
     gui_parser = subparsers.add_parser('gui', help='Launch GUI')
     gui_parser.add_argument('--mode', choices=['crawl', 'pdf'], default='crawl')
-    
+
     # PDF 命令
     pdf_parser = subparsers.add_parser('pdf', help='Generate PDF')
     pdf_parser.add_argument('--input', required=True)
-    
+
     args = parser.parse_args()
-    
+
     if args.command == 'crawl':
         from grabthesite.core import Crawler
         crawler = Crawler.from_args(args)
@@ -903,32 +903,32 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.8', '3.9', '3.10', '3.11']
-    
+
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           pip install pytest pytest-cov mypy black isort flake8
-      
+
       - name: Run black
         run: black --check .
-      
+
       - name: Run isort
         run: isort --check-only .
-      
+
       - name: Run flake8
         run: flake8 .
-      
+
       - name: Run mypy
         run: mypy .
-      
+
       - name: Run tests
         run: pytest --cov=grabthesite tests/
 ```
@@ -942,18 +942,18 @@ jobs:
 ### 阶段一：基础改进
 
 - [x] 提取公共模块 `utils/url_utils.py` (2026-02-24: 创建了 utils/url_utils.py，包含 normalize_url 等函数，并替换 crawler/crawl_site.py、plugins/save_plugin/__init__.py、plugins/pdf_plugin/link_processor.py 中的重复实现)
-- [ ] 提取公共模块 `utils/http.py`
+- [x] 提取公共模块 `utils/http_client.py` (2026-02-24: 创建了 HTTPClient、HTTPClientManager 类，统一了 crawler/fetcher.py、utils/timestamp_utils.py、crawler/downloader.py 中的 HTTP 请求逻辑)
 - [x] 添加类型注解到核心模块 (2026-02-24: 为 crawler/crawl_site.py、utils/error_handler.py、utils/state_manager.py、utils/url_utils.py 添加了类型注解)
 - [x] 修复异常处理过于宽泛的问题 (2026-02-24: 修复了 gui/main_window.py、plugins/save_plugin/__init__.py 和 crawler/crawl_site.py 中的异常处理问题)
-- [ ] 添加 `pyproject.toml` 配置
+- [x] 添加 `pyproject.toml` 配置 (2026-02-24: 包含 black、isort、mypy、pytest、coverage 等工具配置)
 
 ### 阶段二：数据模型重构
 
-- [ ] 创建 `models/crawl_task.py`
-- [ ] 创建 `models/page.py`
-- [ ] 创建 `models/config.py`
+- [ ] 创建 `models/crawl_task.py` (未开始)
+- [ ] 创建 `models/page.py` (未开始)
+- [ ] 创建 `models/config.py` (未开始)
 - [x] 重构配置管理模块 (2026-02-24: 创建了 utils/config_manager.py，包含 ConfigManager、ConfigValidator 类，支持点号路径访问配置、完整的配置验证功能)
-- [ ] 引入自定义异常层次结构
+- [ ] 引入自定义异常层次结构 (未开始)
 
 ### 阶段三：核心类拆分
 
@@ -964,15 +964,15 @@ jobs:
 
 ### 阶段四：插件系统改进
 
-- [ ] 分离 `plugins/base.py`
-- [ ] 分离 `plugins/hooks.py`
-- [ ] 优化 PDF 生成器浏览器复用
+- [ ] 分离 `plugins/base.py` (未开始)
+- [ ] 分离 `plugins/hooks.py` (未开始)
+- [ ] 优化 PDF 生成器浏览器复用 (未开始)
 
 ### 阶段五：架构优化
 
-- [ ] 创建 `utils/events.py` 事件总线
-- [ ] 调整目录结构为 `src/` 布局
-- [ ] 统一入口点 `entry_points.py`
+- [ ] 创建 `utils/events.py` 事件总线 (未开始)
+- [ ] 调整目录结构为 `src/` 布局 (未开始)
+- [ ] 统一入口点 `entry_points.py` (未开始)
 
 ### 阶段六：测试与文档
 

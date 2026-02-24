@@ -108,10 +108,10 @@ show_column_numbers = true
 show_error_context = true
 ignore_missing_imports = true
 exclude = [
-    "\.venv",
+    "\\.venv",
     "venv",
     "env",
-    "\.env",
+    "\\.env",
     "build",
     "dist",
 ]

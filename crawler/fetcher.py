@@ -7,27 +7,19 @@
 """
 
 from typing import Optional
-import requests
-from requests.adapters import HTTPAdapter
-from logger import setup_logger, _ as _t
-from config import USER_AGENT, ERROR_HANDLING_CONFIG, JS_RENDERING_CONFIG, DEFAULT_REQUEST_TIMEOUT
+
+from config import DEFAULT_REQUEST_TIMEOUT, ERROR_HANDLING_CONFIG, JS_RENDERING_CONFIG, USER_AGENT
+from logger import _ as _t
+from logger import setup_logger
 from utils.error_handler import ErrorHandler
+from utils.http_client import HTTPClient
 
 # 获取 logger 实例
 logger = setup_logger(__name__)
 
-# 创建 session，禁用连接池线程
-_session = requests.Session()
-# 禁用 keep-alive，避免后台线程
-_session.headers.update({'Connection': 'close'})
-# 限制连接池大小
-adapter = HTTPAdapter(pool_connections=1, pool_maxsize=1, max_retries=0)
-_session.mount('http://', adapter)
-_session.mount('https://', adapter)
-
 # 导入 Playwright JS 渲染器
 try:
-    from utils.js_renderer_playwright import get_js_renderer, close_js_renderer
+    from utils.js_renderer_playwright import close_js_renderer, get_js_renderer
     JS_RENDERER_AVAILABLE = True
 except ImportError:
     JS_RENDERER_AVAILABLE = False
@@ -117,18 +109,28 @@ class Fetcher:
         Returns:
             str: 页面内容，如果获取失败返回 None
         """
-        headers = {'User-Agent': self.user_agent}
+        # 创建 HTTP 客户端
+        http_client = HTTPClient(
+            user_agent=self.user_agent,
+            pool_connections=1,
+            pool_maxsize=1,
+            max_retries=0,
+            timeout=DEFAULT_REQUEST_TIMEOUT
+        )
 
         @self.error_handler.retry
         def _do_request():
-            response = _session.get(url, headers=headers, timeout=DEFAULT_REQUEST_TIMEOUT)
+            response = http_client.get(url)
             response.raise_for_status()
             return response.text
 
         try:
-            return _do_request()
+            result = _do_request()
+            http_client.close()
+            return result
         except Exception as e:
             logger.error(_t("HTTP 请求失败") + f": {url}, {e}")
+            http_client.close()
             return None
 
     def close(self) -> None:

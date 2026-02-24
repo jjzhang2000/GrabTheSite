@@ -275,7 +275,7 @@ class SavePlugin(Plugin):
                 processed_pages[url] = html_content
         
         # 记录静态资源处理统计
-        self.logger.info(_t("静态资源处理统计") + f": {_('已收集')} {len(self.static_resources)} {_('个')}, {_('已加入下载队列')} {len(queued_resources)} {_('个')}")
+        self.logger.info(_t("静态资源处理统计") + f": {_t('已收集')} {len(self.static_resources)} {_t('个')}, {_t('已加入下载队列')} {len(queued_resources)} {_t('个')}")
         
         return processed_pages
     
@@ -543,7 +543,7 @@ class SavePlugin(Plugin):
                     except (queue.Empty, ValueError) as e:
                         self.logger.debug(f"task_done 调用失败: {e}")
         
-        self.logger.info(_t("资源下载线程停止前清理") + f": {_('成功')} {download_count} {_('个')}, {_('跳过')} {skip_count} {_('个')}, {_('失败')} {fail_count} {_('个')}, {_('队列剩余')} {self.resource_queue.qsize()} {_('个')}")
+        self.logger.info(_t("资源下载线程停止前清理") + f": {_t('成功')} {download_count} {_t('个')}, {_t('跳过')} {skip_count} {_t('个')}, {_t('失败')} {fail_count} {_t('个')}, {_t('队列剩余')} {self.resource_queue.qsize()} {_t('个')}")
         
         # 处理队列中剩余的任务（非阻塞方式）
         remaining = 0
@@ -583,7 +583,7 @@ class SavePlugin(Plugin):
                     except:
                         pass
         
-        self.logger.info(_t("资源下载线程已停止") + f": {_('总计成功')} {download_count} {_('个')}, {_('跳过')} {skip_count} {_('个')}, {_('失败')} {fail_count} {_('个')}")
+        self.logger.info(_t("资源下载线程已停止") + f": {_t('总计成功')} {download_count} {_t('个')}, {_t('跳过')} {skip_count} {_t('个')}, {_t('失败')} {fail_count} {_t('个')}")
     
     def on_save_end(self, saved_files):
         """保存结束时调用
@@ -593,7 +593,7 @@ class SavePlugin(Plugin):
         """
         # 停止资源下载线程
         self._stop_resource_thread()
-        self.logger.info(_t("保存插件工作完成") + f", {_('共保存')} {len(saved_files)} {_('个文件')}")
+        self.logger.info(_t("保存插件工作完成") + f", {_t('共保存')} {len(saved_files)} {_t('个文件')}")
 
 
 # 创建插件实例
