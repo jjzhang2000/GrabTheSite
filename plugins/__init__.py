@@ -5,9 +5,31 @@
 
 __version__ = "0.1.0"
 
-from utils.plugin_manager import Plugin, PluginManager
+from plugins.base import Plugin, HookResult
+from plugins.hooks import (
+    HookType,
+    HookEvent,
+    HookPriority,
+    hook,
+    OnCrawlStartHook,
+    OnPageCrawledHook,
+    OnCrawlEndHook,
+    OnSaveStartHook,
+    OnPageSavedHook,
+    OnSaveEndHook,
+)
 
 __all__ = [
     "Plugin",
-    "PluginManager",
+    "HookResult",
+    "HookType",
+    "HookEvent",
+    "HookPriority",
+    "hook",
+    "OnCrawlStartHook",
+    "OnPageCrawledHook",
+    "OnCrawlEndHook",
+    "OnSaveStartHook",
+    "OnPageSavedHook",
+    "OnSaveEndHook",
 ]

@@ -964,8 +964,8 @@ jobs:
 
 ### 阶段四：插件系统改进
 
-- [ ] 分离 `plugins/base.py` (未开始)
-- [ ] 分离 `plugins/hooks.py` (未开始)
+- [x] 分离 `plugins/base.py` (2026-02-24: 创建了 Plugin 基类和 HookResult 数据类)
+- [x] 分离 `plugins/hooks.py` (2026-02-24: 创建了 HookType、HookEvent、HookPriority 和钩子接口)
 - [ ] 优化 PDF 生成器浏览器复用 (未开始)
 
 ### 阶段五：架构优化
