@@ -1416,7 +1416,7 @@ edge_paths = [
 
 ---
 
-#### 问题 24：配置修改模块级变量
+#### 问题 24：配置修改模块级变量 ✅ 已修复
 
 **问题描述**：`pdf_the_site.py` 直接修改了 `config` 模块的全局变量。
 
@@ -1433,20 +1433,19 @@ config_module.JS_RENDERING_CONFIG['enabled'] = False
 - 可能影响其他模块的行为
 - 不符合配置管理的最佳实践
 
-**改进方案**：
-```python
-# 在配置加载时处理
-def update_config(args):
-    config = load_config()
+**修复时间**：2026-02-24（随问题 21 一起修复）
 
-    # PDF 模式下禁用 JS 渲染
-    if is_pdf_mode:
-        if "js_rendering" not in config:
-            config["js_rendering"] = {}
-        config["js_rendering"]["enabled"] = False
-
-    return config
-```
+**修复内容**：
+- 在重构 `pdf_the_site.py` 时，将直接修改模块级变量的代码改为通过配置字典传递
+- 在 `PDFCLI._update_specific_config` 方法中设置配置：
+  ```python
+  def _update_specific_config(self, config, args):
+      # PDF 模式下禁用 JS 渲染
+      if "js_rendering" not in config:
+          config["js_rendering"] = {}
+      config["js_rendering"]["enabled"] = False
+  ```
+- 这样配置通过字典传递，不再直接修改模块级变量
 
 ---
 
