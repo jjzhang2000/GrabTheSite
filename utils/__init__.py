@@ -37,6 +37,7 @@ from .exceptions import (
     URLNotAllowedError,
     ValidationError,
 )
+from .browser_manager import BrowserManager, get_browser_manager, close_browser_manager
 from .http_client import HTTPClient, HTTPClientManager, create_default_client, create_retry_client
 from .i18n import get_available_languages, get_current_lang
 from .i18n import gettext as _
@@ -74,6 +75,10 @@ __all__ = [
     "HTTPClientManager",
     "create_default_client",
     "create_retry_client",
+    # 浏览器管理器
+    "BrowserManager",
+    "get_browser_manager",
+    "close_browser_manager",
     # 异常类
     "GrabTheSiteError",
     "ConfigError",

@@ -1,17 +1,23 @@
 """PDF 生成器
 
 使用 Playwright 将 HTML 渲染为 PDF 文件。
+现在使用 BrowserManager 实现浏览器复用。
 """
 
 import os
 from urllib.parse import urljoin, urlparse
-from playwright.sync_api import sync_playwright
+from typing import Optional, Dict, Any, Set
+
+from utils.browser_manager import get_browser_manager
+from logger import setup_logger, _ as _t
+
+logger = setup_logger(__name__)
 
 
 class PdfGenerator:
     """PDF 生成器，使用 Playwright 将 HTML 渲染为 PDF"""
 
-    def __init__(self, config=None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         """初始化 PDF 生成器
 
         Args:
@@ -22,32 +28,7 @@ class PdfGenerator:
         self.header_config = self.config.get('header', {})
         self.footer_config = self.config.get('footer', {})
 
-    def _find_system_browser(self):
-        """查找系统安装的浏览器
-
-        Returns:
-            str: 浏览器可执行文件路径，如果未找到返回 None
-        """
-        # 可能的浏览器路径
-        possible_paths = [
-            # Microsoft Edge
-            os.path.expandvars(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
-            os.path.expandvars(r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"),
-            # Google Chrome
-            os.path.expandvars(r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"),
-            os.path.expandvars(r"C:\Program Files\Google\Chrome\Application\chrome.exe"),
-            os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
-            # Chromium
-            os.path.expandvars(r"C:\Program Files\Chromium\Application\chrome.exe"),
-        ]
-
-        for path in possible_paths:
-            if os.path.exists(path):
-                return path
-
-        return None
-
-    def _process_html_images(self, html_content, base_url):
+    def _process_html_images(self, html_content: str, base_url: str) -> str:
         """处理 HTML 中的图片链接，将相对路径转换为绝对路径
 
         Args:
@@ -91,7 +72,7 @@ class PdfGenerator:
 
         return str(soup)
 
-    def _process_html_links(self, html_content, base_url, downloaded_urls=None):
+    def _process_html_links(self, html_content: str, base_url: str, downloaded_urls: Optional[Set[str]] = None) -> str:
         """处理 HTML 中的链接
 
         将已下载的内部链接的 href 设为空串（通过书签导航）。
@@ -137,7 +118,7 @@ class PdfGenerator:
 
         return str(soup)
 
-    def _extract_title_from_html(self, html_content):
+    def _extract_title_from_html(self, html_content: str) -> str:
         """从 HTML 中提取标题
 
         Args:
@@ -153,7 +134,7 @@ class PdfGenerator:
             return title_tag.text.strip()
         return ""
 
-    def generate_pdf(self, html_content, output_path, source_url=None, downloaded_urls=None):
+    def generate_pdf(self, html_content: str, output_path: str, source_url: Optional[str] = None, downloaded_urls: Optional[Set[str]] = None) -> None:
         """将 HTML 内容渲染为 PDF
 
         Args:
@@ -165,84 +146,84 @@ class PdfGenerator:
         Raises:
             Exception: 当 PDF 生成失败时抛出
         """
-        with sync_playwright() as p:
-            # 尝试查找系统浏览器
-            browser_path = self._find_system_browser()
+        # 获取浏览器管理器
+        browser_manager = get_browser_manager()
 
-            if browser_path:
-                # 使用系统浏览器
-                browser = p.chromium.launch(executable_path=browser_path)
-            else:
-                # 尝试使用 Playwright 内置浏览器
-                try:
-                    browser = p.chromium.launch()
-                except Exception as e:
-                    raise Exception(
-                        "无法启动浏览器。请安装 Playwright 浏览器: playwright install chromium，"
-                        "或确保系统已安装 Edge/Chrome 浏览器。"
-                    ) from e
+        if not browser_manager.initialize():
+            raise Exception(
+                "无法启动浏览器。请安装 Playwright 浏览器: playwright install chromium，"
+                "或确保系统已安装 Edge/Chrome 浏览器。"
+            )
 
-            page = browser.new_page()
+        # 获取页面（复用浏览器实例）
+        page_id = f"pdf_{id(self)}"
+        page = browser_manager.get_page(page_id)
 
-            try:
-                # 处理 HTML 中的图片链接和内部链接
-                if source_url:
-                    html_content = self._process_html_images(html_content, source_url)
-                    html_content = self._process_html_links(html_content, source_url, downloaded_urls)
+        if page is None:
+            raise Exception("无法创建页面")
 
-                # 加载 HTML 内容
-                page.set_content(html_content)
+        try:
+            # 处理 HTML 中的图片链接和内部链接
+            if source_url:
+                html_content = self._process_html_images(html_content, source_url)
+                html_content = self._process_html_links(html_content, source_url, downloaded_urls)
 
-                # 等待页面加载完成
-                page.wait_for_load_state('networkidle')
+            # 加载 HTML 内容
+            page.set_content(html_content)
 
-                # 额外等待图片加载
-                page.wait_for_function("""
-                    () => {
-                        const images = document.querySelectorAll('img');
-                        if (images.length === 0) return true;
-                        return Array.from(images).every(img => img.complete);
-                    }
-                """, timeout=10000)
+            # 等待页面加载完成
+            page.wait_for_load_state('networkidle')
 
-                # 再等待一小段时间确保渲染完成
-                page.wait_for_timeout(500)
+            # 额外等待图片加载
+            page.wait_for_function("""
+                () => {
+                    const images = document.querySelectorAll('img');
+                    if (images.length === 0) return true;
+                    return Array.from(images).every(img => img.complete);
+                }
+            """, timeout=10000)
 
-                # 获取页面配置
-                format_option = self.page_config.get('format', 'A4')
-                margin_config = self.page_config.get('margin', {})
+            # 再等待一小段时间确保渲染完成
+            page.wait_for_timeout(500)
 
-                # 提取页面标题和 URL 用于页眉
-                page_title = self._extract_title_from_html(html_content)
-                if not page_title and source_url:
-                    page_title = source_url
-                page_url = source_url if source_url else ""
+            # 获取页面配置
+            format_option = self.page_config.get('format', 'A4')
+            margin_config = self.page_config.get('margin', {})
 
-                # 获取边距配置
-                margin_left = margin_config.get('left', 20)
-                margin_right = margin_config.get('right', 20)
+            # 提取页面标题和 URL 用于页眉
+            page_title = self._extract_title_from_html(html_content)
+            if not page_title and source_url:
+                page_title = source_url
+            page_url = source_url if source_url else ""
 
-                # 生成 PDF
-                # Playwright 会自动保留外部链接，内部链接已被移除
-                page.pdf(
-                    path=output_path,
-                    format=format_option,
-                    margin={
-                        'top': f"{margin_config.get('top', 20)}mm",
-                        'bottom': f"{margin_config.get('bottom', 20)}mm",
-                        'left': f"{margin_left}mm",
-                        'right': f"{margin_right}mm"
-                    },
-                    display_header_footer=self.header_config.get('enabled', True),
-                    header_template=self._build_header_template(page_title, page_url, margin_left, margin_right),
-                    footer_template=self._build_footer_template(),
-                    print_background=True
-                )
+            # 获取边距配置
+            margin_left = margin_config.get('left', 20)
+            margin_right = margin_config.get('right', 20)
 
-            finally:
-                browser.close()
+            # 生成 PDF
+            # Playwright 会自动保留外部链接，内部链接已被移除
+            page.pdf(
+                path=output_path,
+                format=format_option,
+                margin={
+                    'top': f"{margin_config.get('top', 20)}mm",
+                    'bottom': f"{margin_config.get('bottom', 20)}mm",
+                    'left': f"{margin_left}mm",
+                    'right': f"{margin_right}mm"
+                },
+                display_header_footer=self.header_config.get('enabled', True),
+                header_template=self._build_header_template(page_title, page_url, margin_left, margin_right),
+                footer_template=self._build_footer_template(),
+                print_background=True
+            )
 
-    def _build_header_template(self, page_title="", page_url="", margin_left=20, margin_right=20):
+            logger.info(_t("PDF 生成成功") + f": {output_path}")
+
+        finally:
+            # 释放页面（但不关闭浏览器）
+            browser_manager.release_page(page_id)
+
+    def _build_header_template(self, page_title: str = "", page_url: str = "", margin_left: int = 20, margin_right: int = 20) -> str:
         """构建页眉模板
 
         页眉布局：左侧显示页面标题，右侧显示页面网址
@@ -274,7 +255,7 @@ class PdfGenerator:
             <div style="clear: both;"></div>
         </div>'''
 
-    def _build_footer_template(self):
+    def _build_footer_template(self) -> str:
         """构建页脚模板
 
         Returns:

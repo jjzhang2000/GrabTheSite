@@ -966,7 +966,7 @@ jobs:
 
 - [x] 分离 `plugins/base.py` (2026-02-24: 创建了 Plugin 基类和 HookResult 数据类)
 - [x] 分离 `plugins/hooks.py` (2026-02-24: 创建了 HookType、HookEvent、HookPriority 和钩子接口)
-- [ ] 优化 PDF 生成器浏览器复用 (未开始)
+- [x] 优化 PDF 生成器浏览器复用 (2026-02-24: 创建了 utils/browser_manager.py，使用单例模式管理浏览器实例，PDF 生成器现在复用浏览器)
 
 ### 阶段五：架构优化
 
