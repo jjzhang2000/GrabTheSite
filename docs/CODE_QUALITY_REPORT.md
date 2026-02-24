@@ -970,9 +970,9 @@ jobs:
 
 ### 阶段五：架构优化
 
-- [ ] 创建 `utils/events.py` 事件总线 (未开始)
-- [ ] 调整目录结构为 `src/` 布局 (未开始)
-- [ ] 统一入口点 `entry_points.py` (未开始)
+- [x] 创建 `utils/events.py` 事件总线 (2026-02-24: 创建了 EventBus、Event、EventPriority，支持发布-订阅模式)
+- [ ] 调整目录结构为 `src/` 布局 (未开始: 这是一个较大的重构，建议在未来版本中进行)
+- [x] 统一入口点 `entry_points.py` (2026-02-24: 创建了统一的 CLI、GUI、PDF 入口点)
 
 ### 阶段六：测试与文档
 
