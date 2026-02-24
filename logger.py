@@ -11,40 +11,41 @@ import logging
 import os
 import sys
 from logging.handlers import RotatingFileHandler
+from typing import Optional, Tuple, Dict, Any
 
 # 日志配置常量
-DEFAULT_LOG_DIR = "logs"
-DEFAULT_LOG_FILE = "grabthesite.log"
-DEFAULT_LOG_LEVEL = logging.DEBUG
-DEFAULT_CONSOLE_LEVEL = logging.INFO
-DEFAULT_MAX_BYTES = 10 * 1024 * 1024  # 10MB
-DEFAULT_BACKUP_COUNT = 5
-DEFAULT_ENCODING = 'utf-8'
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+DEFAULT_LOG_DIR: str = "logs"
+DEFAULT_LOG_FILE: str = "grabthesite.log"
+DEFAULT_LOG_LEVEL: int = logging.DEBUG
+DEFAULT_CONSOLE_LEVEL: int = logging.INFO
+DEFAULT_MAX_BYTES: int = 10 * 1024 * 1024  # 10MB
+DEFAULT_BACKUP_COUNT: int = 5
+DEFAULT_ENCODING: str = 'utf-8'
+LOG_FORMAT: str = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+DATE_FORMAT: str = '%Y-%m-%d %H:%M:%S'
 
 # 控制台输出开关（GUI模式下可关闭）
-CONSOLE_OUTPUT_ENABLED = True
+CONSOLE_OUTPUT_ENABLED: bool = True
 
 # 全局标志：是否已经初始化
-_initialized = False
-_root_handlers = []
+_initialized: bool = False
+_root_handlers: list[logging.Handler] = []
 
 
-def disable_console_output():
+def disable_console_output() -> None:
     """禁用控制台日志输出（用于GUI模式）
-    
+
     调用此函数后，所有logger将只输出到文件，不输出到控制台
     """
     global CONSOLE_OUTPUT_ENABLED
     CONSOLE_OUTPUT_ENABLED = False
 
 
-def _load_logging_config():
+def _load_logging_config() -> Dict[str, Any]:
     """加载日志配置
-    
+
     Returns:
-        dict: 包含日志配置项的字典，如果配置不可用则返回空字典
+        包含日志配置项的字典，如果配置不可用则返回空字典
     """
     try:
         from config import LOGGING_CONFIG
@@ -53,29 +54,29 @@ def _load_logging_config():
         return {}
 
 
-def _get_log_settings():
+def _get_log_settings() -> Tuple[str, str, int, int, int, int]:
     """获取日志设置
-    
+
     Returns:
-        tuple: (log_dir, log_file, log_level, console_level, max_bytes, backup_count)
+        (log_dir, log_file, log_level, console_level, max_bytes, backup_count)
     """
-    config = _load_logging_config()
-    
-    log_file = config.get('file', os.path.join(DEFAULT_LOG_DIR, DEFAULT_LOG_FILE))
-    log_dir = os.path.dirname(log_file) or DEFAULT_LOG_DIR
-    
-    level_str = config.get('level', 'INFO')
-    log_level = getattr(logging, level_str.upper(), logging.INFO)
-    console_level = log_level
-    
-    max_bytes = config.get('max_bytes', DEFAULT_MAX_BYTES)
-    backup_count = config.get('backup_count', DEFAULT_BACKUP_COUNT)
-    
+    config: Dict[str, Any] = _load_logging_config()
+
+    log_file: str = config.get('file', os.path.join(DEFAULT_LOG_DIR, DEFAULT_LOG_FILE))
+    log_dir: str = os.path.dirname(log_file) or DEFAULT_LOG_DIR
+
+    level_str: str = config.get('level', 'INFO')
+    log_level: int = getattr(logging, level_str.upper(), logging.INFO)
+    console_level: int = log_level
+
+    max_bytes: int = config.get('max_bytes', DEFAULT_MAX_BYTES)
+    backup_count: int = config.get('backup_count', DEFAULT_BACKUP_COUNT)
+
     return log_dir, log_file, log_level, console_level, max_bytes, backup_count
 
 
 # 翻译函数封装，使用 builtins._ 以支持动态语言切换
-def _(message):
+def _(message: str) -> str:
     """翻译函数，从 builtins 获取实际的翻译函数"""
     import builtins
     trans_func = getattr(builtins, '_', None)
@@ -84,26 +85,26 @@ def _(message):
     return message
 
 
-def _ensure_root_logger_configured():
+def _ensure_root_logger_configured() -> None:
     """确保根日志记录器已配置（只执行一次）"""
     global _initialized, _root_handlers
-    
+
     if _initialized:
         return
-    
+
     log_dir, log_file, log_level, console_level, max_bytes, backup_count = _get_log_settings()
-    
+
     # 使用绝对路径
     log_file = os.path.abspath(log_file)
     log_dir = os.path.abspath(log_dir) if log_dir else os.path.dirname(log_file)
-    
+
     # 确保目录存在
     os.makedirs(log_dir, exist_ok=True)
-    
+
     # 配置根记录器
-    root_logger = logging.getLogger()
+    root_logger: logging.Logger = logging.getLogger()
     root_logger.setLevel(logging.DEBUG)  # 根记录器设置最低级别
-    
+
     # 清除现有的处理器（避免重复）
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
@@ -112,8 +113,9 @@ def _ensure_root_logger_configured():
         except (IOError, OSError) as e:
             # 关闭处理器时出错，记录调试信息
             print(f"关闭日志处理器时出错: {e}", file=sys.stderr)
-    
+
     # 创建文件处理器
+    file_handler: Optional[RotatingFileHandler] = None
     try:
         file_handler = RotatingFileHandler(
             log_file,
@@ -123,65 +125,64 @@ def _ensure_root_logger_configured():
             delay=False
         )
         file_handler.setLevel(log_level)
-        formatter = logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT)
+        formatter: logging.Formatter = logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT)
         file_handler.setFormatter(formatter)
         root_logger.addHandler(file_handler)
         _root_handlers.append(file_handler)
-        
+
         # 输出日志文件位置
         print(f"[Logger] 日志文件: {log_file} (level={logging.getLevelName(log_level)})", flush=True)
-        
+
     except Exception as e:
         print(f"[Logger Error] 无法创建文件处理器: {e}", flush=True)
-        file_handler = None
-    
+
     # 创建控制台处理器
     if CONSOLE_OUTPUT_ENABLED:
-        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler: logging.StreamHandler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(console_level)
         formatter = logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT)
         console_handler.setFormatter(formatter)
         root_logger.addHandler(console_handler)
         _root_handlers.append(console_handler)
-    
+
     _initialized = True
 
 
-def setup_logger(name=__name__):
+def setup_logger(name: str = __name__) -> logging.Logger:
     """设置并返回一个配置好的 logger 实例
-    
+
     Args:
         name: logger 名称，默认使用模块名称
-        
+
     Returns:
         配置好的 logger 实例
     """
     # 确保根记录器已配置
     _ensure_root_logger_configured()
-    
+
     # 获取或创建命名记录器
-    logger = logging.getLogger(name)
-    
+    logger: logging.Logger = logging.getLogger(name)
+
     # 添加翻译方法
-    logger._ = _
-    
+    logger._ = _  # type: ignore
+
     return logger
 
 
-def close_all_loggers():
+def close_all_loggers() -> None:
     """关闭所有日志处理器，释放文件锁
-    
+
     在程序退出前调用，确保日志文件被正确关闭
     """
     global _initialized
-    
+
     try:
         # 先刷新所有日志
         logging.shutdown()
-        
+
         # 获取根记录器
-        root_logger = logging.getLogger()
-        
+        root_logger: logging.Logger = logging.getLogger()
+
         # 关闭并移除所有处理器
         for handler in root_logger.handlers[:]:
             try:
@@ -195,7 +196,7 @@ def close_all_loggers():
 
         # 清理命名记录器的处理器
         for logger_name in list(logging.Logger.manager.loggerDict.keys()):
-            logger = logging.getLogger(logger_name)
+            logger: logging.Logger = logging.getLogger(logger_name)
             for handler in logger.handlers[:]:
                 try:
                     handler.flush()
@@ -205,11 +206,11 @@ def close_all_loggers():
                     print(f"关闭日志处理器 '{logger_name}' 时出错: {e}", file=sys.stderr)
                 finally:
                     logger.removeHandler(handler)
-        
+
         _initialized = False
         print("[Logger] 日志资源已清理", flush=True)
-        
-    except (IOError, OSError, ValueError) as e:
+
+    except (IOError, OSError, ValueError):
         # 忽略文件已关闭等 I/O 错误
         pass
     except Exception as e:
@@ -221,4 +222,4 @@ import atexit
 atexit.register(close_all_loggers)
 
 # 创建默认 logger 实例
-default_logger = setup_logger()
+default_logger: logging.Logger = setup_logger()
