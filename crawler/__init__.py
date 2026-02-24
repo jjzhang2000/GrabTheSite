@@ -8,10 +8,16 @@ __version__ = "0.1.0"
 from .crawl_site import CrawlSite
 from .downloader import Downloader, download_file
 from .save_site import SaveSite
+from .url_filter import URLFilter
+from .link_extractor import LinkExtractor
+from .fetcher import Fetcher
 
 __all__ = [
     "CrawlSite",
     "Downloader",
     "download_file",
     "SaveSite",
+    "URLFilter",
+    "LinkExtractor",
+    "Fetcher",
 ]

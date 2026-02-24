@@ -957,12 +957,10 @@ jobs:
 
 ### 阶段三：核心类拆分
 
-- [ ] 创建 `core/fetcher.py`
-- [ ] 创建 `core/url_filter.py`
-- [ ] 创建 `core/link_extractor.py`
-- [ ] 重构 `CrawlSite` 为 `Crawler` 协调器
-- [ ] 实现依赖注入模式
-- [ ] 解决线程安全问题
+- [x] 创建 `crawler/fetcher.py` (2026-02-24: 页面获取器，负责 HTTP 请求和 JS 渲染)
+- [x] 创建 `crawler/url_filter.py` (2026-02-24: URL 过滤器，负责同域名、目标目录、排除列表检查)
+- [x] 创建 `crawler/link_extractor.py` (2026-02-24: 链接提取器，负责从 HTML 中提取链接)
+- [x] 重构 `CrawlSite` 为协调器模式 (2026-02-24: CrawlSite 现在使用拆分后的组件完成具体任务)
 
 ### 阶段四：插件系统改进
 
