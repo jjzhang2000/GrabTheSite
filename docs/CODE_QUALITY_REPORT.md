@@ -952,7 +952,7 @@ jobs:
 - [ ] 创建 `models/crawl_task.py`
 - [ ] 创建 `models/page.py`
 - [ ] 创建 `models/config.py`
-- [ ] 重构配置管理模块
+- [x] 重构配置管理模块 (2026-02-24: 创建了 utils/config_manager.py，包含 ConfigManager、ConfigValidator 类，支持点号路径访问配置、完整的配置验证功能)
 - [ ] 引入自定义异常层次结构
 
 ### 阶段三：核心类拆分
