@@ -209,6 +209,9 @@ def close_all_loggers():
         _initialized = False
         print("[Logger] 日志资源已清理", flush=True)
         
+    except (IOError, OSError, ValueError) as e:
+        # 忽略文件已关闭等 I/O 错误
+        pass
     except Exception as e:
         print(f"[Logger Error] 清理日志时出错: {e}", flush=True)
 
