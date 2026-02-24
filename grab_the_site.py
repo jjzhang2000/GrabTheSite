@@ -30,6 +30,12 @@ from utils.sitemap_generator import SitemapGenerator
 
 logger = setup_logger(__name__)
 
+# 设置 CLI 模式的控制台日志级别为 ERROR，减少控制台输出，但保留文件日志
+import logging
+for handler in logging.getLogger().handlers:
+    if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
+        handler.setLevel(logging.ERROR)
+
 
 def parse_args():
     """解析命令行参数
