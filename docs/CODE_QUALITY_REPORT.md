@@ -1276,7 +1276,7 @@ except:
 
 ---
 
-#### 问题 20：弃用模块未完全移除
+#### 问题 20：弃用模块未完全移除 ✅ 已修复
 
 **问题描述**：`crawler/save_site.py` 标记为弃用但仍保留，可能造成混淆。
 
@@ -1291,10 +1291,12 @@ except:
 """
 ```
 
-**改进方案**：
-1. 设置明确的移除时间表
-2. 在 `pyproject.toml` 中添加弃用警告
-3. 或直接移除该文件
+**修复时间**：2026-02-24
+
+**修复内容**：
+- 删除 `crawler/save_site.py` 文件
+- 更新 `crawler/__init__.py`，移除 `SaveSite` 的导出
+- 使用 `plugins.save_plugin.SavePlugin` 替代
 
 ---
 
