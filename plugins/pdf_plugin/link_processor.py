@@ -5,6 +5,7 @@
 
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
+from utils.url_utils import normalize_url
 
 
 class LinkProcessor:
@@ -42,7 +43,7 @@ class LinkProcessor:
             full_url = urljoin(base_url, href)
 
             # 规范化 URL
-            normalized_url = self._normalize_url(full_url)
+            normalized_url = normalize_url(full_url)
 
             # 检查是否为内部链接（在抓取范围内）
             if normalized_url in all_page_urls:
@@ -54,23 +55,3 @@ class LinkProcessor:
                 link['data-external-link'] = 'true'
 
         return str(soup)
-
-    def _normalize_url(self, url):
-        """规范化 URL
-
-        统一 URL 格式用于比较：
-        - 移除 URL 片段（#后面的内容）
-        - 统一小写（域名部分）
-
-        Args:
-            url: 原始 URL
-
-        Returns:
-            str: 规范化后的 URL
-        """
-        parsed = urlparse(url)
-        # 移除片段，小写化 netloc
-        normalized = f"{parsed.scheme.lower()}://{parsed.netloc.lower()}{parsed.path}"
-        if parsed.query:
-            normalized += f"?{parsed.query}"
-        return normalized

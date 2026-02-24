@@ -11,6 +11,7 @@ from .sitemap_generator import SitemapGenerator
 from .error_handler import ErrorHandler, retry
 from .state_manager import StateManager
 from .rate_limiter import GlobalDelayManager, RateLimiter
+from .url_utils import normalize_url, get_domain, get_path, is_same_domain, join_url
 
 __all__ = [
     "_",
@@ -25,4 +26,9 @@ __all__ = [
     "StateManager",
     "GlobalDelayManager",
     "RateLimiter",
+    "normalize_url",
+    "get_domain",
+    "get_path",
+    "is_same_domain",
+    "join_url",
 ]

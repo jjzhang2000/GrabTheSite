@@ -13,6 +13,7 @@ import threading
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from utils.plugin_manager import Plugin
+from utils.url_utils import normalize_url
 from logger import _ as _t
 
 
@@ -121,7 +122,7 @@ class SavePlugin(Plugin):
         # 获取静态资源集合，并规范化所有 URL
         raw_static_resources = saver_data.get('static_resources', set())
         self.logger.info(_t("接收到静态资源") + f": {len(raw_static_resources)} " + _t("个"))
-        self.static_resources = {self._normalize_url(url) for url in raw_static_resources}
+        self.static_resources = {normalize_url(url) for url in raw_static_resources}
         self.logger.info(_t("规范化后静态资源") + f": {len(self.static_resources)} " + _t("个"))
         
         if self.target_url and self.output_dir:
@@ -227,7 +228,7 @@ class SavePlugin(Plugin):
                         if src:
                             full_url = urljoin(url, src)
                             # 规范化 URL（与 crawler 中的逻辑一致）
-                            full_url = self._normalize_url(full_url)
+                            full_url = normalize_url(full_url)
                             self.logger.debug(_t("规范化后URL") + f": {full_url}")
                             # 检查是否为已记录的静态资源
                             self.logger.debug(_t("检查是否在static_resources中") + f": {full_url in self.static_resources}, static_resources数量={len(self.static_resources)}")
@@ -354,27 +355,7 @@ class SavePlugin(Plugin):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         
         return file_path
-    
-    def _normalize_url(self, url):
-        """规范化 URL
-        
-        统一 URL 格式，用于比较和去重：
-        - 移除 URL 片段（#后面的内容）
-        - 统一小写（域名部分）
-        
-        Args:
-            url: 原始 URL
-            
-        Returns:
-            str: 规范化后的 URL
-        """
-        parsed = urlparse(url)
-        # 移除片段，小写化 netloc
-        normalized = f"{parsed.scheme.lower()}://{parsed.netloc.lower()}{parsed.path}"
-        if parsed.query:
-            normalized += f"?{parsed.query}"
-        return normalized
-    
+
     def _is_same_domain(self, url):
         """检查是否为同域名"""
         target_domain = urlparse(self.target_url).netloc

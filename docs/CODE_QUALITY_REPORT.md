@@ -941,7 +941,7 @@ jobs:
 
 ### 阶段一：基础改进
 
-- [ ] 提取公共模块 `utils/url.py`
+- [x] 提取公共模块 `utils/url_utils.py` (2026-02-24: 创建了 utils/url_utils.py，包含 normalize_url 等函数，并替换 crawler/crawl_site.py、plugins/save_plugin/__init__.py、plugins/pdf_plugin/link_processor.py 中的重复实现)
 - [ ] 提取公共模块 `utils/http.py`
 - [ ] 添加类型注解到 `crawler/` 模块
 - [ ] 添加类型注解到 `plugins/` 模块

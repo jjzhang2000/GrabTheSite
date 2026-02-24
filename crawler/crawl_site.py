@@ -24,6 +24,7 @@ from config import EXCLUDE_LIST, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, ERROR
 from utils.timestamp_utils import get_file_timestamp, get_remote_timestamp, should_update
 from utils.error_handler import ErrorHandler
 from utils.state_manager import StateManager
+from utils.url_utils import normalize_url
 
 # 创建 session，禁用连接池线程
 _session = requests.Session()
@@ -259,7 +260,7 @@ class CrawlSite:
                     
                     # 检查是否已访问过该URL（使用规范化后的URL）
                     if not should_break:
-                        normalized_url = self._normalize_url(url)
+                        normalized_url = normalize_url(url)
                         with self.lock:
                             if normalized_url in self.visited_urls:
                                 task_completed = True
@@ -364,7 +365,7 @@ class CrawlSite:
         file_path = os.path.join(self.output_dir, path.lstrip('/'))
         
         # 规范化URL用于去重检查
-        normalized_url = self._normalize_url(url)
+        normalized_url = normalize_url(url)
         
         # 检查是否已访问过该URL
         with self.lock:
@@ -441,7 +442,7 @@ class CrawlSite:
                 if src:
                     full_url = urljoin(url, src)
                     # 规范化 URL（移除片段，统一格式）
-                    full_url = self._normalize_url(full_url)
+                    full_url = normalize_url(full_url)
                     # 只记录同域名且在目标目录中的静态资源
                     if self._is_same_domain(full_url) and self._is_in_target_directory(full_url):
                         with self.lock:
@@ -456,7 +457,7 @@ class CrawlSite:
                 if href:
                     full_url = urljoin(url, href)
                     # 规范化URL用于去重检查
-                    normalized_full_url = self._normalize_url(full_url)
+                    normalized_full_url = normalize_url(full_url)
                     # 只抓取同域名、在起始目录及其子目录中、并且深度小于最大深度的链接
                     if self._is_same_domain(full_url) and self._is_in_target_directory(full_url) and depth < self.max_depth:
                         # 检查是否已访问过该URL（使用规范化后的URL）
@@ -474,27 +475,7 @@ class CrawlSite:
         
         # 添加延迟
         self._add_delay()
-    
-    def _normalize_url(self, url: str) -> str:
-        """规范化 URL
-        
-        统一 URL 格式，用于比较和去重：
-        - 移除 URL 片段（#后面的内容）
-        - 统一小写（域名部分）
-        
-        Args:
-            url: 原始 URL
-            
-        Returns:
-            str: 规范化后的 URL
-        """
-        parsed = urlparse(url)
-        # 移除片段，小写化 netloc
-        normalized = f"{parsed.scheme.lower()}://{parsed.netloc.lower()}{parsed.path}"
-        if parsed.query:
-            normalized += f"?{parsed.query}"
-        return normalized
-    
+
     def _is_same_domain(self, url: str) -> bool:
         """检查是否为同域名
         
