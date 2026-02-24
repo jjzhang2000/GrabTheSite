@@ -1231,3 +1231,372 @@ def _extract_title(self) -> Optional[str]:
 | `utils/config_manager.py` | 配置验证完整、支持点号路径访问 |
 | `utils/error_handler.py` | 重试机制完善、支持指数退避 |
 | `tests/unit/test_*.py` | 测试用例结构清晰、覆盖边界情况 |
+
+---
+
+## 九、第三轮代码审查发现的问题
+
+> 审查日期：2026-02-24
+> 审查范围：核心爬虫模块、插件模块、主入口文件、日志模块、工具模块
+
+### 🔴 高优先级问题
+
+#### 问题 19：空异常处理块
+
+**问题描述**：多处使用空的 `except:` 或 `except: pass` 块，可能隐藏严重错误。
+
+**影响范围**：
+| 文件 | 位置 | 代码 |
+|------|------|------|
+| `logger.py` | 第112-113行 | `except: pass` |
+| `logger.py` | 第189-191行 | `except: pass` |
+| `logger.py` | 第199-202行 | `except: pass` |
+| `plugins/save_plugin/__init__.py` | 第586-587行 | `except: pass` |
+
+**问题代码**：
+```python
+try:
+    handler.close()
+except:
+    pass
+```
+
+**风险**：
+- 隐藏 `KeyboardInterrupt` 和 `SystemExit`
+- 可能掩盖严重的程序错误
+- 难以调试
+
+**改进方案**：
+```python
+try:
+    handler.close()
+except (IOError, OSError) as e:
+    logger.debug(f"关闭处理器时出错: {e}")
+```
+
+---
+
+#### 问题 20：弃用模块未完全移除
+
+**问题描述**：`crawler/save_site.py` 标记为弃用但仍保留，可能造成混淆。
+
+**影响范围**：`crawler/save_site.py`
+
+**问题代码**：
+```python
+"""网站保存类 - 已弃用
+
+注意：此类已弃用，请使用 plugins.save_plugin.SavePlugin
+保留此文件是为了向后兼容，将在未来版本中移除
+"""
+```
+
+**改进方案**：
+1. 设置明确的移除时间表
+2. 在 `pyproject.toml` 中添加弃用警告
+3. 或直接移除该文件
+
+---
+
+### 🟡 中优先级问题
+
+#### 问题 21：主入口文件大量重复代码
+
+**问题描述**：`grab_the_site.py` 和 `pdf_the_site.py` 有约 70% 的代码重复。
+
+**影响范围**：
+| 文件 | 行数 |
+|------|------|
+| `grab_the_site.py` | ~392行 |
+| `pdf_the_site.py` | ~507行 |
+
+**重复内容**：
+- `parse_args()` 函数
+- `update_config()` 函数
+- `main()` 函数主体结构
+
+**改进方案**：
+```python
+# cli/base.py
+class BaseCLI:
+    """CLI 基类"""
+
+    def __init__(self, mode: str = 'crawl'):
+        self.mode = mode
+        self.parser = self._create_parser()
+
+    def _create_parser(self) -> argparse.ArgumentParser:
+        """创建参数解析器"""
+        parser = argparse.ArgumentParser()
+        self._add_common_args(parser)
+        self._add_specific_args(parser)
+        return parser
+
+    def _add_common_args(self, parser):
+        """添加通用参数"""
+        parser.add_argument("--url", "-u", ...)
+        parser.add_argument("--depth", "-d", ...)
+        # ...
+
+    def _add_specific_args(self, parser):
+        """添加特定参数（子类实现）"""
+        pass
+
+    def run(self, args_list=None, stop_event=None):
+        """运行主逻辑"""
+        # 公共逻辑
+        ...
+
+# cli/crawl_cli.py
+class CrawlCLI(BaseCLI):
+    def _add_specific_args(self, parser):
+        # 抓取特有参数
+        pass
+
+# cli/pdf_cli.py
+class PDFCLI(BaseCLI):
+    def _add_specific_args(self, parser):
+        parser.add_argument("--pdf-filename", ...)
+        parser.add_argument("--pdf-format", ...)
+```
+
+---
+
+#### 问题 22：全局单例模式线程安全问题
+
+**问题描述**：`js_renderer_playwright.py` 中的全局单例初始化存在潜在的竞态条件。
+
+**影响范围**：`utils/js_renderer_playwright.py` 第281-295行
+
+**问题代码**：
+```python
+_js_renderer = None
+_js_renderer_lock = threading.Lock()
+
+def get_js_renderer(enable=False, timeout=30):
+    global _js_renderer
+
+    with _js_renderer_lock:
+        if _js_renderer is None and enable:
+            _js_renderer = JSRendererThread(enable=True, timeout=timeout)
+            _js_renderer.start()
+
+        return _js_renderer
+```
+
+**风险**：
+- 如果 `_js_renderer.start()` 失败，`_js_renderer` 仍为非 None 但未正确初始化
+- 后续调用可能返回一个无效的实例
+
+**改进方案**：
+```python
+def get_js_renderer(enable=False, timeout=30):
+    global _js_renderer
+
+    with _js_renderer_lock:
+        if _js_renderer is None and enable:
+            renderer = JSRendererThread(enable=True, timeout=timeout)
+            renderer.start()
+            # 等待初始化完成
+            if renderer._initialized:
+                _js_renderer = renderer
+            else:
+                renderer.stop()
+                logger.error("JS渲染器初始化失败")
+                return None
+
+        return _js_renderer
+```
+
+---
+
+#### 问题 23：硬编码的浏览器路径
+
+**问题描述**：`js_renderer_playwright.py` 中硬编码了 Windows 系统的浏览器路径。
+
+**影响范围**：`utils/js_renderer_playwright.py` 第86-113行
+
+**问题代码**：
+```python
+edge_paths = [
+    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+    os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+]
+```
+
+**风险**：
+- 不支持 macOS 和 Linux
+- 浏览器安装位置变化时需要修改代码
+
+**改进方案**：
+```python
+def _find_system_browser(self, p):
+    """查找系统中已安装的浏览器"""
+    import platform
+    system = platform.system()
+
+    browsers = []
+
+    if system == "Windows":
+        browsers = [
+            ("chromium", "msedge", [
+                r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+                r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+                os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+            ]),
+            ("chromium", "chrome", [
+                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                # ...
+            ]),
+        ]
+    elif system == "Darwin":  # macOS
+        browsers = [
+            ("chromium", "chrome", ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]),
+            ("chromium", "msedge", ["/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"]),
+        ]
+    elif system == "Linux":
+        browsers = [
+            ("chromium", "chrome", ["/usr/bin/google-chrome", "/usr/bin/chromium-browser"]),
+        ]
+
+    # ... 查找逻辑
+```
+
+---
+
+#### 问题 24：配置修改模块级变量
+
+**问题描述**：`pdf_the_site.py` 直接修改了 `config` 模块的全局变量。
+
+**影响范围**：`pdf_the_site.py` 第419-420行
+
+**问题代码**：
+```python
+import config as config_module
+config_module.JS_RENDERING_CONFIG['enabled'] = False
+```
+
+**风险**：
+- 副作用难以追踪
+- 可能影响其他模块的行为
+- 不符合配置管理的最佳实践
+
+**改进方案**：
+```python
+# 在配置加载时处理
+def update_config(args):
+    config = load_config()
+
+    # PDF 模式下禁用 JS 渲染
+    if is_pdf_mode:
+        if "js_rendering" not in config:
+            config["js_rendering"] = {}
+        config["js_rendering"]["enabled"] = False
+
+    return config
+```
+
+---
+
+### 🟢 低优先级问题
+
+#### 问题 25：日志级别不一致
+
+**问题描述**：CLI 模式下强制将控制台日志级别设为 ERROR，可能遗漏重要信息。
+
+**影响范围**：
+| 文件 | 位置 |
+|------|------|
+| `grab_the_site.py` | 第34-37行 |
+| `pdf_the_site.py` | 第34-38行 |
+
+**问题代码**：
+```python
+import logging
+for handler in logging.getLogger().handlers:
+    if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
+        handler.setLevel(logging.ERROR)
+```
+
+**改进方案**：
+```python
+# 通过命令行参数控制日志级别
+parser.add_argument("--verbose", "-v", action="count", default=0,
+                    help="增加日志详细程度")
+parser.add_argument("--quiet", "-q", action="store_true",
+                    help="只显示错误信息")
+
+# 在 main() 中
+if args.quiet:
+    console_level = logging.ERROR
+elif args.verbose >= 2:
+    console_level = logging.DEBUG
+elif args.verbose == 1:
+    console_level = logging.INFO
+else:
+    console_level = logging.WARNING
+```
+
+---
+
+#### 问题 26：缺少类型注解
+
+**问题描述**：部分核心模块仍缺少完整的类型注解。
+
+**影响范围**：
+| 模块 | 类型注解状态 |
+|------|-------------|
+| `crawler/crawl_site.py` | ⚠️ 部分添加 |
+| `crawler/downloader.py` | ❌ 缺失 |
+| `plugins/save_plugin/__init__.py` | ❌ 缺失 |
+| `plugins/pdf_plugin/__init__.py` | ❌ 缺失 |
+| `grab_the_site.py` | ❌ 缺失 |
+| `pdf_the_site.py` | ❌ 缺失 |
+| `logger.py` | ❌ 缺失 |
+
+**改进方案**：逐步为这些模块添加类型注解。
+
+---
+
+### 代码质量良好的模块（第三轮确认）
+
+以下模块在第三轮审查中确认代码质量良好：
+
+| 模块 | 优点 |
+|------|------|
+| `crawler/fetcher.py` | 类型注解完整、错误处理得当、资源管理正确 |
+| `utils/state_manager.py` | 类型注解完整、状态管理清晰、支持断点续传 |
+| `utils/browser_manager.py` | 单例模式实现正确、资源管理得当 |
+| `plugins/pdf_plugin/pdf_generator.py` | 使用 BrowserManager 复用浏览器、资源清理正确 |
+
+---
+
+## 十、问题修复进度汇总
+
+### 统计信息
+
+| 优先级 | 发现问题数 | 已修复 | 待处理 |
+|--------|-----------|--------|--------|
+| 🔴 高 | 8 | 5 | 3 |
+| 🟡 中 | 12 | 6 | 6 |
+| 🟢 低 | 6 | 2 | 4 |
+| **总计** | **26** | **13** | **13** |
+
+### 待处理问题清单
+
+| 编号 | 问题 | 优先级 | 预计工作量 |
+|------|------|--------|-----------|
+| 13 | GUI 使用 os._exit 强制终止进程 | 🔴 高 | 中 |
+| 19 | 空异常处理块 | 🔴 高 | 小 |
+| 20 | 弃用模块未完全移除 | 🔴 高 | 小 |
+| 14 | GUI 主窗口类重复代码 | 🟡 中 | 大 |
+| 15 | 模块导入位置不规范 | 🟡 中 | 小 |
+| 16 | 重复的模块文档字符串 | 🟡 中 | 小 |
+| 21 | 主入口文件大量重复代码 | 🟡 中 | 大 |
+| 22 | 全局单例模式线程安全问题 | 🟡 中 | 中 |
+| 23 | 硬编码的浏览器路径 | 🟡 中 | 中 |
+| 24 | 配置修改模块级变量 | 🟡 中 | 小 |
+| 17 | 测试覆盖不完整 | 🟢 低 | 大 |
+| 25 | 日志级别不一致 | 🟢 低 | 小 |
+| 26 | 缺少类型注解 | 🟢 低 | 大 |
