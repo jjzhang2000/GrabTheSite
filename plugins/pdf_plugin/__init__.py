@@ -11,6 +11,7 @@
 import os
 import shutil
 import tempfile
+from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
@@ -26,49 +27,50 @@ class PdfPlugin(Plugin):
     """
 
     # 插件名称
-    name = "PDF Plugin"
+    name: str = "PDF Plugin"
 
     # 插件描述
-    description = "将抓取的网站保存为 PDF 文件，保留目录结构和页面链接"
+    description: str = "将抓取的网站保存为 PDF 文件，保留目录结构和页面链接"
 
-    def __init__(self, config=None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
         """初始化插件
 
         Args:
             config: 配置对象
         """
         super().__init__(config)
-        self.target_url = None
-        self.output_dir = None
-        self.output_pdf_path = None
-        self.pdf_config = config.get('pdf', {}) if config else {}
+        self.target_url: Optional[str] = None
+        self.output_dir: Optional[str] = None
+        self.output_pdf_path: Optional[str] = None
+        self.pdf_config: Dict[str, Any] = config.get('pdf', {}) if config else {}
+        self.target_directory: str = "/"
 
         # 页面数据
-        self.pages = {}
-        self.page_depths = {}
-        self.saved_files = []
+        self.pages: Dict[str, str] = {}
+        self.page_depths: Dict[str, int] = {}
+        self.saved_files: List[Tuple[str, str]] = []
 
         # 工具类实例（延迟初始化）
-        self.bookmark_builder = None
-        self.link_processor = None
-        self.pdf_generator = None
-        self.pdf_merger = None
+        self.bookmark_builder: Optional[Any] = None
+        self.link_processor: Optional[Any] = None
+        self.pdf_generator: Optional[Any] = None
+        self.pdf_merger: Optional[Any] = None
 
         # URL 到页码的映射（用于内部链接跳转）
-        self.url_to_page_map = {}
+        self.url_to_page_map: Dict[str, int] = {}
 
         # 页面链接信息：url -> [(href, is_internal)]
-        self.page_links_info = {}
+        self.page_links_info: Dict[str, List[Tuple[str, bool]]] = {}
 
         # 临时文件目录
-        self.temp_dir = None
+        self.temp_dir: Optional[str] = None
 
-    def on_init(self):
+    def on_init(self) -> None:
         """插件初始化时调用"""
         super().on_init()
         self.logger.info(_t("PDF插件初始化完成"))
 
-    def on_crawl_end(self, pages):
+    def on_crawl_end(self, pages: Dict[str, str]) -> None:
         """抓取结束时调用，准备保存参数
 
         Args:
@@ -77,7 +79,7 @@ class PdfPlugin(Plugin):
         self.logger.info(_t("准备生成PDF，共") + f" {len(pages)} " + _t("个页面"))
         self.pages = pages
 
-    def on_save_start(self, saver_data):
+    def on_save_start(self, saver_data: Dict[str, Any]) -> None:
         """保存开始时调用
 
         参考 save_plugin.on_save_start 的实现
@@ -99,7 +101,7 @@ class PdfPlugin(Plugin):
                 self.target_directory += '/'
 
             # 设置输出路径
-            output_filename = self.pdf_config.get('output_filename', 'site.pdf')
+            output_filename: str = self.pdf_config.get('output_filename', 'site.pdf')
             self.output_pdf_path = os.path.join(self.output_dir, output_filename)
 
             # 创建临时目录
@@ -109,7 +111,7 @@ class PdfPlugin(Plugin):
         else:
             self.logger.error(_t("PDF插件初始化失败：缺少必要参数"))
 
-    def save_site(self, pages):
+    def save_site(self, pages: Dict[str, str]) -> List[Tuple[str, str]]:
         """保存抓取的页面为 PDF
 
         内部链接在生成时已被移除，外部链接由 Playwright 正确保留。
@@ -119,7 +121,7 @@ class PdfPlugin(Plugin):
             pages: 暂存的页面内容，键为URL，值为页面内容
 
         Returns:
-            list: 保存的文件列表
+            保存的文件列表
         """
         if not pages:
             self.logger.warning(_t("没有页面需要保存"))
@@ -132,20 +134,20 @@ class PdfPlugin(Plugin):
             self._init_tools()
 
             # 1. 分析页面结构，构建书签树
-            bookmark_tree = self.bookmark_builder.build_bookmarks(pages, self.page_depths)
+            bookmark_tree: Any = self.bookmark_builder.build_bookmarks(pages, self.page_depths)
             self.logger.info(_t("书签树构建完成"))
 
             # 2. 为每个页面生成单个 PDF（临时文件）
-            temp_pdf_files = []
-            page_count = 0
+            temp_pdf_files: List[Tuple[str, str]] = []
+            page_count: int = 0
 
             # 获取已下载页面的 URL 集合
-            downloaded_urls = set(pages.keys())
+            downloaded_urls: Set[str] = set(pages.keys())
 
             for url, html_content in pages.items():
                 try:
                     # 生成临时 PDF 文件
-                    temp_pdf_path = os.path.join(
+                    temp_pdf_path: str = os.path.join(
                         self.temp_dir,
                         f"page_{page_count:04d}.pdf"
                     )
@@ -188,7 +190,7 @@ class PdfPlugin(Plugin):
             # 清理临时文件
             self._cleanup_temp_files()
 
-    def _init_tools(self):
+    def _init_tools(self) -> None:
         """延迟初始化工具类"""
         from .pdf_generator import PdfGenerator
         from .bookmark_builder import BookmarkBuilder
@@ -200,7 +202,7 @@ class PdfPlugin(Plugin):
         self.pdf_generator = PdfGenerator(self.pdf_config)
         self.pdf_merger = PdfMerger()
 
-    def _cleanup_temp_files(self):
+    def _cleanup_temp_files(self) -> None:
         """清理临时文件"""
         if self.temp_dir and os.path.exists(self.temp_dir):
             try:
@@ -209,7 +211,7 @@ class PdfPlugin(Plugin):
             except Exception as e:
                 self.logger.warning(_t("清理临时文件失败") + f": {str(e)}")
 
-    def on_save_end(self, saved_files):
+    def on_save_end(self, saved_files: List[Tuple[str, str]]) -> None:
         """保存结束时调用
 
         Args:
@@ -219,4 +221,4 @@ class PdfPlugin(Plugin):
 
 
 # 创建插件实例
-plugin = PdfPlugin()
+plugin: PdfPlugin = PdfPlugin()
