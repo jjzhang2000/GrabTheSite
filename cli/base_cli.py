@@ -48,14 +48,27 @@ class BaseCLI(ABC):
         self.prog = prog
         self.parser = self._create_parser()
 
-        # 设置 CLI 模式的控制台日志级别
-        self._setup_cli_logging()
+    def _setup_cli_logging(self, verbose: int = 0, quiet: bool = False) -> None:
+        """设置 CLI 模式的日志级别
 
-    def _setup_cli_logging(self) -> None:
-        """设置 CLI 模式的日志级别"""
+        Args:
+            verbose: 详细程度（0=WARNING, 1=INFO, 2+=DEBUG）
+            quiet: 是否只显示错误信息
+        """
+        # 根据参数确定日志级别
+        if quiet:
+            console_level = logging.ERROR
+        elif verbose >= 2:
+            console_level = logging.DEBUG
+        elif verbose == 1:
+            console_level = logging.INFO
+        else:
+            console_level = logging.WARNING
+
+        # 设置控制台日志级别
         for handler in logging.getLogger().handlers:
             if isinstance(handler, logging.StreamHandler) and not isinstance(handler, logging.FileHandler):
-                handler.setLevel(logging.ERROR)
+                handler.setLevel(console_level)
 
     def _create_parser(self) -> argparse.ArgumentParser:
         """创建参数解析器
@@ -82,6 +95,20 @@ class BaseCLI(ABC):
         Args:
             parser: 参数解析器
         """
+        # 日志级别控制
+        parser.add_argument(
+            "--verbose", "-v",
+            action="count",
+            default=0,
+            help=_("增加日志详细程度（-v=INFO, -vv=DEBUG）")
+        )
+
+        parser.add_argument(
+            "--quiet", "-q",
+            action="store_true",
+            help=_("只显示错误信息")
+        )
+
         parser.add_argument(
             "--url", "-u",
             type=str,
@@ -308,6 +335,9 @@ class BaseCLI(ABC):
         """
         # 解析参数
         args = self.parse_args(args_list)
+
+        # 设置日志级别（根据 verbose 和 quiet 参数）
+        self._setup_cli_logging(verbose=args.verbose, quiet=args.quiet)
 
         # 更新配置
         config = self.update_config(args)

@@ -1451,7 +1451,7 @@ config_module.JS_RENDERING_CONFIG['enabled'] = False
 
 ### 🟢 低优先级问题
 
-#### 问题 25：日志级别不一致
+#### 问题 25：日志级别不一致 ✅ 已修复
 
 **问题描述**：CLI 模式下强制将控制台日志级别设为 ERROR，可能遗漏重要信息。
 
@@ -1469,24 +1469,16 @@ for handler in logging.getLogger().handlers:
         handler.setLevel(logging.ERROR)
 ```
 
-**改进方案**：
-```python
-# 通过命令行参数控制日志级别
-parser.add_argument("--verbose", "-v", action="count", default=0,
-                    help="增加日志详细程度")
-parser.add_argument("--quiet", "-q", action="store_true",
-                    help="只显示错误信息")
+**修复时间**：2026-02-24
 
-# 在 main() 中
-if args.quiet:
-    console_level = logging.ERROR
-elif args.verbose >= 2:
-    console_level = logging.DEBUG
-elif args.verbose == 1:
-    console_level = logging.INFO
-else:
-    console_level = logging.WARNING
-```
+**修复内容**：
+- 在 `cli/base_cli.py` 中添加 `--verbose` (`-v`) 和 `--quiet` (`-q`) 参数
+- 修改 `_setup_cli_logging` 方法，根据参数设置日志级别：
+  - `--quiet` (`-q`): 只显示错误信息 (ERROR)
+  - `--verbose` (`-v`): 显示信息 (INFO)
+  - `--verbose --verbose` (`-vv`): 显示调试信息 (DEBUG)
+  - 默认: 显示警告信息 (WARNING)
+- 在 `run` 方法中解析参数后调用 `_setup_cli_logging` 设置日志级别
 
 ---
 
