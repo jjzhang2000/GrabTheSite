@@ -1076,7 +1076,7 @@ def on_exit(self):
 
 ### 🟡 中优先级问题
 
-#### 问题 14：GUI 主窗口类大量重复代码
+#### 问题 14：GUI 主窗口类大量重复代码 ✅ 已修复
 
 **问题描述**：`MainWindow` 和 `PdfMainWindow` 类有约 80% 的代码重复。
 
@@ -1093,45 +1093,29 @@ def on_exit(self):
 - `on_exit` 方法
 - 线程管理逻辑
 
-**改进方案**：
-```python
-class BaseMainWindow(tk.Tk):
-    """主窗口基类"""
-    
-    def __init__(self, title: str, geometry: str):
-        super().__init__()
-        self.title(title)
-        self.geometry(geometry)
-        self._setup_common_components()
-        self._setup_specific_components()
-    
-    def _setup_common_components(self):
-        """设置公共组件"""
-        # 日志面板、底部按钮等
-        ...
-    
-    def _setup_specific_components(self):
-        """设置特定组件（子类实现）"""
-        raise NotImplementedError
-    
-    def on_stop(self):
-        """停止抓取"""
-        ...
-    
-    def on_exit(self):
-        """退出程序"""
-        ...
+**修复时间**：2026-02-24
 
-class MainWindow(BaseMainWindow):
-    def _setup_specific_components(self):
-        # 基本配置面板
-        ...
+**修复内容**：
+1. 创建基类 `gui/base_main_window.py`：
+   - `BaseMainWindow` 抽象基类（357 行）
+   - 包含公共初始化、面板创建、按钮创建
+   - 包含公共方法：`on_start`、`on_stop`、`on_exit`
+   - 包含工具方法：`_create_crawl_thread`、`_run_crawl`、`_convert_config_to_args`
+   - 定义抽象方法供子类实现
 
-class PdfMainWindow(BaseMainWindow):
-    def _setup_specific_components(self):
-        # PDF 配置面板
-        ...
-```
+2. 重构 `gui/main_window.py`：
+   - 从 280+ 行简化为 59 行
+   - 只实现特定方法：`_setup_log_handlers`、`_get_config`、`_start_crawl_thread`
+
+3. 重构 `gui/pdf_main_window.py`：
+   - 从 280+ 行简化为 143 行（包含 PdfConfigPanel 类）
+   - 只实现特定方法：`_create_specific_config_panel`、`_setup_log_handlers`、`_get_config`、`_start_crawl_thread`
+   - `PdfConfigPanel` 保持不变作为特定配置面板
+
+**效果**：
+- 消除约 260 行重复代码
+- 提高可维护性
+- 新增功能只需修改基类
 
 ---
 

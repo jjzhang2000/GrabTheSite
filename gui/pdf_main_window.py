@@ -1,294 +1,74 @@
 """PDF 主窗口模块
 
-PDFtheSite GUI应用程序的主窗口，包含：
-- URL配置面板
-- PDF配置选项卡
-- 高级配置选项卡
-- 日志显示面板
-- 控制按钮
-
+PDFtheSite GUI应用程序的主窗口，继承自 BaseMainWindow。
 与 MainWindow 的区别：
 - 调用 pdf_the_site.py 而不是 grab_the_site.py
 - 添加 PDF 配置选项
 """
 
 import tkinter as tk
-import threading
 from tkinter import ttk
+from typing import Dict, Any
 
-# 禁用控制台日志输出（必须在导入其他模块之前）
-from logger import disable_console_output
-disable_console_output()
-
-from gui.config_panels import BasicConfigPanel, AdvancedConfigPanel, save_config_to_yaml
-from gui.log_panel import LogPanel
-from utils.i18n import gettext as _, register_language_change_callback, init_i18n
-from config import load_config
+from gui.base_main_window import BaseMainWindow
 
 
-class PdfMainWindow(tk.Tk):
+class PdfMainWindow(BaseMainWindow):
     """PDF 主窗口类"""
 
     def __init__(self):
         """初始化 PDF 主窗口"""
-        super().__init__()
+        super().__init__(
+            title="PDFtheSite - 网站抓取到PDF",
+            geometry="750x850",
+            min_size=(650, 750)
+        )
 
-        # 根据配置初始化语言
-        try:
-            config = load_config()
-            i18n_config = config.get('i18n', {})
-            lang = i18n_config.get('lang', 'zh_CN')
-            init_i18n(lang)
-        except Exception:
-            init_i18n('zh_CN')  # 默认中文
-
-        self.title(_("PDFtheSite - 网站抓取到PDF"))
-        self.geometry("750x850")
-        self.minsize(650, 750)
-
-        # 创建主框架
-        self.main_frame = ttk.Frame(self, padding="10")
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
-
-        # 创建顶部框架（用于URL和基本配置）
-        self.top_frame = ttk.LabelFrame(self.main_frame, text=_("基本配置"), padding="8")
-        self.top_frame.pack(fill=tk.X, pady=(0, 10))
-
-        # 创建基本配置面板
-        self.basic_config_panel = BasicConfigPanel(self.top_frame)
-        self.basic_config_panel.pack(fill=tk.X)
-
-        # 创建PDF配置框架
+    def _create_specific_config_panel(self) -> None:
+        """创建 PDF 配置面板"""
         self.pdf_frame = ttk.LabelFrame(self.main_frame, text=_("PDF配置"), padding="8")
         self.pdf_frame.pack(fill=tk.X, pady=(0, 10))
 
-        # 创建PDF配置面板
         self.pdf_config_panel = PdfConfigPanel(self.pdf_frame)
         self.pdf_config_panel.pack(fill=tk.X)
 
-        # 创建高级配置框架
-        self.advanced_frame = ttk.LabelFrame(self.main_frame, text=_("高级配置"), padding="8")
-        self.advanced_frame.pack(fill=tk.X, pady=(0, 10))
-
-        # 创建高级配置面板
-        self.advanced_config_panel = AdvancedConfigPanel(self.advanced_frame)
-        self.advanced_config_panel.pack(fill=tk.X, expand=False)
-
-        # 创建日志面板
-        self.log_frame = ttk.LabelFrame(self.main_frame, text=_("日志"), padding="5")
-        self.log_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-
-        self.log_panel = LogPanel(self.log_frame)
-        self.log_panel.pack(fill=tk.BOTH, expand=True)
-
-        # 设置日志处理器，将日志输出到GUI
-        import logging
-        self.log_panel.setup_logger_handler()  # 设置根logger
-        # 也为各个模块设置
-        self.log_panel.setup_logger_handler('pdf_the_site')
-        self.log_panel.setup_logger_handler('crawler.crawl_site')
-        self.log_panel.setup_logger_handler('crawler.downloader')
-        self.log_panel.setup_logger_handler('plugins.pdf_plugin')
-
-        # 创建底部框架（用于按钮）
-        self.bottom_frame = ttk.Frame(self.main_frame)
-        self.bottom_frame.pack(fill=tk.X, pady=(10, 0))
-
-        # 创建开始抓取按钮
-        self.start_button = ttk.Button(self.bottom_frame, text=_("抓取到PDF"), command=self.on_start)
-        self.start_button.pack(side=tk.LEFT, padx=(0, 15))
-
-        # 创建停止按钮
-        self.stop_button = ttk.Button(self.bottom_frame, text=_("停止"), command=self.on_stop, state=tk.DISABLED)
-        self.stop_button.pack(side=tk.LEFT, padx=(0, 15))
-
-        # 创建退出按钮
-        self.exit_button = ttk.Button(self.bottom_frame, text=_("退出"), command=self.on_exit)
-        self.exit_button.pack(side=tk.RIGHT)
-
-        # 抓取状态
-        self.is_crawling = False
-        self.stop_event = threading.Event()  # 用于通知抓取线程停止
-        self.crawl_thread = None  # 抓取线程引用
-
-        # 注册语言切换回调
-        register_language_change_callback(self._update_ui_texts)
-
-        # 设置窗口关闭协议
-        self.protocol("WM_DELETE_WINDOW", self.on_exit)
-
-    def _update_ui_texts(self):
-        """更新界面文本（语言切换后调用）"""
-        # 重新导入gettext以确保使用最新的翻译
-        from utils.i18n import gettext as _
-
-        # 更新窗口标题
-        self.title(_("PDFtheSite - 网站抓取到PDF"))
-
-        # 更新标签框架文本
-        self.top_frame.config(text=_("基本配置"))
-        self.pdf_frame.config(text=_("PDF配置"))
-        self.advanced_frame.config(text=_("高级配置"))
-        self.log_frame.config(text=_("日志"))
-
-        # 更新按钮文本
-        self.start_button.config(text=_("抓取到PDF"))
-        self.stop_button.config(text=_("停止"))
-        self.exit_button.config(text=_("退出"))
-
-    def on_start(self):
-        """开始抓取按钮点击事件"""
-        import threading
-
-        # 检查当前线程数
-        thread_count = threading.active_count()
-        self.log_panel.add_log(_("当前活跃线程数: {}").format(thread_count))
-
-        # 如果线程数异常，警告用户
-        if thread_count > 20:
-            self.log_panel.add_log(_("警告: 线程数过多 ({}), 建议重启程序").format(thread_count))
-
-        # 禁用开始按钮，启用停止按钮
-        self.start_button.config(state=tk.DISABLED)
-        self.stop_button.config(state=tk.NORMAL)
-        self.is_crawling = True
-        self.stop_event.clear()  # 清除停止标志
-
-        # 获取配置
-        config = {
-            **self.basic_config_panel.get_config(),
-            **self.pdf_config_panel.get_config(),
-            **self.advanced_config_panel.get_config()
-        }
-
-        # 保存配置到config.yaml
-        save_config_to_yaml(config)
-        self.log_panel.add_log(_("配置已保存到 config.yaml"))
-
-        # 验证配置
-        if not config["url"]:
-            self.log_panel.add_log(_("错误: 目标URL不能为空"))
-            self.on_stop()
-            return
-
-        # 记录开始日志
-        self.log_panel.add_log(_("开始抓取网站并生成PDF: {}").format(config["url"]))
-
-        # 重新设置日志处理器（确保在多次抓取后能正常工作）
+    def _setup_log_handlers(self) -> None:
+        """设置日志处理器"""
         self.log_panel.setup_logger_handler()  # 根 logger
         self.log_panel.setup_logger_handler('pdf_the_site')
         self.log_panel.setup_logger_handler('crawler.crawl_site')
         self.log_panel.setup_logger_handler('crawler.downloader')
         self.log_panel.setup_logger_handler('plugins.pdf_plugin')
 
-        # 导入 PDF 抓取模块
+    def _get_start_button_text(self) -> str:
+        """获取开始按钮文本"""
+        return "抓取到PDF"
+
+    def _get_window_title(self) -> str:
+        """获取窗口标题"""
+        return "PDFtheSite - 网站抓取到PDF"
+
+    def _update_specific_ui_texts(self) -> None:
+        """更新特定组件文本"""
+        self.pdf_frame.config(text=_("PDF配置"))
+
+    def _get_config(self) -> Dict[str, Any]:
+        """获取完整配置"""
+        return {
+            **self._get_base_config(),
+            **self.pdf_config_panel.get_config()
+        }
+
+    def _start_crawl_thread(self, config: Dict[str, Any]) -> None:
+        """启动抓取线程"""
         from pdf_the_site import main as pdf_main
-        import threading
 
-        # 在单独的线程中执行抓取，避免阻塞GUI
         def crawl_thread():
-            try:
-                # 调用抓取功能
-                self.log_panel.add_log(_("抓取配置已准备就绪"))
-                self.log_panel.add_log(_("开始抓取..."))
+            args_list = self._convert_config_to_args(config)
+            self._run_crawl(pdf_main, args_list, "PDF生成完成!")
 
-                # 检查是否收到停止信号
-                if self.stop_event.is_set():
-                    self.log_panel.add_log(_("抓取已被用户取消"))
-                    return
-
-                # 将配置转换为命令行参数（将snake_case转换为kebab-case）
-                args_list = []
-                for key, value in config.items():
-                    # 将下划线转换为短横线（如max_files -> max-files）
-                    arg_name = key.replace('_', '-')
-                    if value is True:
-                        args_list.append(f"--{arg_name}")
-                    elif value is False:
-                        continue
-                    elif isinstance(value, list):
-                        if value:
-                            args_list.append(f"--{arg_name}")
-                            args_list.extend(value)
-                    else:
-                        args_list.append(f"--{arg_name}")
-                        args_list.append(str(value))
-
-                # 调用主抓取函数，传递stop_event
-                pdf_main(args_list, self.stop_event)
-
-                # 记录完成日志
-                self.log_panel.add_log(_("PDF生成完成!"))
-            except Exception as e:
-                # 记录错误日志
-                self.log_panel.add_log(_("错误: {}").format(str(e)))
-            finally:
-                # 抓取结束（正常完成或被停止），重置UI状态
-                # 注意：这里不调用on_stop，因为on_stop会等待线程结束，可能导致死锁
-                if self.is_crawling:
-                    self.is_crawling = False
-                    self.start_button.config(state=tk.NORMAL)
-                    self.stop_button.config(state=tk.DISABLED)
-
-        # 启动抓取线程
-        self.crawl_thread = threading.Thread(target=crawl_thread)
-        self.crawl_thread.daemon = True
+        self.crawl_thread = self._create_crawl_thread(crawl_thread)
         self.crawl_thread.start()
-
-    def on_stop(self):
-        """停止按钮点击事件"""
-        if not self.is_crawling:
-            return  # 如果没有正在抓取，直接返回
-
-        # 设置停止标志，通知抓取线程
-        self.stop_event.set()
-
-        # 记录停止日志
-        self.log_panel.add_log(_("正在停止抓取..."))
-
-        # 等待抓取线程结束（最多等待5秒）
-        if self.crawl_thread:
-            self.crawl_thread.join(timeout=5)
-            if self.crawl_thread.is_alive():
-                self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
-
-        # 重置状态
-        self.is_crawling = False
-        self.start_button.config(state=tk.NORMAL)
-        self.stop_button.config(state=tk.DISABLED)
-        self.log_panel.add_log(_("抓取已停止"))
-
-    def on_exit(self):
-        """退出按钮点击事件"""
-        import sys
-        import time
-
-        # 如果正在抓取，先发送停止信号
-        if self.is_crawling:
-            self.log_panel.add_log(_("正在停止抓取并退出..."))
-            self.stop_event.set()
-
-        # 无论是否正在抓取，都确保抓取线程已结束
-        if self.crawl_thread and self.crawl_thread.is_alive():
-            self.log_panel.add_log(_("等待抓取线程结束..."))
-
-            # 等待抓取线程结束，最多等待5秒
-            self.crawl_thread.join(timeout=5)
-
-            # 如果线程仍在运行，记录警告
-            if self.crawl_thread.is_alive():
-                self.log_panel.add_log(_("警告: 抓取线程未能及时停止"))
-
-        # 关闭所有日志处理器，释放文件锁
-        self.log_panel.add_log(_("正在清理资源..."))
-        from logger import close_all_loggers
-        close_all_loggers()
-
-        # 销毁窗口
-        self.destroy()
-
-        # 使用 sys.exit(0) 正常退出，让 Python 解释器执行清理
-        sys.exit(0)
 
 
 class PdfConfigPanel(ttk.Frame):
@@ -318,53 +98,42 @@ class PdfConfigPanel(ttk.Frame):
         """创建界面组件"""
         # 第一行：文件名和格式
         row1 = ttk.Frame(self)
-        row1.pack(fill=tk.X, pady=(0, 5))
+        row1.pack(fill=tk.X, pady=2)
 
-        # PDF文件名
-        self.filename_label = ttk.Label(row1, text=_("PDF文件名:"))
-        self.filename_label.pack(side=tk.LEFT, padx=(0, 8))
-        self.filename_entry = ttk.Entry(row1, textvariable=self.pdf_filename_var, width=20)
-        self.filename_entry.pack(side=tk.LEFT, padx=(0, 20))
+        ttk.Label(row1, text=_("文件名:")).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Entry(row1, textvariable=self.pdf_filename_var, width=20).pack(side=tk.LEFT, padx=(0, 15))
 
-        # 页面格式
-        self.format_label = ttk.Label(row1, text=_("页面格式:"))
-        self.format_label.pack(side=tk.LEFT, padx=(0, 8))
-        self.format_combo = ttk.Combobox(
-            row1,
-            textvariable=self.pdf_format_var,
-            values=["A4", "Letter", "Legal", "Tabloid"],
-            width=10,
-            state="readonly"
-        )
-        self.format_combo.pack(side=tk.LEFT, padx=(0, 20))
+        ttk.Label(row1, text=_("格式:")).pack(side=tk.LEFT, padx=(0, 5))
+        format_combo = ttk.Combobox(row1, textvariable=self.pdf_format_var, values=["A4", "Letter", "Legal"], width=10, state="readonly")
+        format_combo.pack(side=tk.LEFT)
 
-        # 页边距
-        self.margin_label = ttk.Label(row1, text=_("页边距(mm):"))
-        self.margin_label.pack(side=tk.LEFT, padx=(0, 8))
-        self.margin_spin = ttk.Spinbox(
-            row1,
-            from_=0,
-            to=50,
-            textvariable=self.pdf_margin_var,
-            width=5
-        )
-        self.margin_spin.pack(side=tk.LEFT)
+        # 第二行：边距
+        row2 = ttk.Frame(self)
+        row2.pack(fill=tk.X, pady=2)
+
+        ttk.Label(row2, text=_("边距(mm):")).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Spinbox(row2, from_=0, to=50, textvariable=self.pdf_margin_var, width=8).pack(side=tk.LEFT)
 
     def _update_ui_texts(self):
-        """更新界面文本（语言切换后调用）"""
-        # 重新导入gettext以确保使用最新的翻译
-        from utils.i18n import gettext as _
-
+        """更新界面文本"""
         # 更新标签文本
-        self.filename_label.config(text=_("PDF文件名:"))
-        self.format_label.config(text=_("页面格式:"))
-        self.margin_label.config(text=_("页边距(mm):"))
+        for child in self.winfo_children():
+            if isinstance(child, ttk.Frame):
+                for label in child.winfo_children():
+                    if isinstance(label, ttk.Label):
+                        current_text = label.cget("text")
+                        if "文件名" in current_text or "filename" in current_text.lower():
+                            label.config(text=_("文件名:"))
+                        elif "格式" in current_text or "format" in current_text.lower():
+                            label.config(text=_("格式:"))
+                        elif "边距" in current_text or "margin" in current_text.lower():
+                            label.config(text=_("边距(mm):"))
 
-    def get_config(self):
-        """获取 PDF 配置
+    def get_config(self) -> Dict[str, Any]:
+        """获取PDF配置
 
         Returns:
-            dict: PDF 配置字典
+            Dict[str, Any]: 配置字典
         """
         return {
             "pdf_filename": self.pdf_filename_var.get(),
