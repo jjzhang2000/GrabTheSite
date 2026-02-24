@@ -5,9 +5,6 @@
 - 全局延迟管理
 - 线程安全
 """
-"""
-提供全局速率限制功能，用于控制请求频率。
-"""
 
 import time
 import threading

@@ -7,6 +7,7 @@
 - 超时处理
 """
 
+import os
 from typing import Any, Dict, Optional, Union
 
 import requests
@@ -305,6 +306,3 @@ def create_retry_client(
         max_retries=max_retries,
         keep_alive=False
     )
-
-
-import os  # 导入 os 模块用于 download 方法

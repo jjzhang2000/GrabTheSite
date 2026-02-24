@@ -991,10 +991,227 @@ jobs:
 | 🔴 高 | 异常处理过宽 | 调试困难、隐藏错误 | 阶段一 |
 | 🔴 高 | 线程安全问题 | 潜在数据竞争 | 阶段三 |
 | 🔴 高 | 核心类职责过重 | 可维护性、可测试性 | 阶段三 |
-| 🟡 中 | 重复代码 | 维护成本 | 阶段一 |
+| � 高 | GUI 使用 os._exit 强制终止进程 | 资源泄漏、数据丢失 | 待处理 |
+| �🟡 中 | 重复代码 | 维护成本 | 阶段一 |
 | 🟡 中 | 硬编码配置值 | 灵活性 | 阶段二 |
 | 🟡 中 | 资源管理 | 性能 | 阶段四 |
 | 🟡 中 | 配置验证不完整 | 稳定性 | 阶段二 |
-| 🟢 低 | 测试覆盖缺失 | 质量保证 | 阶段六 |
+| � 中 | GUI 主窗口类重复代码 | 维护成本 | 待处理 |
+| 🟡 中 | 模块导入位置不规范 | 代码风格 | 待处理 |
+| �🟢 低 | 测试覆盖缺失 | 质量保证 | 阶段六 |
 | 🟢 低 | 文档字符串不统一 | 可读性 | 阶段六 |
 | 🟢 低 | 依赖版本管理 | 可重复构建 | 阶段六 |
+| 🟢 低 | 重复的模块文档字符串 | 代码风格 | 待处理 |
+
+---
+
+## 八、第二轮代码审查发现的问题
+
+> 审查日期：2026-02-24
+> 审查范围：GUI模块、模型模块、测试模块、工具模块、配置和国际化模块
+
+### 🔴 高优先级问题
+
+#### 问题 13：GUI 使用 os._exit 强制终止进程
+
+**问题描述**：`main_window.py` 和 `pdf_main_window.py` 在退出时使用 `os._exit(0)` 强制终止整个进程。
+
+**影响范围**：
+| 文件 | 位置 |
+|------|------|
+| `gui/main_window.py` | 第304行 |
+| `gui/pdf_main_window.py` | 第312行 |
+
+**问题代码**：
+```python
+import os
+os._exit(0)
+```
+
+**风险**：
+- 跳过所有 Python 清理操作（`__del__`、`atexit` 回调等）
+- 可能导致文件句柄未正确关闭
+- 可能导致日志缓冲区数据丢失
+- 可能导致临时文件未清理
+
+**改进方案**：
+```python
+def on_exit(self):
+    # 优雅关闭
+    if self.is_crawling:
+        self.stop_event.set()
+        if self.crawl_thread and self.crawl_thread.is_alive():
+            self.crawl_thread.join(timeout=5)
+    
+    # 关闭日志处理器
+    from logger import close_all_loggers
+    close_all_loggers()
+    
+    # 销毁窗口
+    self.destroy()
+    
+    # 正常退出，让 Python 解释器执行清理
+    sys.exit(0)
+```
+
+---
+
+### 🟡 中优先级问题
+
+#### 问题 14：GUI 主窗口类大量重复代码
+
+**问题描述**：`MainWindow` 和 `PdfMainWindow` 类有约 80% 的代码重复。
+
+**影响范围**：
+| 文件 | 重复行数 |
+|------|----------|
+| `gui/main_window.py` | ~250行 |
+| `gui/pdf_main_window.py` | ~260行 |
+
+**重复内容**：
+- `__init__` 方法结构
+- `_update_ui_texts` 方法
+- `on_stop` 方法
+- `on_exit` 方法
+- 线程管理逻辑
+
+**改进方案**：
+```python
+class BaseMainWindow(tk.Tk):
+    """主窗口基类"""
+    
+    def __init__(self, title: str, geometry: str):
+        super().__init__()
+        self.title(title)
+        self.geometry(geometry)
+        self._setup_common_components()
+        self._setup_specific_components()
+    
+    def _setup_common_components(self):
+        """设置公共组件"""
+        # 日志面板、底部按钮等
+        ...
+    
+    def _setup_specific_components(self):
+        """设置特定组件（子类实现）"""
+        raise NotImplementedError
+    
+    def on_stop(self):
+        """停止抓取"""
+        ...
+    
+    def on_exit(self):
+        """退出程序"""
+        ...
+
+class MainWindow(BaseMainWindow):
+    def _setup_specific_components(self):
+        # 基本配置面板
+        ...
+
+class PdfMainWindow(BaseMainWindow):
+    def _setup_specific_components(self):
+        # PDF 配置面板
+        ...
+```
+
+---
+
+#### 问题 15：模块导入位置不规范
+
+**问题描述**：`utils/http_client.py` 中 `import os` 放在文件末尾。
+
+**影响范围**：`utils/http_client.py` 第310行
+
+**问题代码**：
+```python
+# ... 类定义 ...
+
+import os  # 导入 os 模块用于 download 方法
+```
+
+**改进方案**：将导入移到文件顶部。
+
+---
+
+#### 问题 16：重复的模块文档字符串
+
+**问题描述**：`utils/rate_limiter.py` 有两个连续的模块文档字符串。
+
+**影响范围**：`utils/rate_limiter.py` 第1-11行
+
+**问题代码**：
+```python
+"""速率限制器模块
+
+提供全局速率限制功能：
+- 令牌桶算法实现
+- 全局延迟管理
+- 线程安全
+"""
+"""  # 重复的文档字符串
+提供全局速率限制功能，用于控制请求频率。
+"""
+```
+
+**改进方案**：删除重复的文档字符串。
+
+---
+
+### 🟢 低优先级问题
+
+#### 问题 17：测试覆盖不完整
+
+**问题描述**：当前测试只覆盖了部分模块，缺少以下测试：
+
+**缺失的测试**：
+| 模块 | 测试状态 |
+|------|----------|
+| `crawler/crawl_site.py` | ❌ 缺失 |
+| `crawler/downloader.py` | ❌ 缺失 |
+| `crawler/fetcher.py` | ❌ 缺失 |
+| `plugins/save_plugin/` | ❌ 缺失 |
+| `plugins/pdf_plugin/` | ❌ 缺失 |
+| `gui/` | ❌ 缺失 |
+| `utils/http_client.py` | ❌ 缺失 |
+| `utils/rate_limiter.py` | ❌ 缺失 |
+| `utils/error_handler.py` | ❌ 缺失 |
+| `utils/state_manager.py` | ❌ 缺失 |
+| `utils/i18n.py` | ❌ 缺失 |
+| `utils/events.py` | ❌ 缺失 |
+
+**改进方案**：按优先级补充测试用例。
+
+---
+
+#### 问题 18：方法内部导入模块
+
+**问题描述**：`models/page.py` 在方法内部导入 BeautifulSoup。
+
+**影响范围**：`models/page.py` 第42行
+
+**问题代码**：
+```python
+def _extract_title(self) -> Optional[str]:
+    try:
+        from bs4 import BeautifulSoup
+        ...
+```
+
+**改进方案**：将导入移到模块顶部，或使用延迟导入模式。
+
+---
+
+### 代码质量良好的模块
+
+以下模块代码质量较好，无需修改：
+
+| 模块 | 优点 |
+|------|------|
+| `models/config.py` | 使用 dataclass、完整类型注解、验证逻辑清晰 |
+| `models/page.py` | 使用 dataclass、类型注解完整 |
+| `models/crawl_task.py` | 使用 dataclass 和 Enum、状态管理清晰 |
+| `utils/exceptions.py` | 异常层次结构清晰、文档完整 |
+| `utils/config_manager.py` | 配置验证完整、支持点号路径访问 |
+| `utils/error_handler.py` | 重试机制完善、支持指数退避 |
+| `tests/unit/test_*.py` | 测试用例结构清晰、覆盖边界情况 |

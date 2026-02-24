@@ -8,6 +8,14 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 import time
 
+# 延迟导入 BeautifulSoup，避免循环导入
+_BS4_AVAILABLE = False
+try:
+    from bs4 import BeautifulSoup
+    _BS4_AVAILABLE = True
+except ImportError:
+    pass
+
 
 @dataclass
 class Page:
@@ -38,8 +46,10 @@ class Page:
         Returns:
             str: 页面标题，如果提取失败返回 None
         """
+        if not _BS4_AVAILABLE:
+            return None
+
         try:
-            from bs4 import BeautifulSoup
             soup = BeautifulSoup(self.content, 'html.parser')
             title_tag = soup.find('title')
             if title_tag:
