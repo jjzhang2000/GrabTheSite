@@ -15,7 +15,7 @@ from config import USER_AGENT
 
 # 尝试导入 Playwright
 try:
-    from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+    from playwright.sync_api import sync_playwright
     PLAYWRIGHT_AVAILABLE = True
     logger = setup_logger(__name__)
     logger.info(_t("Playwright 已加载"))
