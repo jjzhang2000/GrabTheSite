@@ -31,6 +31,13 @@ from utils.plugin_manager import PluginManager
 
 logger = setup_logger(__name__)
 
+# 设置 CLI 模式的日志级别为 ERROR，减少控制台输出
+import logging
+logging.getLogger().setLevel(logging.ERROR)
+for handler in logging.getLogger().handlers:
+    if isinstance(handler, logging.StreamHandler):
+        handler.setLevel(logging.ERROR)
+
 
 def parse_args():
     """解析命令行参数
