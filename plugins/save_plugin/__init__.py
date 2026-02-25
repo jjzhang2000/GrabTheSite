@@ -70,13 +70,16 @@ class SavePlugin(Plugin):
         # 延迟导入以避免循环导入
         from crawler.downloader import Downloader
 
+        # 获取域名
+        parsed_url = urlparse(url)
+        domain = parsed_url.netloc
+
         # 检查是否已经下载过
         with self.downloader_lock:
             if url in self.downloaded_resources:
                 # 已下载过，返回文件路径
-                parsed_url = urlparse(url)
                 path: str = parsed_url.path
-                file_path: str = os.path.join(output_dir, path.lstrip('/'))
+                file_path: str = os.path.join(output_dir, domain, path.lstrip('/'))
                 if os.path.exists(file_path):
                     self.logger.debug(_t("资源已下载，跳过") + f": {url}")
                     return file_path
@@ -84,7 +87,8 @@ class SavePlugin(Plugin):
         # 使用 Downloader 下载单个文件
         self.logger.info(_t("开始下载资源") + f": {url}")
         try:
-            downloader: Downloader = Downloader(output_dir, threads=1)
+            resource_output_dir = os.path.join(output_dir, domain)
+            downloader: Downloader = Downloader(resource_output_dir, threads=1)
             downloader.add_task(url)
             results: List[Tuple[str, Optional[str]]] = downloader.run()
 
@@ -333,6 +337,7 @@ class SavePlugin(Plugin):
         """获取文件保存路径，保留原网站的目录结构"""
         parsed_url = urlparse(url)
         path: str = parsed_url.path
+        domain: str = parsed_url.netloc
 
         # 如果路径为空，设置为/
         if not path:
@@ -348,8 +353,8 @@ class SavePlugin(Plugin):
         elif '.' not in os.path.basename(path):
             path += '.html'
 
-        # 构建完整文件路径，保留目录结构
-        file_path: str = os.path.join(self.output_dir, path.lstrip('/'))
+        # 构建完整文件路径，保留目录结构，并包含域名
+        file_path: str = os.path.join(self.output_dir, domain, path.lstrip('/'))
 
         # 创建目录结构
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -392,6 +397,7 @@ class SavePlugin(Plugin):
         """
         parsed_url = urlparse(url)
         path: str = parsed_url.path
+        domain: str = parsed_url.netloc
 
         # 如果路径为空，设置为/
         if not path:
@@ -407,8 +413,8 @@ class SavePlugin(Plugin):
         elif '.' not in os.path.basename(path):
             path += '.html'
 
-        # 构建完整文件路径，保留目录结构
-        file_path: str = os.path.join(self.output_dir, path.lstrip('/'))
+        # 构建完整文件路径，保留目录结构，并包含域名
+        file_path: str = os.path.join(self.output_dir, domain, path.lstrip('/'))
 
         return file_path
 
