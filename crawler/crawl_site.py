@@ -21,7 +21,7 @@ import time
 from typing import Any, Dict, List, Optional, Set
 from urllib.parse import urlparse
 
-from config import DELAY, EXCLUDE_LIST, RANDOM_DELAY, THREADS
+from app_config import DELAY, EXCLUDE_LIST, RANDOM_DELAY, THREADS
 from crawler.fetcher import Fetcher
 from crawler.link_extractor import LinkExtractor
 from crawler.url_filter import URLFilter

@@ -23,7 +23,7 @@ logger = setup_logger(__name__)
 def _get_default_user_agent() -> str:
     """获取默认 User-Agent，使用延迟导入避免循环导入"""
     try:
-        from config import USER_AGENT
+        from app_config import USER_AGENT
         return USER_AGENT
     except ImportError:
         # 如果 config 模块不可用，使用硬编码默认值

@@ -8,7 +8,7 @@
 
 from typing import Optional
 
-from config import DEFAULT_REQUEST_TIMEOUT, ERROR_HANDLING_CONFIG, JS_RENDERING_CONFIG, USER_AGENT
+from app_config import DEFAULT_REQUEST_TIMEOUT, ERROR_HANDLING_CONFIG, JS_RENDERING_CONFIG, USER_AGENT
 from logger import _ as _t
 from logger import setup_logger
 from utils.error_handler import ErrorHandler

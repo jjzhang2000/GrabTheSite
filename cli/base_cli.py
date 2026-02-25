@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, List
 from urllib.parse import urlparse
 
-from config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG
+from app_config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG
 from crawler.crawl_site import CrawlSite
 from logger import setup_logger
 from utils.i18n import init_i18n, get_current_lang
@@ -191,6 +191,13 @@ class BaseCLI(ABC):
             help=_("界面语言 (zh_CN/en)")
         )
 
+        parser.add_argument(
+            "--user-agent",
+            type=str,
+            default=None,
+            help=_("自定义 User-Agent")
+        )
+
     @abstractmethod
     def _add_specific_args(self, parser: argparse.ArgumentParser) -> None:
         """添加特定参数（子类实现）
@@ -254,6 +261,8 @@ class BaseCLI(ABC):
             config["crawl"]["proxy"] = args.proxy
         if args.exclude:
             config["crawl"]["exclude_patterns"] = args.exclude
+        if args.user_agent:
+            config["crawl"]["user_agent"] = args.user_agent
 
         # 子类特定的配置更新
         self._update_specific_config(config, args)

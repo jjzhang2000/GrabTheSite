@@ -16,7 +16,7 @@ disable_console_output()
 from gui.config_panels import BasicConfigPanel, AdvancedConfigPanel, save_config_to_yaml
 from gui.log_panel import LogPanel
 from utils.i18n import gettext as _, register_language_change_callback, init_i18n
-from config import load_config
+from app_config import load_config
 
 
 class BaseMainWindow(tk.Tk, ABC):

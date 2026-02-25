@@ -14,7 +14,7 @@ import time
 from typing import Optional, List, Tuple
 from urllib.parse import urlparse
 
-from config import DELAY, ERROR_HANDLING_CONFIG, RANDOM_DELAY, THREADS, USER_AGENT
+from app_config import DELAY, ERROR_HANDLING_CONFIG, RANDOM_DELAY, THREADS, USER_AGENT
 from logger import _ as _t
 from logger import setup_logger
 from utils.error_handler import ErrorHandler, retry
@@ -135,7 +135,7 @@ class Downloader:
         self.delay_manager.wait()
 
         # 下载文件
-        from config import DEFAULT_REQUEST_TIMEOUT
+        from app_config import DEFAULT_REQUEST_TIMEOUT
 
         # 创建 HTTP 客户端
         http_client: HTTPClient = HTTPClient(

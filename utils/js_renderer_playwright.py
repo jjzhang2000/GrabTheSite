@@ -11,7 +11,7 @@ import threading
 import queue
 import time
 from logger import setup_logger, _ as _t
-from config import USER_AGENT
+from app_config import USER_AGENT
 
 # 尝试导入 Playwright
 try:

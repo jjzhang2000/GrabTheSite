@@ -11,7 +11,7 @@ import tkinter as tk
 from tkinter import ttk
 import yaml
 from utils.i18n import gettext as _, init_i18n, register_language_change_callback, get_current_lang
-from config import MAX_DEPTH, MAX_FILES, DELAY, BASE_OUTPUT_DIR, USER_CONFIG_FILE, load_config
+from app_config import MAX_DEPTH, MAX_FILES, DELAY, BASE_OUTPUT_DIR, USER_CONFIG_FILE, load_config
 
 
 def save_config_to_yaml(config):

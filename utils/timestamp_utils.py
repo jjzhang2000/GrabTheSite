@@ -10,7 +10,7 @@ import os
 import time
 from email.utils import parsedate_to_datetime
 
-from config import ERROR_HANDLING_CONFIG, USER_AGENT
+from app_config import ERROR_HANDLING_CONFIG, USER_AGENT
 from logger import _ as _t
 from logger import setup_logger
 from utils.error_handler import ErrorHandler, retry
@@ -57,7 +57,7 @@ def get_remote_timestamp(url):
     Returns:
         float: 远程文件的修改时间戳，获取失败返回 0
     """
-    from config import DEFAULT_REQUEST_TIMEOUT
+    from app_config import DEFAULT_REQUEST_TIMEOUT
 
     # 创建 HTTP 客户端
     http_client = HTTPClient(
