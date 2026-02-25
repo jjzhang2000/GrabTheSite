@@ -16,6 +16,8 @@ def _(message: str) -> str:
     from utils.i18n import gettext
     return gettext(message)
 
+_t = _
+
 
 class CrawlCLI(BaseCLI):
     """抓取 CLI 类"""
