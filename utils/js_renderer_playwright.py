@@ -214,10 +214,37 @@ class JSRendererThread:
                 
                 # 创建单一页面实例并复用
                 logger.info(_t("创建页面实例..."))
-                self.page = self.browser.new_page(
-                    user_agent=USER_AGENT,
-                    viewport={'width': 1280, 'height': 720}
-                )
+                try:
+                    self.page = self.browser.new_page(
+                        user_agent=USER_AGENT,
+                        viewport={'width': 1280, 'height': 720}
+                    )
+                except Exception as e:
+                    logger.error(_t("创建页面实例失败") + f": {e}")
+                    # 如果浏览器已关闭，尝试重新启动
+                    if "browser has been closed" in str(e).lower() or "target page" in str(e).lower():
+                        logger.info(_t("浏览器已关闭，尝试重新启动..."))
+                        self.browser = p.chromium.launch(
+                            headless=True,
+                            args=[
+                                '--disable-gpu',
+                                '--disable-dev-shm-usage',
+                                '--disable-setuid-sandbox',
+                                '--no-sandbox',
+                                '--single-process',
+                                '--disable-extensions',
+                                '--disable-plugins',
+                                '--disable-background-timer-throttling',
+                                '--disable-backgrounding-occluded-windows',
+                                '--disable-renderer-backgrounding',
+                            ]
+                        )
+                        self.page = self.browser.new_page(
+                            user_agent=USER_AGENT,
+                            viewport={'width': 1280, 'height': 720}
+                        )
+                    else:
+                        raise
                 
                 # 拦截图片等不必要资源
                 self.page.route("**/*.{png,jpg,jpeg,gif,svg,css,woff,woff2,ttf}", 
