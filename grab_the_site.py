@@ -41,8 +41,12 @@ class CrawlCLI(BaseCLI):
 
     def _configure_plugins(self, plugin_manager, config):
         """配置插件"""
-        # 启用所有插件
-        plugin_manager.enable_all_plugins()
+        # 只启用 Save 插件，禁用 PDF 插件
+        plugin_config = {
+            "save_plugin": True,
+            "pdf_plugin": False
+        }
+        plugin_manager.enable_plugins(plugin_config)
 
     def _post_process(self, config, pages, plugin_manager, logger):
         """后续处理"""
