@@ -71,10 +71,10 @@ class CrawlSite:
         self.force_download: bool = force_download
         self.stop_event: Optional[threading.Event] = stop_event
         self.target_url: str = target_url
-        self.max_depth: int = max_depth
-        self.max_files: int = max_files
+        self.max_depth: int = int(max_depth)
+        self.max_files: int = int(max_files)
         self.output_dir: str = output_dir
-        self.threads: int = threads
+        self.threads: int = int(threads)
         self.plugin_manager: Optional[PluginManager] = plugin_manager
         self.downloaded_files: int = 0
         self.visited_urls: Set[str] = set()
