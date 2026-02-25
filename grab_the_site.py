@@ -42,10 +42,37 @@ class CrawlCLI(BaseCLI):
         # 启用所有插件
         plugin_manager.enable_all_plugins()
 
-    def _post_process(self, config, pages):
+    def _post_process(self, config, pages, plugin_manager, logger):
         """后续处理"""
-        # 生成站点地图
+        saved_files = []
+        
+        # 调用保存插件保存页面
         if pages:
+            # 准备保存器数据
+            saver_data = {
+                'target_url': config['target_url'],
+                'output_dir': config['output']['base_dir'],
+                'static_resources': set(),
+            }
+            
+            # 调用 on_save_start 钩子
+            plugin_manager.call_hook("on_save_start", saver_data)
+            
+            # 查找所有实现了 save_site 方法的插件
+            for plugin in plugin_manager.get_all_plugins():
+                if hasattr(plugin, 'save_site') and callable(getattr(plugin, 'save_site')):
+                    try:
+                        plugin_saved_files = plugin.save_site(pages)
+                        if plugin_saved_files:
+                            saved_files.extend(plugin_saved_files)
+                            logger.info(_t("插件") + f" {plugin.name} " + _t("保存了") + f" {len(plugin_saved_files)} " + _t("个页面"))
+                    except Exception as e:
+                        logger.error(_t("插件") + f" {plugin.name} " + _t("保存失败") + f": {e}")
+            
+            # 调用 on_save_end 钩子
+            plugin_manager.call_hook("on_save_end", saved_files)
+            
+            # 生成站点地图
             sitemap_generator = SitemapGenerator(
                 config["target_url"],
                 config["output"]["base_dir"]

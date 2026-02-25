@@ -369,7 +369,7 @@ class BaseCLI(ABC):
             pages = crawler.crawl_site()
 
             # 子类特定的后续处理
-            return self._post_process(config, pages)
+            return self._post_process(config, pages, plugin_manager, logger)
 
         except Exception as e:
             logger.error(_("抓取失败: {}").format(e))
@@ -379,12 +379,14 @@ class BaseCLI(ABC):
             plugin_manager.cleanup()
 
     @abstractmethod
-    def _post_process(self, config: Dict[str, Any], pages: Dict[str, str]) -> int:
+    def _post_process(self, config: Dict[str, Any], pages: Dict[str, str], plugin_manager, logger) -> int:
         """后续处理（子类实现）
 
         Args:
             config: 配置字典
             pages: 抓取的页面
+            plugin_manager: 插件管理器
+            logger: 日志记录器
 
         Returns:
             int: 退出码

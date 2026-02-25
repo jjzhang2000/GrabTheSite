@@ -77,7 +77,7 @@ class PDFCLI(BaseCLI):
         }
         plugin_manager.enable_plugins(plugin_config)
 
-    def _post_process(self, config, pages):
+    def _post_process(self, config, pages, plugin_manager, logger):
         """后续处理"""
         # PDF 生成由 pdf_plugin 处理
         return 0

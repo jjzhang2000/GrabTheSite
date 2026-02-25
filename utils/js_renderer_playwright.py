@@ -255,7 +255,6 @@ class JSRendererThread:
                                 '--disable-dev-shm-usage',
                                 '--disable-setuid-sandbox',
                                 '--no-sandbox',
-                                '--single-process',
                                 '--disable-extensions',
                                 '--disable-plugins',
                             ]
@@ -293,7 +292,6 @@ class JSRendererThread:
                             '--disable-dev-shm-usage',
                             '--disable-setuid-sandbox',
                             '--no-sandbox',
-                            '--single-process',
                             '--disable-extensions',
                             '--disable-plugins',
                             '--disable-background-timer-throttling',
