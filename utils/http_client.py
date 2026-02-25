@@ -14,11 +14,20 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from config import USER_AGENT
 from logger import _ as _t
 from logger import setup_logger
 
 logger = setup_logger(__name__)
+
+
+def _get_default_user_agent() -> str:
+    """获取默认 User-Agent，使用延迟导入避免循环导入"""
+    try:
+        from config import USER_AGENT
+        return USER_AGENT
+    except ImportError:
+        # 如果 config 模块不可用，使用硬编码默认值
+        return "GrabTheSite/1.0"
 
 
 class HTTPClient:
@@ -49,7 +58,7 @@ class HTTPClient:
             headers: 额外的请求头
             keep_alive: 是否保持连接
         """
-        self.user_agent: str = user_agent or USER_AGENT
+        self.user_agent: str = user_agent or _get_default_user_agent()
         self.timeout: float = timeout
         self._session: requests.Session = self._create_session(
             pool_connections, pool_maxsize, max_retries, keep_alive
