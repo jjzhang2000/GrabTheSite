@@ -301,17 +301,38 @@ class BaseMainWindow(tk.Tk, ABC):
         Returns:
             List[str]: 命令行参数列表
         """
+        # 参数名称映射（GUI 配置键 → CLI 参数名）
+        arg_mapping = {
+            'url': 'url',
+            'depth': 'depth',
+            'max_files': 'max-files',
+            'output': 'output',
+            'delay': 'delay',
+            'threads': 'threads',
+            'lang': 'lang',
+            'user_agent': 'user-agent',
+            'force_download': 'force',           # 映射到 --force
+            'no_random_delay': 'no-random-delay',
+            'exclude_urls': 'exclude',           # 映射到 --exclude
+            'pdf_filename': 'pdf-filename',
+            'pdf_format': 'pdf-format',
+            'pdf_margin': 'pdf-margin',
+        }
+
         args_list = []
         for key, value in config.items():
-            arg_name = key.replace('_', '-')
+            # 获取正确的参数名
+            arg_name = arg_mapping.get(key, key.replace('_', '-'))
+
             if value is True:
                 args_list.append(f"--{arg_name}")
             elif value is False:
                 continue
             elif isinstance(value, list):
-                if value:
+                # 列表参数需要多次添加（每个元素一个 --arg）
+                for item in value:
                     args_list.append(f"--{arg_name}")
-                    args_list.extend(value)
+                    args_list.append(str(item))
             elif isinstance(value, (str, int, float)):
                 args_list.append(f"--{arg_name}")
                 # 语言参数需要保持大小写
