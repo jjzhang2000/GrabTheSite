@@ -50,7 +50,7 @@ class CrawlCLI(BaseCLI):
                 config["target_url"],
                 config["output"]["base_dir"]
             )
-            sitemap_generator.generate(pages)
+            sitemap_generator.generate_html_sitemap(pages)
 
         return 0
 

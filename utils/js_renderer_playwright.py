@@ -48,6 +48,7 @@ class JSRendererThread:
         self._lock = threading.Lock()
         self._thread = None
         self._task_counter = 0
+        self._channel = None  # 保存当前使用的浏览器 channel
         
     def start(self):
         """启动渲染线程"""
@@ -243,6 +244,7 @@ class JSRendererThread:
                 # 尝试启动找到的系统浏览器
                 while browser_info and not browser_launched:
                     browser_type, channel, executable_path = browser_info
+                    self._channel = channel  # 保存 channel 以便重新启动时使用
                     logger.info(_t("正在启动系统浏览器(Playwright)...") + f" [{channel}]")
                     try:
                         self.browser = p.chromium.launch(
@@ -312,9 +314,10 @@ class JSRendererThread:
                     # 如果浏览器已关闭，尝试重新启动
                     if "browser has been closed" in str(e).lower() or "target page" in str(e).lower():
                         logger.info(_t("浏览器已关闭，尝试重新启动..."))
-                        self.browser = p.chromium.launch(
-                            headless=True,
-                            args=[
+                        # 使用保存的 channel 重新启动浏览器
+                        launch_options = {
+                            'headless': True,
+                            'args': [
                                 '--disable-gpu',
                                 '--disable-dev-shm-usage',
                                 '--disable-setuid-sandbox',
@@ -326,11 +329,24 @@ class JSRendererThread:
                                 '--disable-backgrounding-occluded-windows',
                                 '--disable-renderer-backgrounding',
                             ]
-                        )
-                        self.page = self.browser.new_page(
-                            user_agent=USER_AGENT,
-                            viewport={'width': 1280, 'height': 720}
-                        )
+                        }
+                        if self._channel:
+                            launch_options['channel'] = self._channel
+                            logger.info(_t("使用系统浏览器重新启动") + f": {self._channel}")
+                        else:
+                            logger.info(_t("使用 Playwright 内置浏览器重新启动"))
+                        
+                        try:
+                            self.browser = p.chromium.launch(**launch_options)
+                            self.page = self.browser.new_page(
+                                user_agent=USER_AGENT,
+                                viewport={'width': 1280, 'height': 720}
+                            )
+                        except Exception as relaunch_error:
+                            logger.error(_t("重新启动浏览器失败") + f": {relaunch_error}")
+                            # 如果重新启动失败，禁用 JS 渲染
+                            self.enable = False
+                            return
                     else:
                         raise
                 
