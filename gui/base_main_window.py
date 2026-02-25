@@ -275,6 +275,7 @@ class BaseMainWindow(tk.Tk, ABC):
         """
         try:
             self.log_panel.add_log(_("抓取配置已准备就绪"))
+            self.log_panel.add_log(_("命令行参数: {}").format(' '.join(args_list)))
             self.log_panel.add_log(_("开始抓取..."))
 
             if self.stop_event.is_set():
@@ -311,13 +312,14 @@ class BaseMainWindow(tk.Tk, ABC):
                 if value:
                     args_list.append(f"--{arg_name}")
                     args_list.extend(value)
-            else:
+            elif isinstance(value, (str, int, float)):
                 args_list.append(f"--{arg_name}")
                 # 语言参数需要保持大小写
                 if key == 'lang':
                     args_list.append(str(value))
                 else:
                     args_list.append(str(value))
+            # 忽略其他类型（如字典、None等）
         return args_list
 
     def on_stop(self) -> None:
