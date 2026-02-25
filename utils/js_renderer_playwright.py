@@ -49,6 +49,7 @@ class JSRendererThread:
         self._thread = None
         self._task_counter = 0
         self._channel = None  # 保存当前使用的浏览器 channel
+        self._needs_restart = False  # 标记是否需要重新启动浏览器
         
     def start(self):
         """启动渲染线程"""
@@ -364,6 +365,58 @@ class JSRendererThread:
                 # 处理渲染任务
                 while not self._stop_event.is_set():
                     try:
+                        # 检查是否需要重新启动浏览器
+                        if self._needs_restart:
+                            logger.info(_t("检测到浏览器已关闭，正在重新启动..."))
+                            # 关闭旧资源
+                            if self.page:
+                                try:
+                                    self.page.close()
+                                except:
+                                    pass
+                            if self.browser:
+                                try:
+                                    self.browser.close()
+                                except:
+                                    pass
+                            
+                            # 重新启动浏览器
+                            try:
+                                launch_options = {
+                                    'headless': True,
+                                    'args': [
+                                        '--disable-gpu',
+                                        '--disable-dev-shm-usage',
+                                        '--disable-setuid-sandbox',
+                                        '--no-sandbox',
+                                        '--single-process',
+                                        '--disable-extensions',
+                                        '--disable-plugins',
+                                        '--disable-background-timer-throttling',
+                                        '--disable-backgrounding-occluded-windows',
+                                        '--disable-renderer-backgrounding',
+                                    ]
+                                }
+                                if self._channel:
+                                    launch_options['channel'] = self._channel
+                                    logger.info(_t("使用系统浏览器重新启动") + f": {self._channel}")
+                                else:
+                                    logger.info(_t("使用 Playwright 内置浏览器重新启动"))
+                                
+                                self.browser = p.chromium.launch(**launch_options)
+                                time.sleep(1)
+                                self.page = self.browser.new_page(
+                                    user_agent=USER_AGENT,
+                                    viewport={'width': 1280, 'height': 720}
+                                )
+                                self._needs_restart = False
+                                logger.info(_t("浏览器重新启动成功"))
+                            except Exception as restart_error:
+                                logger.error(_t("浏览器重新启动失败") + f": {restart_error}")
+                                # 无法重新启动，禁用 JS 渲染
+                                self.enable = False
+                                break
+                        
                         task_id, url, event = self._task_queue.get(timeout=1)
                         
                         # 停止信号
@@ -431,16 +484,8 @@ class JSRendererThread:
             # 检查是否是浏览器已关闭的错误
             if "target page, context or browser has been closed" in error_msg:
                 logger.error(_t("浏览器已关闭，无法渲染页面") + f": {url}")
-                # 尝试重新初始化页面
-                try:
-                    if self.browser:
-                        self.page = self.browser.new_page(
-                            user_agent=USER_AGENT,
-                            viewport={'width': 1280, 'height': 720}
-                        )
-                        logger.info(_t("重新创建页面实例成功"))
-                except Exception as reinit_error:
-                    logger.error(_t("重新创建页面实例失败") + f": {reinit_error}")
+                # 标记需要重新启动浏览器
+                self._needs_restart = True
             else:
                 logger.error(_t("渲染页面失败") + f": {url}, {e}")
             return None
