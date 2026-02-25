@@ -313,7 +313,11 @@ class BaseMainWindow(tk.Tk, ABC):
                     args_list.extend(value)
             else:
                 args_list.append(f"--{arg_name}")
-                args_list.append(str(value))
+                # 语言参数需要保持大小写
+                if key == 'lang':
+                    args_list.append(str(value))
+                else:
+                    args_list.append(str(value))
         return args_list
 
     def on_stop(self) -> None:

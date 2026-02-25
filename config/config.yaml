@@ -17,7 +17,7 @@ logging:
   max_bytes: 10485760
   backup_count: 5
 i18n:
-  lang: zh_cn
+  lang: zh_CN
 exclude_urls:
 - '*/ftz/'
 - '*.php*'
