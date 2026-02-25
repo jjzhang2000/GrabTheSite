@@ -95,9 +95,9 @@ class TestConfigValidator:
             ConfigValidator.validate_choice("option3", "test_field", ["option1", "option2"])
 
     def test_validate_choice_case_insensitive(self):
-        """测试验证选项大小写不敏感"""
+        """测试验证选项大小写不敏感，返回原始值"""
         result = ConfigValidator.validate_choice("OPTION1", "test_field", ["option1", "option2"])
-        assert result == "option1"
+        assert result == "OPTION1"  # 返回原始值，保持大小写
 
 
 class TestConfigManager:

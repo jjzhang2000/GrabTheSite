@@ -136,19 +136,20 @@ class ConfigValidator:
             choices: 允许的选项
 
         Returns:
-            str: 验证后的值
+            str: 验证后的值（保持原始大小写）
 
         Raises:
             ValidationError: 验证失败
         """
-        str_value = str(value).lower()
-        valid_choices = [c.lower() for c in choices]
+        str_value = str(value)
+        valid_choices_lower = [c.lower() for c in choices]
 
-        if str_value not in valid_choices:
+        if str_value.lower() not in valid_choices_lower:
             raise ValidationError(
                 f"{field_name} 必须是以下值之一: {', '.join(choices)}, 实际值: {value}"
             )
 
+        # 返回原始值，保持大小写
         return str_value
 
 
