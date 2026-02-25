@@ -5,6 +5,8 @@
     from utils import ConfigManager, load_config, get_config
 """
 
+import os
+
 from utils.config_manager import (
     ConfigManager,
     ConfigValidator,
@@ -19,6 +21,9 @@ logger = setup_logger(__name__)
 
 # 加载配置
 config = load_config()
+
+# 用户配置文件路径
+USER_CONFIG_FILE = os.path.join("config", "config.yaml")
 
 # 导出完整配置对象
 CONFIG = config
@@ -63,6 +68,7 @@ __all__ = [
     # 旧的兼容导出
     "config",
     "CONFIG",
+    "USER_CONFIG_FILE",
     "TARGET_URL",
     "MAX_DEPTH",
     "MAX_FILES",
