@@ -3,20 +3,31 @@
 提供 grab_the_site.py 和 pdf_the_site.py 的公共基类，消除重复代码。
 """
 
-import os
-import sys
 import argparse
 import logging
+import os
+import sys
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
-from app_config import load_config, CONFIG, TARGET_URL, MAX_DEPTH, MAX_FILES, DELAY, RANDOM_DELAY, THREADS, USER_AGENT, OUTPUT_DIR, I18N_CONFIG
+from app_config import (
+    CONFIG,
+    DELAY,
+    I18N_CONFIG,
+    MAX_DEPTH,
+    MAX_FILES,
+    OUTPUT_DIR,
+    RANDOM_DELAY,
+    TARGET_URL,
+    THREADS,
+    USER_AGENT,
+    load_config,
+)
 from crawler.crawl_site import CrawlSite
 from logger import setup_logger
-from utils.i18n import init_i18n, get_current_lang
+from utils.i18n import get_current_lang, init_i18n
 from utils.plugin_manager import PluginManager
-
 
 logger = setup_logger(__name__)
 

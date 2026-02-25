@@ -3,20 +3,22 @@
 提供 MainWindow 和 PdfMainWindow 的公共基类，消除重复代码。
 """
 
-import tkinter as tk
 import threading
-from tkinter import ttk
+import tkinter as tk
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Callable, List
+from tkinter import ttk
+from typing import Any, Callable, Dict, List
 
 # 禁用控制台日志输出（必须在导入其他模块之前）
 from logger import disable_console_output
+
 disable_console_output()
 
-from gui.config_panels import BasicConfigPanel, AdvancedConfigPanel, save_config_to_yaml
-from gui.log_panel import LogPanel
-from utils.i18n import gettext as _, register_language_change_callback, init_i18n
 from app_config import load_config
+from gui.config_panels import AdvancedConfigPanel, BasicConfigPanel, save_config_to_yaml
+from gui.log_panel import LogPanel
+from utils.i18n import gettext as _
+from utils.i18n import init_i18n, register_language_change_callback
 
 
 class BaseMainWindow(tk.Tk, ABC):

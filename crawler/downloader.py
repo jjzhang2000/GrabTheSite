@@ -11,7 +11,7 @@ import queue
 import random
 import threading
 import time
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 from urllib.parse import urlparse
 
 from app_config import DELAY, ERROR_HANDLING_CONFIG, RANDOM_DELAY, THREADS, USER_AGENT

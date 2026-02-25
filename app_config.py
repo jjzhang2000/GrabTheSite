@@ -7,15 +7,15 @@
 
 import os
 
+from logger import setup_logger
 from utils.config_manager import (
     ConfigManager,
     ConfigValidator,
     ValidationError,
-    load_config,
     get_config,
-    get_config_manager
+    get_config_manager,
+    load_config,
 )
-from logger import setup_logger
 
 logger = setup_logger(__name__)
 

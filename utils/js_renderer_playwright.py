@@ -7,11 +7,13 @@
 """
 
 import os
-import threading
 import queue
+import threading
 import time
-from logger import setup_logger, _ as _t
+
 from app_config import USER_AGENT
+from logger import _ as _t
+from logger import setup_logger
 
 # 尝试导入 Playwright
 try:
@@ -28,10 +30,10 @@ except ImportError:
 
 class JSRendererThread:
     """JS渲染专用线程 - 使用 Playwright"""
-    
+
     def __init__(self, enable=False, timeout=30):
         """初始化渲染线程
-        
+
         Args:
             enable: 是否启用JavaScript渲染
             timeout: 渲染超时时间（秒）
@@ -49,17 +51,17 @@ class JSRendererThread:
         self._thread = None
         self._task_counter = 0
         self._channel = None  # 保存当前使用的浏览器 channel
-        
+
     def start(self):
         """启动渲染线程"""
         if not self.enable or (self._thread and self._thread.is_alive()):
             return
-        
+
         self._stop_event.clear()
         self._thread = threading.Thread(target=self._run, name="JSRendererThread")
         self._thread.daemon = True
         self._thread.start()
-        
+
         # 等待初始化完成或失败
         import time
         init_timeout = 60  # 最多等待60秒
@@ -74,34 +76,34 @@ class JSRendererThread:
                 self.enable = False
                 return
             time.sleep(0.1)
-        
+
         # 超时
         logger.error(_t("JS渲染线程启动超时，将禁用JavaScript渲染"))
         self.stop(timeout=5)
         self.enable = False
-    
+
     def stop(self, timeout=30):
         """停止渲染线程"""
         if not self._thread or not self._thread.is_alive():
             return
-        
+
         logger.info(_t("正在停止JS渲染线程..."))
         self._stop_event.set()
-        
+
         # 清空队列
         while not self._task_queue.empty():
             try:
                 self._task_queue.get_nowait()
             except queue.Empty:
                 break
-        
+
         # 添加停止信号
         self._task_queue.put((None, None, None))
-        
+
         self._thread.join(timeout=timeout)
         if self._thread.is_alive():
             logger.warning(_t("JS渲染线程停止超时"))
-    
+
     def _find_system_browser(self, p):
         """查找系统中已安装的浏览器
 
@@ -164,23 +166,23 @@ class JSRendererThread:
 
         logger.warning(_t(f"未在 {system} 系统检测到支持的浏览器"))
         return None
-    
+
     def _find_next_browser(self, p, last_channel):
         """查找下一个可用的浏览器（排除已尝试过的）
-        
+
         Args:
             p: Playwright 实例
             last_channel: 上次尝试的浏览器 channel
-            
+
         Returns:
             tuple: (browser_type, channel, executable_path) 或 None
         """
         import platform
         system = platform.system()
-        
+
         # 定义不同系统的浏览器路径（排除已尝试过的）
         browsers = []
-        
+
         if system == "Windows":
             if last_channel != "chrome":
                 browsers.append(("chromium", "chrome", [
@@ -219,28 +221,28 @@ class JSRendererThread:
                     "/usr/bin/microsoft-edge",
                     "/usr/bin/microsoft-edge-stable",
                 ]))
-        
+
         # 查找可用的浏览器
         for browser_type, channel, paths in browsers:
             for path in paths:
                 if os.path.exists(path):
                     logger.info(_t(f"检测到备用浏览器: ") + f"{channel} ({path})")
                     return (browser_type, channel, path)
-        
+
         logger.warning(_t("没有其他可用的系统浏览器"))
         return None
-    
+
     def _run(self):
         """渲染线程主循环"""
         try:
             # Playwright 使用同步 API
             with sync_playwright() as p:
                 self.playwright = p
-                
+
                 # 首先尝试使用系统中已安装的浏览器
                 browser_info = self._find_system_browser(p)
                 browser_launched = False
-                
+
                 # 尝试启动找到的系统浏览器
                 while browser_info and not browser_launched:
                     browser_type, channel, executable_path = browser_info
@@ -265,7 +267,7 @@ class JSRendererThread:
                         logger.warning(_t("启动系统浏览器失败") + f" [{channel}]: {str(e)}")
                         # 尝试查找其他浏览器
                         browser_info = self._find_next_browser(p, channel)
-                
+
                 # 如果没有系统浏览器或所有系统浏览器都启动失败，尝试使用 Playwright 内置浏览器
                 if not browser_launched:
                     # 检查 Playwright 内置浏览器是否已安装
@@ -283,7 +285,7 @@ class JSRendererThread:
                             return
                     except Exception as check_error:
                         logger.warning(_t("检查浏览器安装状态时出错: ") + str(check_error))
-                    
+
                     logger.info(_t("正在启动Chromium(Playwright)..."))
                     self.browser = p.chromium.launch(
                         headless=True,
@@ -299,7 +301,7 @@ class JSRendererThread:
                             '--disable-renderer-backgrounding',
                         ]
                     )
-                
+
                 # 创建单一页面实例并复用
                 logger.info(_t("创建页面实例..."))
                 # 等待浏览器完全启动
@@ -335,7 +337,7 @@ class JSRendererThread:
                             logger.info(_t("使用系统浏览器重新启动") + f": {self._channel}")
                         else:
                             logger.info(_t("使用 Playwright 内置浏览器重新启动"))
-                        
+
                         try:
                             self.browser = p.chromium.launch(**launch_options)
                             # 等待浏览器完全启动
@@ -351,23 +353,23 @@ class JSRendererThread:
                             return
                     else:
                         raise
-                
+
                 # 拦截图片等不必要资源
-                self.page.route("**/*.{png,jpg,jpeg,gif,svg,css,woff,woff2,ttf}", 
+                self.page.route("**/*.{png,jpg,jpeg,gif,svg,css,woff,woff2,ttf}",
                                lambda route: route.abort())
-                
+
                 self._initialized = True
                 logger.info(_t("浏览器初始化成功，页面实例: ") + f"{id(self.page)}")
-                
+
                 # 处理渲染任务
                 while not self._stop_event.is_set():
                     try:
                         task_id, url, event = self._task_queue.get(timeout=1)
-                        
+
                         # 停止信号
                         if task_id is None:
                             break
-                        
+
                         # 执行渲染
                         try:
                             html = self._render_page(url, p)
@@ -380,48 +382,48 @@ class JSRendererThread:
                         finally:
                             if event:
                                 event.set()
-                            
+
                     except queue.Empty:
                         continue
                     except Exception as e:
                         logger.error(_t("渲染线程错误") + f": {e}")
-                
+
                 # 关闭资源
                 logger.info(_t("正在关闭浏览器..."))
                 if self.page:
                     self.page.close()
                 if self.browser:
                     self.browser.close()
-                    
+
         except Exception as e:
             logger.error(_t("渲染线程异常") + f": {e}")
         finally:
             self._initialized = False
             logger.info(_t("JS渲染线程已退出"))
-    
+
     def _render_page(self, url, p):
         """渲染单个页面"""
         if not self.page:
             return None
-        
+
         try:
             # 导航到目标URL
             logger.debug(_t("正在渲染") + f": {url}")
             response = self.page.goto(url, wait_until='networkidle', timeout=self.timeout * 1000)
-            
+
             # 检查响应状态
             if response:
                 status = response.status
                 if status >= 400:
                     logger.warning(_t("页面返回错误状态码") + f": {url}, 状态码: {status}")
                     return None
-            
+
             # 等待动态内容加载
             time.sleep(2)
-            
+
             # 获取内容
             html = self.page.content()
-            
+
             logger.info(_t("页面渲染成功") + f": {url}")
             return html
         except Exception as e:
@@ -442,7 +444,7 @@ class JSRendererThread:
                             self.browser.close()
                         except:
                             pass
-                    
+
                     # 重新启动浏览器
                     launch_options = {
                         'headless': True,
@@ -461,7 +463,7 @@ class JSRendererThread:
                     }
                     if self._channel:
                         launch_options['channel'] = self._channel
-                    
+
                     self.browser = p.chromium.launch(**launch_options)
                     time.sleep(1)
                     self.page = self.browser.new_page(
@@ -469,7 +471,7 @@ class JSRendererThread:
                         viewport={'width': 1280, 'height': 720}
                     )
                     logger.info(_t("浏览器重新启动成功"))
-                    
+
                     # 重新尝试渲染
                     return self._render_page(url, p)
                 except Exception as restart_error:
@@ -479,23 +481,23 @@ class JSRendererThread:
             else:
                 logger.error(_t("渲染页面失败") + f": {url}, {e}")
                 return None
-    
+
     def render_page(self, url, timeout=60):
         """提交渲染任务并等待结果（线程安全）"""
         if not self.enable or not self._thread or not self._thread.is_alive():
             return None
-        
+
         # 生成任务ID
         with self._lock:
             self._task_counter += 1
             task_id = self._task_counter
-        
+
         # 创建完成事件
         event = threading.Event()
-        
+
         # 提交任务
         self._task_queue.put((task_id, url, event))
-        
+
         # 等待完成
         if event.wait(timeout=timeout):
             with self._lock:
@@ -554,7 +556,7 @@ def get_js_renderer(enable=False, timeout=30, init_timeout=10):
 def close_js_renderer(timeout=30):
     """关闭全局JS渲染器"""
     global _js_renderer
-    
+
     with _js_renderer_lock:
         if _js_renderer:
             _js_renderer.stop(timeout=timeout)
