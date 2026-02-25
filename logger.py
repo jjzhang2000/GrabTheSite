@@ -41,18 +41,37 @@ def disable_console_output() -> None:
     CONSOLE_OUTPUT_ENABLED = False
 
 
+_logging_config_cache: Optional[Dict[str, Any]] = None
+
 def _load_logging_config() -> Dict[str, Any]:
     """加载日志配置
 
     Returns:
-        包含日志配置项的字典，如果配置不可用则返回空字典
+        包含日志配置项的字典，如果配置不可用则返回默认配置
     """
+    global _logging_config_cache
+    if _logging_config_cache is not None:
+        return _logging_config_cache
+
+    default_config = {
+        'file': os.path.join(DEFAULT_LOG_DIR, DEFAULT_LOG_FILE),
+        'level': 'INFO',
+        'max_bytes': DEFAULT_MAX_BYTES,
+        'backup_count': DEFAULT_BACKUP_COUNT
+    }
+
     try:
-        from utils.config_manager import get_config
-        config = get_config()
-        return config.get("logging", {})
-    except (ImportError, AttributeError):
-        return {}
+        import sys
+        if 'config' in sys.modules and not isinstance(sys.modules.get('config'), type(None)):
+            config = sys.modules['config']
+            if hasattr(config, 'LOGGING_CONFIG'):
+                _logging_config_cache = config.LOGGING_CONFIG
+                return _logging_config_cache
+    except Exception:
+        pass
+
+    _logging_config_cache = default_config
+    return _logging_config_cache
 
 
 def _get_log_settings() -> Tuple[str, str, int, int, int, int]:
