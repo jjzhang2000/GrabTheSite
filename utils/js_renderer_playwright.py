@@ -406,18 +406,44 @@ class JSRendererThread:
         if not self.page:
             return None
         
-        # 导航到目标URL
-        logger.debug(_t("正在渲染") + f": {url}")
-        self.page.goto(url, wait_until='networkidle', timeout=self.timeout * 1000)
-        
-        # 等待动态内容加载
-        time.sleep(2)
-        
-        # 获取内容
-        html = self.page.content()
-        
-        logger.info(_t("页面渲染成功") + f": {url}")
-        return html
+        try:
+            # 导航到目标URL
+            logger.debug(_t("正在渲染") + f": {url}")
+            response = self.page.goto(url, wait_until='networkidle', timeout=self.timeout * 1000)
+            
+            # 检查响应状态
+            if response:
+                status = response.status
+                if status >= 400:
+                    logger.warning(_t("页面返回错误状态码") + f": {url}, 状态码: {status}")
+                    return None
+            
+            # 等待动态内容加载
+            time.sleep(2)
+            
+            # 获取内容
+            html = self.page.content()
+            
+            logger.info(_t("页面渲染成功") + f": {url}")
+            return html
+        except Exception as e:
+            error_msg = str(e).lower()
+            # 检查是否是浏览器已关闭的错误
+            if "target page, context or browser has been closed" in error_msg:
+                logger.error(_t("浏览器已关闭，无法渲染页面") + f": {url}")
+                # 尝试重新初始化页面
+                try:
+                    if self.browser:
+                        self.page = self.browser.new_page(
+                            user_agent=USER_AGENT,
+                            viewport={'width': 1280, 'height': 720}
+                        )
+                        logger.info(_t("重新创建页面实例成功"))
+                except Exception as reinit_error:
+                    logger.error(_t("重新创建页面实例失败") + f": {reinit_error}")
+            else:
+                logger.error(_t("渲染页面失败") + f": {url}, {e}")
+            return None
     
     def render_page(self, url, timeout=60):
         """提交渲染任务并等待结果（线程安全）"""
