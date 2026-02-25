@@ -46,7 +46,10 @@ class CrawlCLI(BaseCLI):
         """后续处理"""
         # 生成站点地图
         if pages:
-            sitemap_generator = SitemapGenerator(config["output"]["base_dir"])
+            sitemap_generator = SitemapGenerator(
+                config["target_url"],
+                config["output"]["base_dir"]
+            )
             sitemap_generator.generate(pages)
 
         return 0
