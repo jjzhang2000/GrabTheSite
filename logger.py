@@ -48,8 +48,9 @@ def _load_logging_config() -> Dict[str, Any]:
         包含日志配置项的字典，如果配置不可用则返回空字典
     """
     try:
-        from config import LOGGING_CONFIG
-        return LOGGING_CONFIG
+        from utils.config_manager import get_config
+        config = get_config()
+        return config.get("logging", {})
     except (ImportError, AttributeError):
         return {}
 
