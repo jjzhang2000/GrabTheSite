@@ -58,7 +58,26 @@ class JSRendererThread:
         self._thread = threading.Thread(target=self._run, name="JSRendererThread")
         self._thread.daemon = True
         self._thread.start()
-        logger.info(_t("JS渲染线程已启动(Playwright)"))
+        
+        # 等待初始化完成或失败
+        import time
+        init_timeout = 60  # 最多等待60秒
+        start_time = time.time()
+        while time.time() - start_time < init_timeout:
+            if self._initialized:
+                logger.info(_t("JS渲染线程已启动(Playwright)"))
+                return
+            if not self._thread.is_alive():
+                # 线程已退出，说明初始化失败
+                logger.error(_t("JS渲染线程启动失败，将禁用JavaScript渲染"))
+                self.enable = False
+                return
+            time.sleep(0.1)
+        
+        # 超时
+        logger.error(_t("JS渲染线程启动超时，将禁用JavaScript渲染"))
+        self.stop(timeout=5)
+        self.enable = False
     
     def stop(self, timeout=30):
         """停止渲染线程"""
