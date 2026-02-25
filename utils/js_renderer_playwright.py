@@ -304,6 +304,8 @@ class JSRendererThread:
                 
                 # 创建单一页面实例并复用
                 logger.info(_t("创建页面实例..."))
+                # 等待浏览器完全启动
+                time.sleep(1)
                 try:
                     self.page = self.browser.new_page(
                         user_agent=USER_AGENT,
@@ -338,6 +340,8 @@ class JSRendererThread:
                         
                         try:
                             self.browser = p.chromium.launch(**launch_options)
+                            # 等待浏览器完全启动
+                            time.sleep(1)
                             self.page = self.browser.new_page(
                                 user_agent=USER_AGENT,
                                 viewport={'width': 1280, 'height': 720}
