@@ -65,7 +65,7 @@ class CrawlCLI(BaseCLI):
             plugin_manager.call_hook("on_save_start", saver_data)
             
             # 查找所有实现了 save_site 方法的插件
-            for plugin in plugin_manager.plugins:
+            for plugin in plugin_manager.enabled_plugins:
                 if hasattr(plugin, 'save_site') and callable(getattr(plugin, 'save_site')):
                     try:
                         plugin_saved_files = plugin.save_site(pages)
