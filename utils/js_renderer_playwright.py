@@ -164,6 +164,71 @@ class JSRendererThread:
         logger.warning(_t(f"未在 {system} 系统检测到支持的浏览器"))
         return None
     
+    def _find_next_browser(self, p, last_channel):
+        """查找下一个可用的浏览器（排除已尝试过的）
+        
+        Args:
+            p: Playwright 实例
+            last_channel: 上次尝试的浏览器 channel
+            
+        Returns:
+            tuple: (browser_type, channel, executable_path) 或 None
+        """
+        import platform
+        system = platform.system()
+        
+        # 定义不同系统的浏览器路径（排除已尝试过的）
+        browsers = []
+        
+        if system == "Windows":
+            if last_channel != "chrome":
+                browsers.append(("chromium", "chrome", [
+                    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+                    os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
+                ]))
+            if last_channel != "msedge":
+                browsers.append(("chromium", "msedge", [
+                    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+                    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+                    os.path.expandvars(r"%LOCALAPPDATA%\Microsoft\Edge\Application\msedge.exe"),
+                ]))
+        elif system == "Darwin":  # macOS
+            if last_channel != "chrome":
+                browsers.append(("chromium", "chrome", [
+                    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                    os.path.expanduser("~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"),
+                ]))
+            if last_channel != "msedge":
+                browsers.append(("chromium", "msedge", [
+                    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+                    os.path.expanduser("~/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"),
+                ]))
+        elif system == "Linux":
+            if last_channel != "chrome":
+                browsers.append(("chromium", "chrome", [
+                    "/usr/bin/google-chrome",
+                    "/usr/bin/google-chrome-stable",
+                    "/usr/bin/chromium",
+                    "/usr/bin/chromium-browser",
+                    "/snap/bin/chromium",
+                ]))
+            if last_channel != "msedge":
+                browsers.append(("chromium", "msedge", [
+                    "/usr/bin/microsoft-edge",
+                    "/usr/bin/microsoft-edge-stable",
+                ]))
+        
+        # 查找可用的浏览器
+        for browser_type, channel, paths in browsers:
+            for path in paths:
+                if os.path.exists(path):
+                    logger.info(_t(f"检测到备用浏览器: ") + f"{channel} ({path})")
+                    return (browser_type, channel, path)
+        
+        logger.warning(_t("没有其他可用的系统浏览器"))
+        return None
+    
     def _run(self):
         """渲染线程主循环"""
         try:
@@ -173,10 +238,12 @@ class JSRendererThread:
                 
                 # 首先尝试使用系统中已安装的浏览器
                 browser_info = self._find_system_browser(p)
+                browser_launched = False
                 
-                if browser_info:
+                # 尝试启动找到的系统浏览器
+                while browser_info and not browser_launched:
                     browser_type, channel, executable_path = browser_info
-                    logger.info(_t("正在启动系统浏览器(Playwright)..."))
+                    logger.info(_t("正在启动系统浏览器(Playwright)...") + f" [{channel}]")
                     try:
                         self.browser = p.chromium.launch(
                             headless=True,
@@ -192,12 +259,14 @@ class JSRendererThread:
                             ]
                         )
                         logger.info(_t("使用系统浏览器: ") + channel)
+                        browser_launched = True
                     except Exception as e:
-                        logger.warning(_t("启动系统浏览器失败，尝试使用 Playwright 内置浏览器: ") + str(e))
-                        browser_info = None
+                        logger.warning(_t("启动系统浏览器失败") + f" [{channel}]: {str(e)}")
+                        # 尝试查找其他浏览器
+                        browser_info = self._find_next_browser(p, channel)
                 
-                # 如果没有系统浏览器或启动失败，尝试使用 Playwright 内置浏览器
-                if not browser_info:
+                # 如果没有系统浏览器或所有系统浏览器都启动失败，尝试使用 Playwright 内置浏览器
+                if not browser_launched:
                     # 检查 Playwright 内置浏览器是否已安装
                     try:
                         browser_path = p.chromium.executable_path
