@@ -226,6 +226,11 @@ class BaseMainWindow(tk.Tk, ABC):
 
         # 保存配置
         save_config_to_yaml(config)
+
+        # 保存特定配置（如PDF配置）
+        if hasattr(self, '_save_specific_config'):
+            self._save_specific_config()
+
         self.log_panel.add_log(_("配置已保存到 config.yaml"))
 
         # 验证配置
