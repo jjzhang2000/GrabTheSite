@@ -46,6 +46,10 @@ class MainWindow(BaseMainWindow):
         """获取完整配置"""
         return self._get_base_config()
 
+    def _save_specific_config(self) -> None:
+        """保存特定配置（MainWindow 没有特定配置）"""
+        pass
+
     def _start_crawl_thread(self, config: Dict[str, Any]) -> None:
         """启动抓取线程"""
         from grab_the_site import main as grab_main
