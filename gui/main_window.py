@@ -52,7 +52,7 @@ class MainWindow(BaseMainWindow):
 
     def _start_crawl_thread(self, config: Dict[str, Any]) -> None:
         """启动抓取线程"""
-        from grab_the_site import main as grab_main
+        from grab_the_site import main_entry as grab_main
 
         def crawl_thread():
             args_list = self._convert_config_to_args(config)
