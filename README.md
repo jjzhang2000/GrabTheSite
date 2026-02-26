@@ -1,7 +1,7 @@
 # GrabTheSite
 
 一个 Python 工具，用于将网站抓取并保存到本地，支持离线浏览和 PDF 输出。
-项目开发前期使用 Kimi 2.5，Release v0.2.0 之后使用 GLM 5，代码审核使用 GLM 5，人工极少干预代码细节。
+项目开发前期使用 Kimi 2.5，Release v0.2.1 之后使用 GLM 5，代码审核使用 GLM 5，人工极少干预代码细节。
 
 ## 项目简介
 
@@ -127,7 +127,7 @@ GrabTheSite/
 ├── docs/                 # 文档目录
 ├── tests/                # 测试目录
 ├── logger.py             # 日志系统
-├── config.py             # 配置管理
+├── app_config.py         # 配置管理
 ├── grab_the_site.py      # 命令行主脚本（抓取）
 ├── pdf_the_site.py       # 命令行主脚本（PDF）
 ├── grab_gui.py           # GUI 应用程序入口
@@ -154,7 +154,20 @@ python -m pytest tests/unit --cov=. --cov-report=html
 
 ## 更新日志
 
-### 最新改进
+### v0.2.1 (2025-02-26)
+- ✅ 修复模块命名冲突（config.py → app_config.py）
+- ✅ 修复 GUI 参数解析错误
+- ✅ 改进 PDF 配置面板布局
+- ✅ 添加 PDF 配置保存功能
+- ✅ 添加 VS Code 调试配置
+
+### v0.2.0 (2025-02-23)
+- ✅ 新增 PDF 输出插件
+- ✅ 新增 PDF GUI 界面
+- ✅ 书签显示优化
+- ✅ 国际化完善
+
+### 早期改进
 - ✅ 修复空异常处理问题，提高代码健壮性
 - ✅ 移除弃用模块，清理代码库
 - ✅ 重构主入口文件，消除重复代码（减少约 355 行）

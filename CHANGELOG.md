@@ -5,6 +5,30 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.2.1] - 2025-02-26
+
+### 修复
+
+- **模块命名冲突**
+  - 将 `config.py` 重命名为 `app_config.py`，避免与系统 `config` 包冲突
+
+- **GUI 参数解析**
+  - 添加 `--user-agent` 参数定义到 argparse
+  - 修复 `main_window.py` 导入错误的函数（`main` → `main_entry`）
+
+- **VS Code 调试配置**
+  - 创建 `.vscode/launch.json` 配置文件，解决调试时工作目录不正确的问题
+
+### 改进
+
+- **PDF 配置面板**
+  - 改为单行紧凑布局
+  - 添加从 `config.yaml` 加载 PDF 配置的功能
+  - 添加保存 PDF 配置到 `config.yaml` 的功能
+
+- **代码质量**
+  - 添加 `_save_specific_config` 方法到 `MainWindow`，与 `PdfMainWindow` 保持一致
+
 ## [0.2.0] - 2025-02-23
 
 ### 新增
@@ -101,5 +125,6 @@
 - 使用 YAML 进行配置管理
 - 使用 PyPDF2 和 pypdf 处理 PDF 文件
 
+[0.2.1]: https://github.com/jjzhang2000/GrabTheSite/releases/tag/v0.2.1
 [0.2.0]: https://github.com/jjzhang2000/GrabTheSite/releases/tag/v0.2.0
 [0.1.0]: https://github.com/jjzhang2000/GrabTheSite/releases/tag/v0.1.0
